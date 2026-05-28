@@ -1,25 +1,27 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config(); // Carga las variables del .env
+require('dotenv').config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME, 
-  process.env.DB_USER, 
-  process.env.DB_PASSWORD, 
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres', // Le decimos específicamente que hablamos con PostgreSQL
-    logging: false,      // Ponlo en 'true' si quieres ver el SQL que Sequelize genera en la consola
-    pool: {
-      max: 5,            // Máximo de conexiones simultáneas
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
+const isLocal = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+
+const dialectOptions = isLocal ? {} : {
+  ssl: {
+    require: true,
+    rejectUnauthorized: false
   }
-);
+};
 
-// Función técnica para probar la conexión
+const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/mavet_db', {
+  dialect: 'postgres',
+  logging: false,
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
+  dialectOptions
+});
+
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
