@@ -1,36 +1,44 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const isLocal = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+let sequelize;
 
-const dialectOptions = isLocal ? {} : {
-  ssl: {
-    require: true,
-    rejectUnauthorized: false
-  }
-};
+if (process.env.NODE_ENV === 'test') {
+  sequelize = new Sequelize('sqlite::memory:', {
+    logging: false
+  });
+} else {
+  const isLocal = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/mavet_db', {
-  dialect: 'postgres',
-  logging: false,
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
-  },
-  dialectOptions
-});
+  const dialectOptions = isLocal ? {} : {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  };
 
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Conexión a PostgreSQL establecida con éxito.');
-  } catch (error) {
-    console.error('❌ No se pudo conectar a la base de datos:', error);
-  }
-};
+  sequelize = new Sequelize(process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/mavet_db', {
+    dialect: 'postgres',
+    logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    },
+    dialectOptions
+  });
 
-testConnection();
+  const testConnection = async () => {
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Conexión a PostgreSQL establecida con éxito.');
+    } catch (error) {
+      console.error('❌ No se pudo conectar a la base de datos:', error);
+    }
+  };
+
+  testConnection();
+}
 
 module.exports = sequelize;
