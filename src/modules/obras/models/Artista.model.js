@@ -5,7 +5,6 @@ const Artista = sequelize.define('Artista', {
   id_artista: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   nombres: { type: DataTypes.STRING(255) },
   apellidos: { type: DataTypes.STRING(255) },
-  CI: { type: DataTypes.STRING(255) },
   correo: { type: DataTypes.STRING(255) },
   fecha_nacimiento: { type: DataTypes.DATEONLY },
   telefono: { type: DataTypes.STRING(255) },

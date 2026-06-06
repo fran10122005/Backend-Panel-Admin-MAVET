@@ -7,7 +7,10 @@ const Usuario = sequelize.define('Usuario', {
   correo: { type: DataTypes.STRING(255), unique: true },
   password_hash: { type: DataTypes.STRING(255) },
   id_rol: { type: DataTypes.INTEGER },
-  estado: { type: DataTypes.BOOLEAN }
+  estado: { type: DataTypes.BOOLEAN },
+  // Campos para recuperación de contraseña
+  reset_password_token: { type: DataTypes.STRING(255), allowNull: true, defaultValue: null },
+  reset_password_expires: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
 }, { tableName: 'usuarios', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at', deletedAt: 'deleted_at', paranoid: true });
 
 module.exports = Usuario;

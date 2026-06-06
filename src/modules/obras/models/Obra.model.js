@@ -19,9 +19,9 @@ const Obra = sequelize.define('Obra', {
   tableName: 'obras', 
   timestamps: true, 
   createdAt: 'created_at', 
-  updatedAt: 'updated_at', 
-  deletedAt: 'deleted_at', 
-  paranoid: true 
+  updatedAt: 'updated_at',
+  paranoid: true,
+  deletedAt: 'deleted_at'
 });
 
 module.exports = Obra;

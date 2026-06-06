@@ -2,11 +2,27 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../../../middleware/authMiddleware');
+const validateZod = require('../../../middleware/validateSchema');
+const { z } = require('zod');
 
+// --- Esquemas de validación Zod ---
+const forgotPasswordSchema = z.object({
+  correo: z.email({ message: 'Debe ser un correo electrónico válido.' })
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, { message: 'El token es requerido.' }),
+  nuevaPassword: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' })
+});
+
+// Rutas públicas
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/forgot-password', validateZod(forgotPasswordSchema), authController.forgotPassword);
+router.post('/reset-password', validateZod(resetPasswordSchema), authController.resetPassword);
 
-// Rutas protegidas (ejemplo de obtener mi perfil)
+// Rutas protegidas
 router.get('/me', verifyToken, authController.getMe);
+router.get('/export/pdf', verifyToken, authController.exportUsuariosPdf);
 
 module.exports = router;

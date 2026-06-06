@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-const categoriaRoutes = require('./categoriaLibro.routes');
-const autorRoutes = require('./autorLibro.routes');
 const libroRoutes = require('./libro.routes');
+const autorLibroRoutes = require('./autorLibro.routes');
+const categoriaLibroRoutes = require('./categoriaLibro.routes');
+const consultaSalaRoutes = require('./consultaSala.routes');
 
-router.use('/categorias', categoriaRoutes);
-router.use('/autores', autorRoutes);
 router.use('/libros', libroRoutes);
+router.use('/autores', autorLibroRoutes);
+router.use('/categorias', categoriaLibroRoutes);
+router.use('/consultas-sala', consultaSalaRoutes);
 
 module.exports = router;

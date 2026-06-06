@@ -8,8 +8,9 @@ require('dotenv').config();
 // Base de datos y Modelos centralizados
 const { sequelize } = require('./models');
 
-// Middlewares de error
+// Middlewares de error y autenticación
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { verifyToken } = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -57,12 +58,19 @@ const visitantesRoutes = require('./modules/visitantes/routes');
 const educacionRoutes = require('./modules/educacion/routes');
 const authRoutes = require('./modules/auth/routes');
 
+app.use('/api/auth', authRoutes); // Público
+
+// Rutas Mixtas (Públicas y Privadas internamente)
 app.use('/api/rrhh', rrhhRoutes);
-app.use('/api/obras', obrasRoutes);
-app.use('/api/biblioteca', bibliotecaRoutes);
 app.use('/api/visitantes', visitantesRoutes);
-app.use('/api/educacion', educacionRoutes);
-app.use('/api/auth', authRoutes);
+
+// Rutas Totalmente Privadas
+app.use('/api/obras', verifyToken, obrasRoutes);
+app.use('/api/biblioteca', verifyToken, bibliotecaRoutes);
+app.use('/api/educacion', verifyToken, educacionRoutes);
+
+const reportesRoutes = require('./modules/reportes/reportes.routes');
+app.use('/api/reportes', verifyToken, reportesRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
