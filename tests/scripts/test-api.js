@@ -46,8 +46,7 @@ function req(path) {
         }, null, 2));
       } else {
         console.log('OK - 0 events. Try creating one...');
-        // Create a test event
-        const persona = require('./src/models').Persona;
+        const persona = require('../../src/models').Persona;
         const p = await persona.findOne();
         const payload = JSON.stringify({
           id_espacio: 1,

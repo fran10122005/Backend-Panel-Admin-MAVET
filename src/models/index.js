@@ -13,6 +13,7 @@ const CargoTrabajador = require('../modules/rrhh/models/CargoTrabajador.model');
 const Turno = require('../modules/rrhh/models/Turno.model');
 const Trabajador = require('../modules/rrhh/models/Trabajador.model');
 const AsistenciaQR = require('../modules/rrhh/models/AsistenciaQR.model');
+const HistorialHorario = require('../modules/rrhh/models/HistorialHorario.model');
 
 // Importar modelos Obras
 const Artista = require('../modules/obras/models/Artista.model');
@@ -79,6 +80,12 @@ Turno.belongsToMany(Trabajador, { through: 'trabajador_turnos', foreignKey: 'id_
 
 Trabajador.hasMany(AsistenciaQR, { foreignKey: 'id_trabajador' });
 AsistenciaQR.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
+
+Trabajador.hasMany(HistorialHorario, { foreignKey: 'id_trabajador' });
+HistorialHorario.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
+
+Usuario.hasMany(HistorialHorario, { foreignKey: 'id_usuario_modifica' });
+HistorialHorario.belongsTo(Usuario, { foreignKey: 'id_usuario_modifica' });
 
 // --- Obras ---
 Entrega.hasMany(Obra, { foreignKey: 'id_entrega' });
@@ -174,7 +181,7 @@ SolicitudEspacio.belongsTo(Persona, { foreignKey: 'id_persona' });
 module.exports = {
   sequelize,
   Persona, Role, Usuario, BitacoraAuditoria,
-  CargoTrabajador, Turno, Trabajador, AsistenciaQR,
+  CargoTrabajador, Turno, Trabajador, AsistenciaQR, HistorialHorario,
   Artista, TecnicaObra, EstadoObra, CategoriaObra, Entrega, Obra, HistorialUbicacionObra,
   CategoriaLibro, AutorLibro, Libro, ConsultaSala,
   MotivoVisita, RegistroIngreso,

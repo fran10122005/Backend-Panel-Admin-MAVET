@@ -82,6 +82,9 @@ app.use('/api/educacion', verifyToken, educacionRoutes);
 const reportesRoutes = require('./modules/reportes/reportes.routes');
 app.use('/api/reportes', verifyToken, reportesRoutes);
 
+const personaRoutes = require('./modules/personas/routes/persona.routes');
+app.use('/api/personas', verifyToken, personaRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ message: "Backend MAVET - Activo" });

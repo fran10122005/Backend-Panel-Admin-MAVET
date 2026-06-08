@@ -1,8 +1,16 @@
 const { Trabajador, CargoTrabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
+const camposPermitidosTrabajador = [
+  'cedula', 'nombres', 'apellidos', 'telefono', 'correo_personal',
+  'id_cargo', 'qr_uuid', 'estado'
+];
+
 exports.createTrabajador = async (data) => {
-  return await Trabajador.create(data);
+  const payload = {};
+  camposPermitidosTrabajador.forEach(c => { if (data[c] !== undefined) payload[c] = data[c]; });
+  if (data.horas_semanales !== undefined) payload.horas_semanales = data.horas_semanales;
+  return await Trabajador.create(payload);
 };
 
 exports.getAllTrabajadores = async () => {
@@ -22,7 +30,9 @@ exports.getTrabajadorById = async (id) => {
 exports.updateTrabajador = async (id, data) => {
   const trabajador = await Trabajador.findByPk(id);
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
-  return await trabajador.update(data);
+  const payload = {};
+  camposPermitidosTrabajador.forEach(c => { if (data[c] !== undefined) payload[c] = data[c]; });
+  return await trabajador.update(payload);
 };
 
 exports.deleteTrabajador = async (id) => {

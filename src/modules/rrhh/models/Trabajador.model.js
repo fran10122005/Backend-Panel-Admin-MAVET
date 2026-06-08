@@ -3,7 +3,6 @@ const sequelize = require('../../../config/db');
 
 const Trabajador = sequelize.define('Trabajador', {
   id_trabajador: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  id_horario:    { type: DataTypes.INTEGER, allowNull: true },
   id_usuario:    { type: DataTypes.INTEGER, allowNull: true },
   cedula:        { type: DataTypes.STRING(255), unique: true, allowNull: false },
   nombres:       { type: DataTypes.STRING(255), allowNull: false },

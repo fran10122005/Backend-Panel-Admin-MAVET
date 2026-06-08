@@ -1,6 +1,11 @@
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
+const calcularHoras = (inicio, fin) => {
+  if (!inicio || !fin) return null;
+  return Math.round((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60) * 100) / 100;
+};
+
 exports.registrarAsistencia = async (data) => {
   const { cedulaTrabajador, tipoMovimiento, timestamp } = data;
   
@@ -40,6 +45,11 @@ exports.registrarAsistencia = async (data) => {
       throw new AppError('Tipo de movimiento inválido', 400);
   }
   
+  const horasManana = calcularHoras(asistencia.entrada_manana, asistencia.salida_manana);
+  const horasTarde = calcularHoras(asistencia.entrada_tarde, asistencia.salida_tarde);
+  const total = (horasManana || 0) + (horasTarde || 0);
+  asistencia.horas_cumplidas_dia = total > 0 ? total : null;
+
   await asistencia.save();
   return asistencia;
 };

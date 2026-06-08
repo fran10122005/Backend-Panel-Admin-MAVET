@@ -1,5 +1,5 @@
-const { Visitante } = require('./src/models');
-const sequelize = require('./src/config/db');
+const { Visitante } = require('../../src/models');
+const sequelize = require('../../src/config/db');
 
 async function testSequelize() {
   try {
