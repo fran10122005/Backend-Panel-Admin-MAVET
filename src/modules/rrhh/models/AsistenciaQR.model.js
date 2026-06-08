@@ -3,12 +3,14 @@ const sequelize = require('../../../config/db');
 
 const AsistenciaQR = sequelize.define('AsistenciaQR', {
   id_asistencia: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  id_trabajador: { type: DataTypes.INTEGER },
+  id_trabajador: { type: DataTypes.INTEGER, allowNull: false },
   fecha: { type: DataTypes.DATEONLY },
   entrada_manana: { type: DataTypes.DATE },
   salida_manana: { type: DataTypes.DATE },
   entrada_tarde: { type: DataTypes.DATE },
-  salida_tarde: { type: DataTypes.DATE }
+  salida_tarde: { type: DataTypes.DATE },
+  horas_cumplidas_dia: { type: DataTypes.DECIMAL },
+  observaciones: { type: DataTypes.TEXT }
 }, { tableName: 'asistencias_qr', timestamps: false });
 
 module.exports = AsistenciaQR;

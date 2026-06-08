@@ -25,3 +25,8 @@ exports.deleteLibro = catchAsync(async (req, res) => {
   await libroService.deleteLibro(req.params.id);
   res.status(200).json({ message: 'Libro eliminado' });
 });
+
+exports.devolverLibro = catchAsync(async (req, res) => {
+  await libroService.devolverLibro(req.params.id);
+  res.status(200).json({ message: 'Libro devuelto exitosamente' });
+});

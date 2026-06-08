@@ -7,5 +7,6 @@ router.get('/', libroController.getAllLibros);
 router.get('/:id', libroController.getLibroById);
 router.put('/:id', libroController.updateLibro);
 router.delete('/:id', libroController.deleteLibro);
+router.put('/:id/devolver', libroController.devolverLibro);
 
 module.exports = router;

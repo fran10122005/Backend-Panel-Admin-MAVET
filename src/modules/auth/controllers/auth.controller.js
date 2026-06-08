@@ -32,6 +32,24 @@ exports.getMe = catchAsync(async (req, res) => {
   });
 });
 
+exports.getAllUsuarios = catchAsync(async (req, res) => {
+  const usuarios = await Usuario.findAll({
+    include: [
+      { model: Role },
+      { 
+        model: require('../../../models').Trabajador,
+        include: [{ model: require('../../../models').CargoTrabajador }] 
+      }
+    ],
+    order: [['id_usuario', 'DESC']]
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: usuarios
+  });
+});
+
 exports.forgotPassword = catchAsync(async (req, res) => {
   const { correo } = req.body;
   await authService.forgotPassword(correo);
@@ -56,7 +74,7 @@ exports.resetPassword = catchAsync(async (req, res) => {
 exports.exportUsuariosPdf = catchAsync(async (req, res) => {
   const usuarios = await Usuario.findAll({
     include: [{ model: Role }],
-    order: [['createdAt', 'DESC']]
+    order: [['id_usuario', 'DESC']]
   });
 
   const title = "Reporte de Usuarios del Sistema";
@@ -80,4 +98,21 @@ exports.exportUsuariosPdf = catchAsync(async (req, res) => {
   await generateTablePdf(res, title, headers, rows, 'usuarios_mavet.pdf');
 });
 
+exports.updateMe = catchAsync(async (req, res) => {
+  await authService.updateMe(req.user.id_usuario, req.body);
+  
+  res.status(200).json({
+    status: 'success',
+    message: 'Perfil actualizado exitosamente'
+  });
+});
+
+exports.updateUsuario = catchAsync(async (req, res) => {
+  const usuario = await authService.updateUsuario(req.params.id, req.body);
+  res.status(200).json({
+    status: 'success',
+    message: 'Usuario actualizado exitosamente',
+    data: usuario
+  });
+});
 

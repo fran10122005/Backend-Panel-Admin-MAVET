@@ -1,4 +1,4 @@
-const { Instructor } = require('../../../models');
+const { Instructor, Persona } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
 exports.createInstructor = async (data) => {
@@ -6,7 +6,9 @@ exports.createInstructor = async (data) => {
 };
 
 exports.getAllInstructores = async () => {
-  return await Instructor.findAll();
+  return await Instructor.findAll({
+    include: [Persona]
+  });
 };
 
 exports.getInstructorById = async (id) => {

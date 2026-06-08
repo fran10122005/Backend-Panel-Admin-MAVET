@@ -64,6 +64,16 @@ app.use('/api/auth', authRoutes); // Público
 app.use('/api/rrhh', rrhhRoutes);
 app.use('/api/visitantes', visitantesRoutes);
 
+// ── Catálogos de solo-lectura: PÚBLICOS (para poblar selects del frontend) ──
+const artistaController = require('./modules/obras/controllers/artista.controller');
+const tecnicaController = require('./modules/obras/controllers/tecnicaObra.controller');
+const estadoController  = require('./modules/obras/controllers/estadoObra.controller');
+const categoriaController = require('./modules/obras/controllers/categoriaObra.controller');
+app.get('/api/obras/artistas', artistaController.getAllArtistas);
+app.get('/api/obras/tecnicas', tecnicaController.getAllTecnicas);
+app.get('/api/obras/estados',  estadoController.getAllEstados);
+app.get('/api/obras/categorias', categoriaController.getAllCategorias);
+
 // Rutas Totalmente Privadas
 app.use('/api/obras', verifyToken, obrasRoutes);
 app.use('/api/biblioteca', verifyToken, bibliotecaRoutes);

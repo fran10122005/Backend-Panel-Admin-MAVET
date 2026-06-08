@@ -11,17 +11,14 @@ const Role = sequelize.define('Role', {
     type: DataTypes.STRING(255),
     allowNull: false
   },
-  descripcion: {
-    type: DataTypes.STRING(255)
-  },
   permisos: {
-    type: DataTypes.STRING(255)
+    type: DataTypes.TEXT
   }
 }, {
   tableName: 'roles',
   timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  createdAt: false,
+  updatedAt: false,
   deletedAt: 'deleted_at',
   paranoid: true
 });

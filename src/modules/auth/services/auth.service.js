@@ -27,9 +27,16 @@ exports.register = async (data) => {
     correo: data.correo,
     password_hash: passwordHash,
     id_rol: data.id_rol,
-    id_trabajador: data.id_trabajador,
     estado: true
   });
+
+  // Si se indicó un trabajador, vincularlo actualizando su id_usuario
+  if (data.id_trabajador) {
+    await Trabajador.update(
+      { id_usuario: nuevoUsuario.id_usuario },
+      { where: { id_trabajador: data.id_trabajador } }
+    );
+  }
 
   // Generar token
   const token = signToken(nuevoUsuario.id_usuario);
@@ -100,7 +107,7 @@ exports.forgotPassword = async (correo) => {
   if (usuario.id_trabajador) {
     const { Trabajador } = require('../../../models');
     const trabajador = await Trabajador.findByPk(usuario.id_trabajador);
-    if (trabajador) nombreMostrar = trabajador.nombre || trabajador.nombre_completo || 'Usuario';
+    if (trabajador) nombreMostrar = `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`.trim() || 'Usuario';
   }
 
   const emailService = require('../../../services/email.service');
@@ -142,3 +149,66 @@ exports.resetPassword = async (token, nuevaPassword) => {
   return true;
 };
 
+exports.updateMe = async (id_usuario, data) => {
+  const usuario = await Usuario.findByPk(id_usuario, {
+    include: [{ model: Trabajador }]
+  });
+
+  if (!usuario) {
+    throw new AppError('Usuario no encontrado', 404);
+  }
+
+  if (data.password) {
+    const salt = await bcrypt.genSalt(10);
+    usuario.password_hash = await bcrypt.hash(data.password, salt);
+  }
+
+  if (data.correo) {
+    usuario.correo = data.correo;
+  }
+
+  await usuario.save();
+
+  if (usuario.Trabajador) {
+    const tData = {};
+    if (data.nombres !== undefined) tData.nombres = data.nombres;
+    if (data.apellidos !== undefined) tData.apellidos = data.apellidos;
+    if (data.correo_personal !== undefined) tData.correo_personal = data.correo_personal;
+    if (data.telefono !== undefined) tData.telefono = data.telefono;
+    
+    await usuario.Trabajador.update(tData);
+  }
+
+  return true;
+};
+
+exports.updateUsuario = async (id_usuario, data) => {
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  if (data.password) {
+    const salt = await bcrypt.genSalt(10);
+    usuario.password_hash = await bcrypt.hash(data.password, salt);
+  }
+
+  if (data.correo) usuario.correo = data.correo;
+  if (data.id_rol !== undefined) usuario.id_rol = data.id_rol;
+  if (data.estado !== undefined) usuario.estado = data.estado;
+
+  await usuario.save();
+
+  // Vincular/desvincular trabajador actualizando id_usuario en la tabla trabajadores
+  if (data.id_trabajador !== undefined) {
+    // Primero desvinculamos cualquier trabajador que ya estaba asociado a este usuario
+    await Trabajador.update({ id_usuario: null }, { where: { id_usuario } });
+    // Si se seleccionó un trabajador válido, lo vinculamos
+    if (data.id_trabajador && data.id_trabajador !== 0) {
+      await Trabajador.update(
+        { id_usuario },
+        { where: { id_trabajador: data.id_trabajador } }
+      );
+    }
+  }
+
+  return usuario;
+};

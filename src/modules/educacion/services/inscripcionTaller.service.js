@@ -1,34 +1,29 @@
-const InscripcionTaller = require('../models/InscripcionTaller.model');
-const Alumno = require('../models/Alumno.model');
-const Representante = require('../models/Representante.model');
-const Taller = require('../models/Taller.model');
+const { Persona, Alumno, Representante, AlumnoRepresentante, Taller, InscripcionTaller } = require('../../../models');
 const sequelize = require('../../../config/db');
 
-const getAllInscripciones = async () => {
-  return await InscripcionTaller.findAll({
-    include: [
-      // Since associations might not be defined explicitly in index, we will do a manual join or just return raw for now.
-      // But let's try to query just Inscripciones and fetch Alumnos manually if associations fail.
-    ]
-  });
-};
-
 const getInscripcionesConDetalles = async () => {
-  // A custom query since associations might not be fully configured in index models
   const inscripciones = await InscripcionTaller.findAll();
-  
+
   const result = [];
-  for (let inscripcion of inscripciones) {
-    const alumno = await Alumno.findByPk(inscripcion.id_alumno);
-    const taller = await Taller.findByPk(inscripcion.id_taller);
+  for (let ins of inscripciones) {
+    const taller = await Taller.findByPk(ins.id_taller);
+    const alumno = await Alumno.findByPk(ins.id_alumno);
+    let alumnoPersona = null;
     let representante = null;
-    if (alumno && alumno.id_representante) {
-      representante = await Representante.findByPk(alumno.id_representante);
+    if (alumno) {
+      alumnoPersona = await Persona.findByPk(alumno.id_persona);
+      const vinculo = await AlumnoRepresentante.findOne({ where: { id_alumno: alumno.id_alumno } });
+      if (vinculo) {
+        const repRole = await Representante.findByPk(vinculo.id_representante);
+        if (repRole) {
+          const repPersona = await Persona.findByPk(repRole.id_persona);
+          representante = repPersona;
+        }
+      }
     }
-    
     result.push({
-      ...inscripcion.toJSON(),
-      Alumno: alumno,
+      ...ins.toJSON(),
+      Alumno: alumnoPersona,
       Taller: taller,
       Representante: representante
     });
@@ -40,48 +35,83 @@ const inscribirAlumno = async (data) => {
   const t = await sequelize.transaction();
 
   try {
-    const { tallerId, alumno, representante } = data;
+    const { tallerId, alumno: alumnoData, representante: repData } = data;
+    const edad = parseInt(alumnoData.edad, 10);
+    const esMenor = !isNaN(edad) && edad < 18;
 
-    // 1. Find or create Representante
-    let repRecord = await Representante.findOne({ where: { cedula: representante.cedula }, transaction: t });
-    if (!repRecord) {
-      // Formateamos "apellido" dividiendo el nombre si no viene separado
-      const nameParts = representante.nombre.split(' ');
-      const nombres = nameParts[0] || '';
-      const apellido = nameParts.slice(1).join(' ') || '';
-      
-      repRecord = await Representante.create({
-        cedula: representante.cedula,
-        nombres: nombres,
-        apellido: apellido,
-        telefono: representante.telefono,
-      }, { transaction: t });
+    // Validar representante si es menor
+    if (esMenor && (!repData || !repData.nombre || !repData.cedula)) {
+      throw new Error('Los menores de edad requieren un representante con nombre y cédula.');
     }
 
-    // 2. Find or create Alumno
-    // Como el formulario no envía cédula del alumno, usamos un identificador temporal basado en nombre y rep
-    let alumnoRecord = await Alumno.findOne({ 
-      where: { nombres: alumno.nombre, id_representante: repRecord.id_representante },
-      transaction: t 
-    });
+    // Calcular fecha de nacimiento aproximada desde la edad
+    const hoy = new Date();
+    const fechaNac = new Date(hoy.getFullYear() - edad, hoy.getMonth(), hoy.getDate());
 
-    if (!alumnoRecord) {
-      // Generar una cedula falsa para el menor
-      const dummyCedula = `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      
-      alumnoRecord = await Alumno.create({
-        id_representante: repRecord.id_representante,
-        cedula: dummyCedula,
-        nombres: alumno.nombre,
-        apellidos: '', // El form no separa apellidos del alumno
-        telefono: representante.telefono // usar el del representante
-      }, { transaction: t });
+    // 1. Crear Persona del alumno
+    const namePartsAlumno = (alumnoData.nombre || '').trim().split(' ');
+    const nombreAlumno = namePartsAlumno[0] || alumnoData.nombre;
+    const apellidoAlumno = namePartsAlumno.slice(1).join(' ') || '';
+
+    const alumnoPersona = await Persona.create({
+      cedula: `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      nombres: nombreAlumno,
+      apellidos: apellidoAlumno,
+      telefono: repData?.telefono || '',
+      fecha_de_nac: fechaNac,
+      fecha_registro: new Date()
+    }, { transaction: t });
+
+    // 2. Crear Alumno
+    const alumnoRecord = await Alumno.create({
+      id_persona: alumnoPersona.id_persona,
+      nivel_experiencia: null
+    }, { transaction: t });
+
+    // 3. Si es menor, crear/traer Representante y vincular
+    if (esMenor && repData) {
+      let repPersona = await Persona.findOne({
+        where: { cedula: repData.cedula },
+        transaction: t
+      });
+
+      if (!repPersona) {
+        const namePartsRep = (repData.nombre || '').trim().split(' ');
+        const nombreRep = namePartsRep[0] || repData.nombre;
+        const apellidoRep = namePartsRep.slice(1).join(' ') || '';
+
+        repPersona = await Persona.create({
+          cedula: repData.cedula,
+          nombres: nombreRep,
+          apellidos: apellidoRep,
+          telefono: repData.telefono || '',
+          fecha_de_nac: null,
+          fecha_registro: new Date()
+        }, { transaction: t });
+      }
+
+      let repRecord = await Representante.findOne({
+        where: { id_persona: repPersona.id_persona },
+        transaction: t
+      });
+
+      if (!repRecord) {
+        repRecord = await Representante.create({
+          id_persona: repPersona.id_persona,
+          profesion_ocupacion: null
+        }, { transaction: t });
+      }
+
+      await AlumnoRepresentante.findOrCreate({
+        where: { id_alumno: alumnoRecord.id_alumno, id_representante: repRecord.id_representante },
+        defaults: { parentesco: 'Representante Legal' },
+        transaction: t
+      });
     }
 
-    // 3. Crear Inscripcion
-    // Parse tallerId as INT (si viene como "1" o similar)
-    const tId = parseInt(tallerId.toString().replace(/\D/g, '')) || tallerId; 
-    
+    // 4. Crear Inscripcion
+    const tId = parseInt(tallerId.toString().replace(/\D/g, ''), 10) || tallerId;
+
     const inscripcion = await InscripcionTaller.create({
       id_taller: tId,
       id_alumno: alumnoRecord.id_alumno,
@@ -98,7 +128,6 @@ const inscribirAlumno = async (data) => {
 };
 
 module.exports = {
-  getAllInscripciones,
   getInscripcionesConDetalles,
   inscribirAlumno
 };

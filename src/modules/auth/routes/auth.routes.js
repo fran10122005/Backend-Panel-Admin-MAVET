@@ -22,7 +22,10 @@ router.post('/forgot-password', validateZod(forgotPasswordSchema), authControlle
 router.post('/reset-password', validateZod(resetPasswordSchema), authController.resetPassword);
 
 // Rutas protegidas
+router.get('/', verifyToken, authController.getAllUsuarios);
 router.get('/me', verifyToken, authController.getMe);
+router.put('/me', verifyToken, authController.updateMe);
+router.put('/:id', verifyToken, authController.updateUsuario);
 router.get('/export/pdf', verifyToken, authController.exportUsuariosPdf);
 
 module.exports = router;

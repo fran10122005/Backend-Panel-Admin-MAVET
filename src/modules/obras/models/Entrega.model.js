@@ -14,9 +14,7 @@ const Entrega = sequelize.define('Entrega', {
   tableName: 'entrega', 
   timestamps: true, 
   createdAt: 'created_at', 
-  updatedAt: 'updated_at', 
-  deletedAt: 'deleted_at', 
-  paranoid: true 
+  updatedAt: 'updated_at'
 });
 
 module.exports = Entrega;

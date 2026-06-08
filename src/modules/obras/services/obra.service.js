@@ -1,4 +1,4 @@
-const { Obra, Artista, TecnicaObra, EstadoObra, Entrega } = require('../../../models');
+const { Obra, Artista, TecnicaObra, EstadoObra, CategoriaObra, Entrega } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const sequelize = require('../../../config/db');
 
@@ -50,12 +50,7 @@ exports.createObra = async (data) => {
   try {
     const { id_artista, id_tecnica, id_estado_actual } = await processForeignKeys(data, t);
 
-    // Generate codigo_inventario if not provided
-    let codigo_inventario = data.codigo_inventario || data.id;
-    if (!codigo_inventario || codigo_inventario.startsWith('OBR-00')) {
-      const count = await Obra.count({ transaction: t });
-      codigo_inventario = `OBR-${String(count + 1).padStart(3, '0')}-${Date.now().toString().slice(-4)}`;
-    }
+    let codigo_inventario = data.codigo_inventario || `SIN-CODIGO-${Date.now()}`;
 
     const newObra = await Obra.create({
       ...data,
@@ -63,8 +58,12 @@ exports.createObra = async (data) => {
       id_artista,
       id_tecnica,
       id_estado_actual,
+      id_categoria_obra: data.id_categoria_obra || null,
       anio: data.ano || data.anio,
-      tipo_ingreso: data.modalidad || data.tipo_ingreso,
+      tipo_ingreso: data.tipo_ingreso,
+      piezas: data.piezas || 1,
+      peso: data.peso || null,
+      descripcion: data.descripcion || null,
       ubicacion_actual: data.ubicacion || data.ubicacion_actual
     }, { transaction: t });
 
@@ -78,13 +77,25 @@ exports.createObra = async (data) => {
 
 exports.getAllObras = async () => {
   return await Obra.findAll({
-    include: [Artista, TecnicaObra, EstadoObra, Entrega]
+    include: [
+      { model: Artista, as: 'Artista' },
+      TecnicaObra,
+      EstadoObra,
+      CategoriaObra,
+      Entrega
+    ]
   });
 };
 
 exports.getObraById = async (id) => {
   const obra = await Obra.findByPk(id, {
-    include: [Artista, TecnicaObra, EstadoObra, Entrega]
+    include: [
+      { model: Artista, as: 'Artista' },
+      TecnicaObra,
+      EstadoObra,
+      CategoriaObra,
+      Entrega
+    ]
   });
   if (!obra) throw new AppError('Obra no encontrada', 404);
   return obra;
@@ -103,8 +114,12 @@ exports.updateObra = async (id, data) => {
       id_artista: id_artista || obra.id_artista,
       id_tecnica: id_tecnica || obra.id_tecnica,
       id_estado_actual: id_estado_actual || obra.id_estado_actual,
+      id_categoria_obra: data.id_categoria_obra || obra.id_categoria_obra,
       anio: data.ano || data.anio || obra.anio,
-      tipo_ingreso: data.modalidad || data.tipo_ingreso || obra.tipo_ingreso,
+      tipo_ingreso: data.tipo_ingreso || obra.tipo_ingreso,
+      piezas: data.piezas || obra.piezas,
+      peso: data.peso || obra.peso,
+      descripcion: data.descripcion || obra.descripcion,
       ubicacion_actual: data.ubicacion || data.ubicacion_actual || obra.ubicacion_actual
     }, { transaction: t });
 

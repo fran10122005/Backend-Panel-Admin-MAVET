@@ -2,7 +2,7 @@ const { generateTablePdf, generateCartaAvalPdf } = require('../../utils/pdfGener
 const { Libro, CategoriaLibro, AutorLibro } = require('../../models');
 const { Obra, Artista, TecnicaObra, EstadoObra } = require('../../models');
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../models');
-const { SolicitudEspacio, Usuario, EspacioMuseo, RegistroIngreso } = require('../../models');
+const { SolicitudEspacio, Usuario, EspacioMuseo, RegistroIngreso, Persona } = require('../../models');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
 const { Op } = require('sequelize');
@@ -118,19 +118,23 @@ exports.reporteCartaAval = catchAsync(async (req, res) => {
 // ─── Reporte: Historial de Eventos (Auditorio) ────────────────────────────
 exports.reporteEventos = catchAsync(async (req, res) => {
   const eventos = await SolicitudEspacio.findAll({
-    include: [EspacioMuseo, Usuario], // Usuario = Aprobador
-    order: [['fecha_solicitada', 'DESC']]
+    include: [EspacioMuseo, Persona],
+    order: [['fecha_uso', 'DESC']]
   });
 
   const headers = ['Título del Evento / Motivo', 'Organizador', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Estado'];
-  const rows = eventos.map(e => [
-    e.motivo_uso || '—',
-    e.nombre_responsable || e.institucion || '—',
-    e.fecha_solicitada || '—',
-    e.hora_inicio || '—',
-    e.hora_fin || '—',
-    e.estado_solicitud || '—'
-  ]);
+  const rows = eventos.map(e => {
+    const p = e.Persona || {};
+    const orgName = [p.nombres, p.apellidos].filter(Boolean).join(' ') || e.institucion || '—';
+    return [
+      e.motivo || '—',
+      orgName,
+      e.fecha_uso || '—',
+      e.hora_inicio || '—',
+      e.hora_fin || '—',
+      e.estado || '—'
+    ];
+  });
 
   await generateTablePdf(
     res,
@@ -161,11 +165,11 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
   // Próximos eventos (3 más cercanos en el futuro)
   const proximosEventos = await SolicitudEspacio.findAll({
     where: {
-      fecha_solicitada: {
+      fecha_uso: {
         [Op.gte]: now
       }
     },
-    order: [['fecha_solicitada', 'ASC']],
+    order: [['fecha_uso', 'ASC']],
     limit: 3
   });
 
@@ -182,7 +186,7 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
       totalObras: obrasCount,
       totalLibros: librosCount,
       visitantesMes: visitantesMesCount,
-      totalEventosActivos: await SolicitudEspacio.count({ where: { fecha_solicitada: { [Op.gte]: now } } }),
+      totalEventosActivos: await SolicitudEspacio.count({ where: { fecha_uso: { [Op.gte]: now } } }),
       proximosEventos,
       ultimasObras
     }
