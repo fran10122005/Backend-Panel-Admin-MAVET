@@ -47,6 +47,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Servir archivos estáticos
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 // Aplicar rate limiter solo a la API
 app.use('/api', limiter);
 
@@ -63,6 +67,14 @@ app.use('/api/auth', authRoutes); // Público
 // Rutas Mixtas (Públicas y Privadas internamente)
 app.use('/api/rrhh', rrhhRoutes);
 app.use('/api/visitantes', visitantesRoutes);
+
+// Ruta Pública de Obras
+const obraController = require('./modules/obras/controllers/obra.controller');
+app.get('/api/public/obras', obraController.getObrasPublicas);
+
+// Ruta Pública de Agenda (Talleres y Eventos)
+const agendaController = require('./modules/educacion/controllers/agenda.controller');
+app.get('/api/public/agenda', agendaController.getAgenda);
 
 // ── Catálogos de solo-lectura: PÚBLICOS (para poblar selects del frontend) ──
 const artistaController = require('./modules/obras/controllers/artista.controller');

@@ -87,6 +87,17 @@ exports.getAllObras = async () => {
   });
 };
 
+exports.getObrasPublicas = async () => {
+  return await Obra.findAll({
+    attributes: ['id_obra', 'titulo', 'anio', 'imagen_url'],
+    include: [
+      { model: Artista, as: 'Artista', attributes: ['nombres', 'apellidos'] },
+      { model: TecnicaObra, attributes: ['nombre_tecnica'] },
+      { model: CategoriaObra, attributes: ['nombre_categoria'] }
+    ]
+  });
+};
+
 exports.getObraById = async (id) => {
   const obra = await Obra.findByPk(id, {
     include: [
