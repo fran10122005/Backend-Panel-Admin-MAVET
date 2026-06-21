@@ -4,6 +4,7 @@ const sequelize = require('../../../config/db');
 const Taller = sequelize.define('Taller', {
   id_taller: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   nombre_curso: { type: DataTypes.STRING(255) },
+  inventario_id: { type: DataTypes.INTEGER },
   id_instructor: { type: DataTypes.INTEGER },
   id_espacio: { type: DataTypes.INTEGER },
   sesiones: { type: DataTypes.INTEGER },

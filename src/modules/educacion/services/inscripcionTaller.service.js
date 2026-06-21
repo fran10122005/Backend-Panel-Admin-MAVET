@@ -1,4 +1,68 @@
-const { Persona, Alumno, Representante, AlumnoRepresentante, Taller, InscripcionTaller } = require('../../../models');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
+const { PassThrough } = require('stream');
+
+// Export inscripciones for a specific taller in PDF or Excel
+const exportInscripciones = async (tallerId, format) => {
+  // Fetch all detailed inscripciones and filter by taller
+  const allInscripciones = await getInscripcionesConDetalles();
+  const filtered = allInscripciones.filter(ins => ins.Taller && ins.Taller.id_taller == tallerId);
+
+  if (format === 'excel') {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Inscripciones');
+    // Define columns
+    worksheet.columns = [
+      { header: 'Alumno', key: 'alumno', width: 30 },
+      { header: 'Representante', key: 'representante', width: 30 },
+      { header: 'Fecha Inscripción', key: 'fecha', width: 20 }
+    ];
+    // Add rows
+    filtered.forEach(ins => {
+      const alumnoName = ins.Alumno ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim() : '-';
+      const repName = ins.Representante ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim() : '-';
+      const fecha = ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString() : '-';
+      worksheet.addRow({ alumno: alumnoName, representante: repName, fecha });
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const filename = `Inscripciones_Taller_${tallerId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return { buffer, filename, mimeType };
+  } else if (format === 'pdf') {
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    const stream = new PassThrough();
+    doc.pipe(stream);
+    // Header
+    doc.fontSize(16).text(`Inscripciones - Taller ${tallerId}`, { align: 'center' });
+    doc.moveDown();
+    // Table header
+    doc.fontSize(12).text('Alumno', 50, doc.y, { continued: true })
+       .text('Representante', 250, doc.y, { continued: true })
+       .text('Fecha', 450, doc.y);
+    doc.moveDown();
+    // Rows
+    filtered.forEach(ins => {
+      const alumnoName = ins.Alumno ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim() : '-';
+      const repName = ins.Representante ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim() : '-';
+      const fecha = ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString() : '-';
+      doc.text(alumnoName, 50, doc.y, { continued: true })
+         .text(repName, 250, doc.y, { continued: true })
+         .text(fecha, 450, doc.y);
+      doc.moveDown();
+    });
+    doc.end();
+    const chunks = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const filename = `Inscripciones_Taller_${tallerId}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const mimeType = 'application/pdf';
+    return { buffer, filename, mimeType };
+  }
+  throw new Error('Formato no soportado');
+};
+
 const sequelize = require('../../../config/db');
 
 const getInscripcionesConDetalles = async () => {
@@ -129,5 +193,6 @@ const inscribirAlumno = async (data) => {
 
 module.exports = {
   getInscripcionesConDetalles,
-  inscribirAlumno
+  inscribirAlumno,
+  exportInscripciones
 };

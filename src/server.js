@@ -109,10 +109,46 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 
 // SINCRONIZACIÓN Y ARRANQUE
+async function seedInventarioTalleres() {
+    const { InventarioTaller, Taller } = require('./models');
+    const talleresBase = [
+        { nombre: 'Taller de Pintura y Dibujo', descripcion: 'Taller básico de técnicas de pintura al óleo, acrílico y dibujo artístico.' },
+        { nombre: 'Taller de Escultura en Arcilla', descripcion: 'Taller de modelado y escultura con arcilla y herramientas básicas.' },
+        { nombre: 'Taller de Fotografía Digital', descripcion: 'Taller de fotografía digital, composición y edición básica.' },
+        { nombre: 'Taller de Historia del Arte', descripcion: 'Taller teórico sobre corrientes artísticas y obras emblemáticas.' },
+        { nombre: 'Taller de Música y Percusión', descripcion: 'Taller de iniciación musical con instrumentos de percusión.' },
+    ];
+    for (const t of talleresBase) {
+        const existe = await InventarioTaller.findOne({ where: { nombre: t.nombre } });
+        if (!existe) {
+            const creado = await InventarioTaller.create(t);
+            console.log(`  🌱 Inventario: "${t.nombre}" creado.`);
+
+            // También crear un taller planificado de ejemplo para el primero
+            if (t.nombre === 'Taller de Pintura y Dibujo') {
+                const planificado = await Taller.create({
+                    nombre_curso: t.nombre,
+                    inventario_id: creado.id,
+                    sesiones: 8,
+                    fecha: new Date(),
+                    hora_inicio: '10:00',
+                    hora_fin: '12:00',
+                    horas_totales: 16,
+                    cupo_minimo: 5,
+                    cupo_maximo: 20,
+                    estado: 'Activo'
+                });
+                console.log(`  🌱 Taller planificado: "${planificado.nombre_curso}" creado desde inventario.`);
+            }
+        }
+    }
+}
+
 async function startServer() {
     try {
         await sequelize.sync();
         console.log('✅ Base de datos sincronizada exitosamente');
+        await seedInventarioTalleres();
 
         if (require.main === module) {
             app.listen(PORT, () => {

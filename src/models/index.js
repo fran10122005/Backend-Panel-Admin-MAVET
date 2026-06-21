@@ -45,6 +45,7 @@ const InscripcionTaller = require('../modules/educacion/models/InscripcionTaller
 const SesionTaller = require('../modules/educacion/models/SesionTaller.model');
 const AsistenciaAlumno = require('../modules/educacion/models/AsistenciaAlumno.model');
 const SolicitudEspacio = require('../modules/educacion/models/SolicitudEspacio.model');
+const InventarioTaller = require('../modules/educacion/models/InventarioTaller.model');
 
 // ==========================================
 // DEFINICIÓN DE ASOCIACIONES (FOREIGN KEYS)
@@ -143,6 +144,9 @@ Taller.hasMany(RegistroIngreso, { foreignKey: 'id_taller' });
 RegistroIngreso.belongsTo(Taller, { foreignKey: 'id_taller' });
 
 // --- Educación y Talleres ---
+InventarioTaller.hasMany(Taller, { foreignKey: 'inventario_id', as: 'talleresPlanificados' });
+Taller.belongsTo(InventarioTaller, { foreignKey: 'inventario_id', as: 'inventarioTaller' });
+
 Instructor.hasMany(Taller, { foreignKey: 'id_instructor' });
 Taller.belongsTo(Instructor, { foreignKey: 'id_instructor' });
 
@@ -185,5 +189,5 @@ module.exports = {
   Artista, TecnicaObra, EstadoObra, CategoriaObra, Entrega, Obra, HistorialUbicacionObra,
   CategoriaLibro, AutorLibro, Libro, ConsultaSala,
   MotivoVisita, RegistroIngreso,
-  Instructor, Representante, Alumno, AlumnoRepresentante, EspacioMuseo, Taller, InscripcionTaller, SesionTaller, AsistenciaAlumno, SolicitudEspacio
+  Instructor, Representante, Alumno, AlumnoRepresentante, EspacioMuseo, Taller, InscripcionTaller, SesionTaller, AsistenciaAlumno, SolicitudEspacio, InventarioTaller
 };

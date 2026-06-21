@@ -1,9 +1,17 @@
 const tallerService = require('../services/taller.service');
+const { body, validationResult } = require('express-validator');
 const catchAsync = require('../../../utils/catchAsync');
 
+// Crear un taller programado con datos completos
 exports.createTaller = catchAsync(async (req, res) => {
   const taller = await tallerService.createTaller(req.body);
   res.status(201).json({ message: 'Taller creado', data: taller });
+});
+
+// Planificar un taller a partir del inventario
+exports.planificarTaller = catchAsync(async (req, res) => {
+  const taller = await tallerService.planificarTaller(req.body);
+  res.status(201).json({ message: 'Taller planificado', data: taller });
 });
 
 exports.getAllTalleres = catchAsync(async (req, res) => {

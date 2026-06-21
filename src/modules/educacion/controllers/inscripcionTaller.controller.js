@@ -1,5 +1,6 @@
 const inscripcionService = require('../services/inscripcionTaller.service');
 const catchAsync = require('../../../utils/catchAsync');
+const { exportInscripciones } = require('../services/inscripcionTaller.service');
 
 exports.inscribirAlumno = catchAsync(async (req, res) => {
   const inscripcion = await inscripcionService.inscribirAlumno(req.body);
@@ -9,4 +10,17 @@ exports.inscribirAlumno = catchAsync(async (req, res) => {
 exports.getAllInscripciones = catchAsync(async (req, res) => {
   const result = await inscripcionService.getInscripcionesConDetalles();
   res.status(200).json(result);
+});
+
+// New endpoint: export planilla for a specific taller
+exports.exportPlanilla = catchAsync(async (req, res) => {
+  const { id } = req.params; // taller id
+  const { format } = req.query; // pdf or excel
+  if (!['pdf', 'excel'].includes(format)) {
+    return res.status(400).json({ message: 'Formato no soportado. Use pdf o excel.' });
+  }
+  const { buffer, filename, mimeType } = await exportInscripciones(id, format);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', mimeType);
+  res.send(buffer);
 });
