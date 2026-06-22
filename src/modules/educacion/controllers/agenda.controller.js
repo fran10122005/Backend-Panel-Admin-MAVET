@@ -4,15 +4,13 @@ const SolicitudEspacio = require('../models/SolicitudEspacio.model');
 const { Op } = require('sequelize');
 
 exports.getAgenda = catchAsync(async (req, res) => {
-  // Traer talleres activos
+  // Traer talleres activos (todos)
   const talleres = await Taller.findAll({
-    where: { estado: true },
     attributes: ['id_taller', 'nombre_curso', 'fecha', 'hora_inicio', 'hora_fin', 'estado']
   });
 
-  // Traer eventos del auditorio aprobados (SolicitudEspacio)
+  // Traer eventos del auditorio (todos)
   const eventos = await SolicitudEspacio.findAll({
-    where: { estado: 'Aprobado' },
     attributes: ['id_solicitud', 'institucion', 'motivo', 'fecha_uso', 'hora_inicio', 'hora_fin', 'estado']
   });
 

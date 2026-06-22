@@ -6,6 +6,7 @@ const RegistroIngreso = sequelize.define('RegistroIngreso', {
   id_persona: { type: DataTypes.INTEGER, allowNull: false },
   id_motivo: { type: DataTypes.INTEGER, allowNull: false },
   id_taller: { type: DataTypes.INTEGER, allowNull: true },
+  cantidad_acompanantes: { type: DataTypes.INTEGER, defaultValue: 0 },
   fecha_hora_entrada: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, { 
   tableName: 'registros_ingresos', 

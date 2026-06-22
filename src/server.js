@@ -86,6 +86,10 @@ app.get('/api/obras/tecnicas', tecnicaController.getAllTecnicas);
 app.get('/api/obras/estados',  estadoController.getAllEstados);
 app.get('/api/obras/categorias', categoriaController.getAllCategorias);
 
+// Rutas de Auto-Ingreso Públicas (Código QR)
+const publicoVisitantesRoutes = require('./modules/visitantes/routes/publico.routes');
+app.use('/api/publico/visitantes', publicoVisitantesRoutes);
+
 // Rutas Totalmente Privadas
 app.use('/api/obras', verifyToken, obrasRoutes);
 app.use('/api/biblioteca', verifyToken, bibliotecaRoutes);

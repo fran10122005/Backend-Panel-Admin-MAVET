@@ -1,86 +1,66 @@
-# Backend Panel Administrativo MAVET
+# API Backend MAVET (Servidor)
 
-API REST para el sistema de gestión administrativa del **Museo de Artes Visuales y del Espacio del Táchira (MAVET)**.
+Este es el servidor central y API RESTful que alimenta al Panel de Administración y los portales públicos del **Museo de Artes Visuales y del Espacio del Táchira (MAVET)**. 
 
-## Stack
+Está diseñado con una arquitectura modular y robusta basada en Node.js, Express y Sequelize (PostgreSQL/MySQL), aplicando las mejores prácticas de seguridad.
 
-| Capa | Tecnología |
-|---|---|
-| Runtime | Node.js |
-| Framework | Express 5 |
-| ORM | Sequelize 6 |
-| BD Producción | PostgreSQL (Neon) |
-| BD Tests | SQLite |
-| Validación | Zod 4 |
-| Auth | JWT + bcryptjs |
-| Testing | Jest + Supertest |
-| Email | Nodemailer + Handlebars |
-| Exportación | PDFKit + ExcelJS |
+## 🚀 Stack Tecnológico Principal
 
-## Requisitos
+- **Entorno:** Node.js
+- **Framework Web:** Express.js v5
+- **ORM:** Sequelize
+- **Base de Datos:** PostgreSQL (o MySQL, según configuración de dialecto)
+- **Autenticación:** JSON Web Tokens (JWT) & bcryptjs
 
-- Node.js 18+
-- npm
+## 📦 Dependencias Instaladas
 
-## Inicio rápido
+### Dependencias Principales (Dependencies)
+- `express` y `cors`: Núcleo del servidor web y manejo de intercambio de recursos de origen cruzado.
+- `sequelize` y `pg`: ORM potente para el mapeo relacional de la base de datos (junto al driver de Postgres).
+- `bcryptjs` y `jsonwebtoken`: Para el encriptado seguro de contraseñas y la firma/verificación de sesiones JWT.
+- `dotenv`: Gestión de variables de entorno y secretos (`.env`).
+- `express-validator` y `zod`: Doble capa de validación robusta para sanear los datos que entran al servidor.
+- `express-rate-limit` y `helmet`: Middleware crucial para la seguridad web, prevención de ataques DDOS por fuerza bruta y protección de cabeceras HTTP.
+- `multer`: Gestión de subida de archivos (ej. imágenes de obras).
+- `pdfkit` y `exceljs`: Para generación dinámica de reportes y exportación de datos en PDF o Excel desde el backend.
+- `nodemailer` y `handlebars`: Para el envío de notificaciones y correos electrónicos con plantillas HTML.
+- `morgan`: Logger HTTP para monitorear el tráfico entrante.
 
-```bash
-# Instalar dependencias
-npm install
+### Dependencias de Desarrollo (DevDependencies)
+- `nodemon`: Auto-reinicio del servidor durante el desarrollo.
+- `jest` y `supertest`: Framework de pruebas unitarias y testeo de integraciones API.
+- `sqlite3`: Soporte para base de datos en memoria (útil para entorno de testing).
+- `cross-env`: Para inyectar variables de entorno independientes del sistema operativo.
 
-# Copiar y configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales (DATABASE_URL, JWT_SECRET, SMTP...)
+## 💻 Instalación y Uso Local
 
-# Iniciar en desarrollo
-npm run dev
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-# Iniciar en producción
-npm start
-```
+2. **Configurar el Entorno:**
+   Asegúrate de tener un archivo `.env` configurado en la raíz con:
+   - Credenciales de Base de Datos.
+   - `JWT_SECRET` (Llave secreta para tokens).
+   - Variables de puertos.
 
-El servidor arranca en `http://localhost:3000` y sincroniza los modelos con la BD automáticamente.
+3. **Levantar servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   *Esto iniciará Nodemon, recargando el servidor cada vez que detecte un cambio en los archivos fuente.*
 
-## Auth por defecto
+4. **Levantar en producción:**
+   ```bash
+   npm start
+   ```
 
-- **Admin**: `adminmavet@gmail.com` / `admin123`
+## 📁 Estructura Principal (`/src`)
+- `/modules`: Contiene todos los módulos de negocio separados por dominios (ej. `/auth`, `/obras`, `/visitantes`, `/educacion`, `/rrhh`). Cada módulo tiene sus propios `models`, `controllers`, `routes` y `services`.
+- `/config`: Conexión a la BD y configuraciones globales.
+- `/utils`: Funciones utilitarias como el gestor de errores (`catchAsync`).
+- `/middlewares`: Capas interceptoras (Validación JWT, Roles).
 
-## Tests
-
-```bash
-npm test
-```
-
-## Estructura de carpetas
-
-```
-Backend-Panel-Admin-MAVET/
-├── src/
-│   ├── server.js              # Punto de entrada
-│   ├── config/db.js           # Conexión Sequelize
-│   ├── models/index.js        # Modelos centralizados + asociaciones
-│   ├── middleware/             # Auth, errores, validación
-│   ├── services/              # Email service (compartido)
-│   ├── utils/                 # AppError, catchAsync, PDF generator
-│   └── modules/               # Módulos por dominio
-│       ├── auth/              # Autenticación, roles, usuarios
-│       ├── rrhh/              # RH, asistencias, horarios
-│       ├── obras/             # Obras de arte, artistas
-│       ├── biblioteca/        # Libros, autores, consultas en sala
-│       ├── educacion/         # Talleres, alumnos, instructores
-│       ├── visitantes/        # Registro de ingreso de visitantes
-│       ├── personas/          # Búsqueda maestra de personas
-│       └── reportes/          # Reportes PDF
-├── tests/
-│   ├── integration/           # Tests Jest
-│   └── scripts/               # Scripts utilitarios
-└── docs/                      # Documentación detallada
-```
-
-## Documentación
-
-Ver [docs/](/docs) para documentación detallada de:
-- [Arquitectura](docs/architecture.md)
-- [Módulos](docs/modules.md)
-- [Base de datos](docs/database.md)
-- [API](docs/api.md)
+## 🛡️ Seguridad Implementada
+Este servidor cuenta con validación estricta en cada endpoint, limitador de peticiones masivas (Rate Limit) y rutas públicas apartadas en controladores específicos (ej. `/api/publico/`) que no exponen información sensible del museo.

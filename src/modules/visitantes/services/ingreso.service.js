@@ -29,7 +29,8 @@ exports.registrarIngreso = async (data) => {
       cedula, // Opcional si es < 9 años y viene con id_representante_persona
       id_representante_persona, // Obligatorio si es menor de 18
       id_motivo, 
-      id_taller, 
+      id_taller,
+      cantidad_acompanantes,
       nombres, 
       apellidos, 
       telefono, 
@@ -128,6 +129,7 @@ exports.registrarIngreso = async (data) => {
       id_persona: persona.id_persona,
       id_motivo,
       id_taller: id_taller || null,
+      cantidad_acompanantes: cantidad_acompanantes || 0,
       fecha_hora_entrada: new Date()
     }, { transaction: t });
 
@@ -154,26 +156,45 @@ exports.getIngresosStats = async () => {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const visitasHoy = await RegistroIngreso.count({
-    where: { fecha_hora_entrada: { [Op.gte]: hoy } }
+  const visitasHoyRaw = await RegistroIngreso.findAll({
+    where: { fecha_hora_entrada: { [Op.gte]: hoy } },
+    attributes: [
+      [fn('COUNT', col('id_ingreso')), 'total_ingresos'],
+      [fn('SUM', col('cantidad_acompanantes')), 'total_acompanantes']
+    ]
   });
+  const vData = visitasHoyRaw[0]?.dataValues || {};
+  const visitasHoy = parseInt(vData.total_ingresos || 0) + parseInt(vData.total_acompanantes || 0);
 
   const motivosRaw = await RegistroIngreso.findAll({
     attributes: [
       'id_motivo',
-      [fn('COUNT', col('id_motivo')), 'cantidad']
+      [fn('COUNT', col('id_ingreso')), 'base_count'],
+      [fn('SUM', col('cantidad_acompanantes')), 'extra_count']
     ],
     include: [{ model: MotivoVisita, attributes: ['descripcion'] }],
     group: ['id_motivo', 'MotivoVisita.id_motivo', 'MotivoVisita.descripcion']
   });
 
-  const porMotivo = motivosRaw.map(m => ({
-    motivo: m.MotivoVisita ? m.MotivoVisita.descripcion : 'Desconocido',
-    cantidad: parseInt(m.getDataValue('cantidad'))
-  }));
+  const porMotivo = motivosRaw.map(m => {
+    const base = parseInt(m.getDataValue('base_count') || 0);
+    const extra = parseInt(m.getDataValue('extra_count') || 0);
+    return {
+      motivo: m.MotivoVisita ? m.MotivoVisita.descripcion : 'Desconocido',
+      cantidad: base + extra
+    };
+  });
 
   const totalVisitantesUnicos = await Persona.count();
-  const totalVisitasHistoricas = await RegistroIngreso.count();
+  
+  const totalVisitasRaw = await RegistroIngreso.findAll({
+    attributes: [
+      [fn('COUNT', col('id_ingreso')), 'total_ingresos'],
+      [fn('SUM', col('cantidad_acompanantes')), 'total_acompanantes']
+    ]
+  });
+  const tData = totalVisitasRaw[0]?.dataValues || {};
+  const totalVisitasHistoricas = parseInt(tData.total_ingresos || 0) + parseInt(tData.total_acompanantes || 0);
 
   return { visitasHoy, totalVisitantesUnicos, totalVisitasHistoricas, porMotivo };
 };
