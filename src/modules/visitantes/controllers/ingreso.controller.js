@@ -32,3 +32,11 @@ exports.getStats = catchAsync(async (req, res) => {
     data: stats
   });
 });
+
+exports.getTopVisitantes = catchAsync(async (req, res) => {
+  const top = await ingresoService.getTopVisitantes();
+  res.status(200).json({
+    message: 'Top visitantes obtenidos',
+    data: top
+  });
+});

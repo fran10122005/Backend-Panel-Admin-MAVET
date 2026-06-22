@@ -102,14 +102,14 @@ exports.devolverLibro = async (id_libro) => {
   // Buscar el préstamo activo de este libro
   const consulta = await ConsultaSala.findOne({
     where: { id_libro, estado: 'ACTIVO' },
-    order: [['createdAt', 'DESC']]
+    order: [['id_consulta', 'DESC']]
   });
 
   if (!consulta) {
     // Intentar con estado alternativo 'Pendiente'
     const consultaAlternativa = await ConsultaSala.findOne({
       where: { id_libro, estado: 'Pendiente' },
-      order: [['createdAt', 'DESC']]
+      order: [['id_consulta', 'DESC']]
     });
 
     if (!consultaAlternativa) {
@@ -117,9 +117,17 @@ exports.devolverLibro = async (id_libro) => {
     }
 
     await consultaAlternativa.update({ estado: 'Devuelto' });
+    const libroAlt = await require('../../../models').Libro.findByPk(id_libro);
+    if (libroAlt && libroAlt.cantidad_disponible < libroAlt.cantidad_total) {
+      await libroAlt.increment('cantidad_disponible', { by: 1 });
+    }
     return true;
   }
 
-  await consulta.update({ estado: 'Devuelto' });
+  await consulta.update({ estado: 'Devuelto', hora_devolucion: new Date() });
+  const libro = await require('../../../models').Libro.findByPk(id_libro);
+  if (libro && libro.cantidad_disponible < libro.cantidad_total) {
+    await libro.increment('cantidad_disponible', { by: 1 });
+  }
   return true;
 };

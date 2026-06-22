@@ -36,9 +36,14 @@ exports.createConsulta = async (data) => {
     id_persona: finalIdPersona || null,
     id_trabajador: id_trabajador || null,
     mesa,
-    estado: estado || 'Pendiente'
-    // fecha_hora_inicio se setea por default a NOW
+    estado: estado || 'ACTIVO'
   });
+
+  // Decrease stock available
+  const libro = await Libro.findByPk(id_libro);
+  if (libro && libro.cantidad_disponible > 0) {
+    await libro.decrement('cantidad_disponible', { by: 1 });
+  }
 
   return consulta;
 };

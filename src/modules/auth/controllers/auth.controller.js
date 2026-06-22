@@ -95,7 +95,12 @@ exports.exportUsuariosPdf = catchAsync(async (req, res) => {
     u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
   ]);
 
-  await generateTablePdf(res, title, headers, rows, 'usuarios_mavet.pdf');
+  const filename = 'usuarios_mavet.pdf';
+  const pdfBuffer = await generateTablePdf(title, headers, rows);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 exports.updateMe = catchAsync(async (req, res) => {

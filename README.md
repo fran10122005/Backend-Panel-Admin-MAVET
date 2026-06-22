@@ -15,6 +15,7 @@ API REST para el sistema de gestión administrativa del **Museo de Artes Visuale
 | Auth | JWT + bcryptjs |
 | Testing | Jest + Supertest |
 | Email | Nodemailer + Handlebars |
+| Exportación | PDFKit + ExcelJS |
 
 ## Requisitos
 

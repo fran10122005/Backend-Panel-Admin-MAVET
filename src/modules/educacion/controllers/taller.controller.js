@@ -15,7 +15,9 @@ exports.planificarTaller = catchAsync(async (req, res) => {
 });
 
 exports.getAllTalleres = catchAsync(async (req, res) => {
-  const result = await tallerService.getAllTalleres();
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await tallerService.getAllTalleres(page, limit);
   res.status(200).json(result);
 });
 

@@ -75,27 +75,55 @@ exports.createObra = async (data) => {
   }
 };
 
-exports.getAllObras = async () => {
-  return await Obra.findAll({
+exports.getAllObras = async (page, limit) => {
+  const query = {
     include: [
       { model: Artista, as: 'Artista' },
       TecnicaObra,
       EstadoObra,
       CategoriaObra,
       Entrega
-    ]
-  });
+    ],
+    order: [['id_obra', 'DESC']]
+  };
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Obra.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page }
+    };
+  }
+
+  return await Obra.findAll(query);
 };
 
-exports.getObrasPublicas = async () => {
-  return await Obra.findAll({
+exports.getObrasPublicas = async (page, limit) => {
+  const query = {
     attributes: ['id_obra', 'titulo', 'anio', 'imagen_url'],
     include: [
       { model: Artista, as: 'Artista', attributes: ['nombres', 'apellidos'] },
       { model: TecnicaObra, attributes: ['nombre_tecnica'] },
       { model: CategoriaObra, attributes: ['nombre_categoria'] }
-    ]
-  });
+    ],
+    order: [['id_obra', 'DESC']]
+  };
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Obra.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page }
+    };
+  }
+
+  return await Obra.findAll(query);
 };
 
 exports.getObraById = async (id) => {

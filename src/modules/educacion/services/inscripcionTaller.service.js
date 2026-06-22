@@ -64,6 +64,7 @@ const exportInscripciones = async (tallerId, format) => {
 };
 
 const sequelize = require('../../../config/db');
+const { InscripcionTaller, Taller, Alumno, Persona, AlumnoRepresentante, Representante } = require('../../../models');
 
 const getInscripcionesConDetalles = async () => {
   const inscripciones = await InscripcionTaller.findAll();

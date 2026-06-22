@@ -23,10 +23,24 @@ exports.planificarTaller = async (data) => {
   return await Taller.create(tallerData);
 };
 
-exports.getAllTalleres = async () => {
-  return await Taller.findAll({
-    include: [Instructor, EspacioMuseo]
-  });
+exports.getAllTalleres = async (page, limit) => {
+  const query = {
+    include: [Instructor, EspacioMuseo],
+    order: [['id_taller', 'DESC']]
+  };
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Taller.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page }
+    };
+  }
+
+  return await Taller.findAll(query);
 };
 
 exports.getTallerById = async (id) => {

@@ -11,12 +11,16 @@ exports.createObra = catchAsync(async (req, res) => {
 });
 
 exports.getAllObras = catchAsync(async (req, res) => {
-  const result = await obraService.getAllObras();
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await obraService.getAllObras(page, limit);
   res.status(200).json(result);
 });
 
 exports.getObrasPublicas = catchAsync(async (req, res) => {
-  const result = await obraService.getObrasPublicas();
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await obraService.getObrasPublicas(page, limit);
   res.status(200).json(result);
 });
 

@@ -4,5 +4,6 @@ const inscripcionController = require('../controllers/inscripcionTaller.controll
 
 router.post('/', inscripcionController.inscribirAlumno);
 router.get('/', inscripcionController.getAllInscripciones);
+router.get('/taller/:id/export', inscripcionController.exportPlanilla);
 
 module.exports = router;

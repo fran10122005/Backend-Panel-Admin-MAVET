@@ -190,5 +190,6 @@ Generación de reportes en PDF.
 
 ### Tecnología
 
-- Generación de PDF con **pdfkit** + **pdfkit-table**
-- Carta Aval también en PDF
+- Generación de PDF con **pdfkit** puro (mediante buffers de memoria asíncronos para mayor estabilidad)
+- Exportación a Excel con **exceljs**
+- Carta Aval también en PDF usando pdfkit

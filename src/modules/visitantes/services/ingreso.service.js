@@ -177,3 +177,25 @@ exports.getIngresosStats = async () => {
 
   return { visitasHoy, totalVisitantesUnicos, totalVisitasHistoricas, porMotivo };
 };
+
+exports.getTopVisitantes = async () => {
+  const { fn, col } = require('sequelize');
+  const topRaw = await RegistroIngreso.findAll({
+    attributes: [
+      'id_persona',
+      [fn('COUNT', col('id_persona')), 'total_visitas'],
+      [fn('MAX', col('fecha_hora_entrada')), 'ultima_visita']
+    ],
+    include: [{ model: Persona, attributes: ['cedula', 'nombres', 'apellidos'] }],
+    group: ['id_persona', 'Persona.id_persona', 'Persona.cedula', 'Persona.nombres', 'Persona.apellidos'],
+    order: [[fn('COUNT', col('id_persona')), 'DESC']],
+    limit: 10
+  });
+
+  return topRaw.map(t => ({
+    cedula: t.Persona ? t.Persona.cedula : '',
+    nombre: t.Persona ? `${t.Persona.nombres || ''} ${t.Persona.apellidos || ''}`.trim() : 'Desconocido',
+    total_visitas: parseInt(t.getDataValue('total_visitas')),
+    ultima_visita: t.getDataValue('ultima_visita')
+  }));
+};

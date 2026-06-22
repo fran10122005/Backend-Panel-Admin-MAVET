@@ -6,6 +6,9 @@ const { verifyToken } = require('../../../middleware/authMiddleware');
 // Obtener estadísticas del panel
 router.get('/stats', verifyToken, ingresoController.getStats);
 
+// Obtener visitantes más frecuentes
+router.get('/top', verifyToken, ingresoController.getTopVisitantes);
+
 // Verificar si existe un visitante por cédula
 router.get('/check/:cedula', ingresoController.checkVisitante);
 

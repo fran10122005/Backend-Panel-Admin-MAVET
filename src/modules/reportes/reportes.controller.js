@@ -10,7 +10,7 @@ const { Op } = require('sequelize');
 // ─── Reporte: Inventario de Bóveda (Obras) ────────────────────────────────
 exports.reporteObras = catchAsync(async (req, res) => {
   const obras = await Obra.findAll({
-    include: [Artista, TecnicaObra, EstadoObra],
+    include: [{ model: Artista, as: 'Artista' }, TecnicaObra, EstadoObra],
     order: [['id_obra', 'ASC']]
   });
 
@@ -25,13 +25,16 @@ exports.reporteObras = catchAsync(async (req, res) => {
     o.ubicacion_actual || '—',
   ]);
 
-  await generateTablePdf(
-    res,
+  const filename = `MAVET_Inventario_Obras_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
     'Inventario de Bóveda – Obras de Arte',
     headers,
-    rows,
-    `MAVET_Inventario_Obras_${new Date().toISOString().split('T')[0]}.pdf`
+    rows
   );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 // ─── Reporte: Catálogo de Biblioteca ──────────────────────────────────────
@@ -53,13 +56,16 @@ exports.reporteLibros = catchAsync(async (req, res) => {
     l.fecha_ingreso || '—',
   ]);
 
-  await generateTablePdf(
-    res,
+  const filename = `MAVET_Biblioteca_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
     'Catálogo de Biblioteca',
     headers,
-    rows,
-    `MAVET_Biblioteca_${new Date().toISOString().split('T')[0]}.pdf`
+    rows
   );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 // ─── Reporte: Consolidado de Asistencia ───────────────────────────────────
@@ -70,7 +76,18 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
   });
 
   const headers = ['Fecha', 'Cédula', 'Nombres y Apellidos', 'Cargo', 'Ent. Mañana', 'Sal. Mañana', 'Ent. Tarde', 'Sal. Tarde'];
-  const fmt = (dt) => dt ? new Date(dt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const fmt = (dt) => {
+    if (!dt) return '—';
+    if (typeof dt === 'string' && dt.includes(':')) {
+      // Si es formato '08:00:00'
+      const parts = dt.split(':');
+      if (parts.length >= 2) return `${parts[0]}:${parts[1]}`;
+    }
+    // Si por alguna razón es un Date válido
+    const d = new Date(dt);
+    if (!isNaN(d.getTime())) return d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+    return '—';
+  };
   const rows = asistencias.map(a => {
     const t = a.Trabajador || {};
     return [
@@ -85,13 +102,16 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
     ];
   });
 
-  await generateTablePdf(
-    res,
+  const filename = `MAVET_Asistencia_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
     'Consolidado de Asistencia del Personal',
     headers,
-    rows,
-    `MAVET_Asistencia_${new Date().toISOString().split('T')[0]}.pdf`
+    rows
   );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 // ─── Reporte: Carta de Aval (Individual) ──────────────────────────────────
@@ -112,7 +132,12 @@ exports.reporteCartaAval = catchAsync(async (req, res) => {
     order: [['fecha', 'DESC']]
   });
 
-  await generateCartaAvalPdf(res, trabajador, asistencias, `MAVET_CartaAval_${cedula}_${new Date().toISOString().split('T')[0]}.pdf`);
+  const filename = `MAVET_CartaAval_${cedula}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateCartaAvalPdf(trabajador, asistencias);
+  
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 // ─── Reporte: Historial de Eventos (Auditorio) ────────────────────────────
@@ -136,13 +161,16 @@ exports.reporteEventos = catchAsync(async (req, res) => {
     ];
   });
 
-  await generateTablePdf(
-    res,
+  const filename = `MAVET_Historial_Eventos_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
     'HISTORIAL DE EVENTOS Y RESERVAS (AUDITORIO)',
     headers,
-    rows,
-    `MAVET_Historial_Eventos_${new Date().toISOString().split('T')[0]}.pdf`
+    rows
   );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
 
 // ─── Dashboard Stats ──────────────────────────────────────────────────────
