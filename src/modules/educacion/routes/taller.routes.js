@@ -14,6 +14,7 @@ router.post('/', tallerController.createTaller);
 router.get('/', tallerController.getAllTalleres);
 router.get('/:id', tallerController.getTallerById);
 router.put('/:id', tallerController.updateTaller);
+router.delete('/:id', tallerController.deleteTaller);
 router.post('/planificar', tallerController.planificarTaller);
 
 module.exports = router;
