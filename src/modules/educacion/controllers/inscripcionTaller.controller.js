@@ -12,6 +12,13 @@ exports.getAllInscripciones = catchAsync(async (req, res) => {
   res.status(200).json(result);
 });
 
+exports.getInscripcionesByTaller = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const allInscripciones = await inscripcionService.getInscripcionesConDetalles();
+  const filtered = allInscripciones.filter((ins) => ins.Taller && ins.Taller.id_taller == id);
+  res.status(200).json(filtered);
+});
+
 // New endpoint: export planilla for a specific taller
 exports.exportPlanilla = catchAsync(async (req, res) => {
   const { id } = req.params; // taller id

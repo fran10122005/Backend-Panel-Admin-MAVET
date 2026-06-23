@@ -6,16 +6,16 @@ exports.createLibro = async (data) => {
   const t = await sequelize.transaction();
   try {
     const payload = {
-      titulo:              data.titulo,
-      unidad:              data.unidad              || null,
-      cuota:               data.cuota               || null,
-      estante:             data.estante             || null,
-      ano_libro:           data.ano_libro           || null,
-      id_categoria:        data.id_categoria        || null,
-      cantidad_total:      data.cantidad_total      || 1,
-      cantidad_disponible: data.cantidad_total      || 1, // al crear, disponible = total
-      estado:              data.estado              || 'Aprobado',
-      fecha_ingreso:       data.fecha_ingreso       || new Date()
+      titulo: data.titulo,
+      unidad: data.unidad || null,
+      cuota: data.cuota || null,
+      estante: data.estante || null,
+      ano_libro: data.ano_libro || null,
+      id_categoria: data.id_categoria || null,
+      cantidad_total: data.cantidad_total || 1,
+      cantidad_disponible: data.cantidad_total || 1, // al crear, disponible = total
+      estado: data.estado || 'Aprobado',
+      fecha_ingreso: data.fecha_ingreso || new Date(),
     };
 
     const newLibro = await Libro.create(payload, { transaction: t });
@@ -35,20 +35,14 @@ exports.createLibro = async (data) => {
 
 exports.getAllLibros = async () => {
   return await Libro.findAll({
-    include: [
-      { model: CategoriaLibro },
-      { model: AutorLibro }
-    ],
-    order: [['created_at', 'DESC']]
+    include: [{ model: CategoriaLibro }, { model: AutorLibro }],
+    order: [['created_at', 'DESC']],
   });
 };
 
 exports.getLibroById = async (id) => {
   const libro = await Libro.findByPk(id, {
-    include: [
-      { model: CategoriaLibro },
-      { model: AutorLibro }
-    ]
+    include: [{ model: CategoriaLibro }, { model: AutorLibro }],
   });
   if (!libro) throw new AppError('Libro no encontrado', 404);
   return libro;
@@ -61,16 +55,20 @@ exports.updateLibro = async (id, data) => {
     if (!libro) throw new AppError('Libro no encontrado', 404);
 
     const payload = {
-      titulo:              data.titulo              !== undefined ? data.titulo              : libro.titulo,
-      unidad:              data.unidad              !== undefined ? data.unidad              : libro.unidad,
-      cuota:               data.cuota               !== undefined ? data.cuota               : libro.cuota,
-      estante:             data.estante             !== undefined ? data.estante             : libro.estante,
-      ano_libro:           data.ano_libro           !== undefined ? data.ano_libro           : libro.ano_libro,
-      id_categoria:        data.id_categoria        !== undefined ? data.id_categoria        : libro.id_categoria,
-      cantidad_total:      data.cantidad_total      !== undefined ? data.cantidad_total      : libro.cantidad_total,
-      cantidad_disponible: data.cantidad_disponible !== undefined ? data.cantidad_disponible : libro.cantidad_disponible,
-      estado:              data.estado              !== undefined ? data.estado              : libro.estado,
-      fecha_ingreso:       data.fecha_ingreso       !== undefined ? data.fecha_ingreso       : libro.fecha_ingreso
+      titulo: data.titulo !== undefined ? data.titulo : libro.titulo,
+      unidad: data.unidad !== undefined ? data.unidad : libro.unidad,
+      cuota: data.cuota !== undefined ? data.cuota : libro.cuota,
+      estante: data.estante !== undefined ? data.estante : libro.estante,
+      ano_libro: data.ano_libro !== undefined ? data.ano_libro : libro.ano_libro,
+      id_categoria: data.id_categoria !== undefined ? data.id_categoria : libro.id_categoria,
+      cantidad_total:
+        data.cantidad_total !== undefined ? data.cantidad_total : libro.cantidad_total,
+      cantidad_disponible:
+        data.cantidad_disponible !== undefined
+          ? data.cantidad_disponible
+          : libro.cantidad_disponible,
+      estado: data.estado !== undefined ? data.estado : libro.estado,
+      fecha_ingreso: data.fecha_ingreso !== undefined ? data.fecha_ingreso : libro.fecha_ingreso,
     };
 
     await libro.update(payload, { transaction: t });
@@ -97,27 +95,33 @@ exports.deleteLibro = async (id) => {
 };
 
 exports.devolverLibro = async (id_libro) => {
-  const { ConsultaSala } = require('../../../models');
+  const { ConsultaSala, Libro } = require('../../../models');
 
   // Buscar el préstamo activo de este libro
   const consulta = await ConsultaSala.findOne({
     where: { id_libro, estado: 'ACTIVO' },
-    order: [['id_consulta', 'DESC']]
+    order: [['id_consulta', 'DESC']],
   });
 
   if (!consulta) {
     // Intentar con estado alternativo 'Pendiente'
     const consultaAlternativa = await ConsultaSala.findOne({
       where: { id_libro, estado: 'Pendiente' },
-      order: [['id_consulta', 'DESC']]
+      order: [['id_consulta', 'DESC']],
     });
 
     if (!consultaAlternativa) {
+      // Corrección de desincronización: si no hay consulta activa pero el libro no está completo
+      const libro = await Libro.findByPk(id_libro);
+      if (libro && libro.cantidad_disponible < libro.cantidad_total) {
+        await libro.increment('cantidad_disponible', { by: 1 });
+        return true;
+      }
       throw new AppError('No se encontró un préstamo activo para este libro', 404);
     }
 
     await consultaAlternativa.update({ estado: 'Devuelto' });
-    const libroAlt = await require('../../../models').Libro.findByPk(id_libro);
+    const libroAlt = await Libro.findByPk(id_libro);
     if (libroAlt && libroAlt.cantidad_disponible < libroAlt.cantidad_total) {
       await libroAlt.increment('cantidad_disponible', { by: 1 });
     }
@@ -125,7 +129,7 @@ exports.devolverLibro = async (id_libro) => {
   }
 
   await consulta.update({ estado: 'Devuelto', hora_devolucion: new Date() });
-  const libro = await require('../../../models').Libro.findByPk(id_libro);
+  const libro = await Libro.findByPk(id_libro);
   if (libro && libro.cantidad_disponible < libro.cantidad_total) {
     await libro.increment('cantidad_disponible', { by: 1 });
   }

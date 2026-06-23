@@ -5,10 +5,10 @@ const { generateTablePdf } = require('../../../utils/pdfGenerator');
 
 exports.register = catchAsync(async (req, res) => {
   const result = await authService.register(req.body);
-  
+
   res.status(201).json({
     status: 'success',
-    data: result
+    data: result,
   });
 });
 
@@ -18,17 +18,22 @@ exports.login = catchAsync(async (req, res) => {
 
   res.status(200).json({
     status: 'success',
-    data: result
+    data: result,
   });
 });
 
 exports.getMe = catchAsync(async (req, res) => {
-  // El usuario ya viene del authMiddleware
+  const { Usuario, Role, Trabajador } = require('../../../models');
+
+  const usuarioInfo = await Usuario.findByPk(req.user.id_usuario, {
+    include: [{ model: Role }, { model: Trabajador }],
+  });
+
   res.status(200).json({
     status: 'success',
     data: {
-      usuario: req.user
-    }
+      usuario: usuarioInfo,
+    },
   });
 });
 
@@ -36,17 +41,17 @@ exports.getAllUsuarios = catchAsync(async (req, res) => {
   const usuarios = await Usuario.findAll({
     include: [
       { model: Role },
-      { 
+      {
         model: require('../../../models').Trabajador,
-        include: [{ model: require('../../../models').CargoTrabajador }] 
-      }
+        include: [{ model: require('../../../models').CargoTrabajador }],
+      },
     ],
-    order: [['id_usuario', 'DESC']]
+    order: [['id_usuario', 'DESC']],
   });
 
   res.status(200).json({
     status: 'success',
-    data: usuarios
+    data: usuarios,
   });
 });
 
@@ -57,7 +62,8 @@ exports.forgotPassword = catchAsync(async (req, res) => {
   // Siempre respondemos el mismo mensaje por seguridad (no revelamos si el correo existe)
   res.status(200).json({
     status: 'success',
-    message: 'Si el correo está registrado en el sistema, recibirás un enlace de recuperación en breve.'
+    message:
+      'Si el correo está registrado en el sistema, recibirás un enlace de recuperación en breve.',
   });
 });
 
@@ -67,32 +73,33 @@ exports.resetPassword = catchAsync(async (req, res) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+    message:
+      'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.',
   });
 });
 
 exports.exportUsuariosPdf = catchAsync(async (req, res) => {
   const usuarios = await Usuario.findAll({
     include: [{ model: Role }],
-    order: [['id_usuario', 'DESC']]
+    order: [['id_usuario', 'DESC']],
   });
 
-  const title = "Reporte de Usuarios del Sistema";
-  
+  const title = 'Reporte de Usuarios del Sistema';
+
   const headers = [
-    { label: "ID", property: "id", width: 50 },
-    { label: "Nombre de Usuario", property: "nombre_usuario", width: 150 },
-    { label: "Correo", property: "correo", width: 150 },
-    { label: "Rol", property: "rol", width: 100 },
-    { label: "Fecha Registro", property: "fecha", width: 100 }
+    { label: 'ID', property: 'id', width: 50 },
+    { label: 'Nombre de Usuario', property: 'nombre_usuario', width: 150 },
+    { label: 'Correo', property: 'correo', width: 150 },
+    { label: 'Rol', property: 'rol', width: 100 },
+    { label: 'Fecha Registro', property: 'fecha', width: 100 },
   ];
 
-  const rows = usuarios.map(u => [
+  const rows = usuarios.map((u) => [
     (u.id_usuario || u.id).toString(),
     u.nombre_usuario,
     u.correo,
     u.Role ? u.Role.nombre_rol : 'N/A',
-    u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
+    u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A',
   ]);
 
   const filename = 'usuarios_mavet.pdf';
@@ -105,10 +112,10 @@ exports.exportUsuariosPdf = catchAsync(async (req, res) => {
 
 exports.updateMe = catchAsync(async (req, res) => {
   await authService.updateMe(req.user.id_usuario, req.body);
-  
+
   res.status(200).json({
     status: 'success',
-    message: 'Perfil actualizado exitosamente'
+    message: 'Perfil actualizado exitosamente',
   });
 });
 
@@ -117,7 +124,6 @@ exports.updateUsuario = catchAsync(async (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Usuario actualizado exitosamente',
-    data: usuario
+    data: usuario,
   });
 });
-

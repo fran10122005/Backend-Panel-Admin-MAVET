@@ -7,7 +7,7 @@ const AppError = require('../../../utils/AppError');
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
-    expiresIn: process.env.JWT_EXPIRES_IN || '1d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   });
 };
 
@@ -27,7 +27,7 @@ exports.register = async (data) => {
     correo: data.correo,
     password_hash: passwordHash,
     id_rol: data.id_rol,
-    estado: true
+    estado: true,
   });
 
   // Si se indicó un trabajador, vincularlo actualizando su id_usuario
@@ -56,10 +56,7 @@ exports.login = async (correo, password) => {
   // Buscar usuario incluyendo su Rol y Trabajador
   const usuario = await Usuario.findOne({
     where: { correo },
-    include: [
-      { model: Role },
-      { model: Trabajador }
-    ]
+    include: [{ model: Role }, { model: Trabajador }],
   });
 
   if (!usuario) {
@@ -94,7 +91,7 @@ exports.forgotPassword = async (correo) => {
 
   // Generar token aleatorio seguro
   const resetToken = crypto.randomBytes(32).toString('hex');
-  
+
   usuario.reset_password_token = resetToken;
   usuario.reset_password_expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
   await usuario.save();
@@ -107,7 +104,9 @@ exports.forgotPassword = async (correo) => {
   if (usuario.id_trabajador) {
     const { Trabajador } = require('../../../models');
     const trabajador = await Trabajador.findByPk(usuario.id_trabajador);
-    if (trabajador) nombreMostrar = `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`.trim() || 'Usuario';
+    if (trabajador)
+      nombreMostrar =
+        `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`.trim() || 'Usuario';
   }
 
   const emailService = require('../../../services/email.service');
@@ -118,8 +117,8 @@ exports.forgotPassword = async (correo) => {
     templatePath: require('path').join(__dirname, '../templates'),
     context: {
       nombre: nombreMostrar,
-      resetUrl
-    }
+      resetUrl,
+    },
   });
 
   return true;
@@ -129,8 +128,8 @@ exports.resetPassword = async (token, nuevaPassword) => {
   const usuario = await Usuario.findOne({
     where: {
       reset_password_token: token,
-      reset_password_expires: { [Op.gt]: new Date() }
-    }
+      reset_password_expires: { [Op.gt]: new Date() },
+    },
   });
 
   if (!usuario) {
@@ -151,7 +150,7 @@ exports.resetPassword = async (token, nuevaPassword) => {
 
 exports.updateMe = async (id_usuario, data) => {
   const usuario = await Usuario.findByPk(id_usuario, {
-    include: [{ model: Trabajador }]
+    include: [{ model: Trabajador }],
   });
 
   if (!usuario) {
@@ -167,17 +166,29 @@ exports.updateMe = async (id_usuario, data) => {
     usuario.correo = data.correo;
   }
 
-  await usuario.save();
-
   if (usuario.Trabajador) {
     const tData = {};
     if (data.nombres !== undefined) tData.nombres = data.nombres;
     if (data.apellidos !== undefined) tData.apellidos = data.apellidos;
     if (data.correo_personal !== undefined) tData.correo_personal = data.correo_personal;
     if (data.telefono !== undefined) tData.telefono = data.telefono;
-    
+
     await usuario.Trabajador.update(tData);
+  } else if (data.nombres || data.apellidos || data.telefono) {
+    // Create a Trabajador record for this user (e.g. admin)
+    const nuevoTrabajador = await Trabajador.create({
+      cedula: 'ADM-' + usuario.id_usuario,
+      nombres: data.nombres || 'Admin',
+      apellidos: data.apellidos || '',
+      correo_personal: data.correo_personal || data.correo || usuario.correo,
+      telefono: data.telefono || '',
+      id_cargo: 1,
+      id_usuario: usuario.id_usuario,
+    });
+    usuario.id_trabajador = nuevoTrabajador.id_trabajador;
   }
+
+  await usuario.save();
 
   return true;
 };
@@ -203,10 +214,7 @@ exports.updateUsuario = async (id_usuario, data) => {
     await Trabajador.update({ id_usuario: null }, { where: { id_usuario } });
     // Si se seleccionó un trabajador válido, lo vinculamos
     if (data.id_trabajador && data.id_trabajador !== 0) {
-      await Trabajador.update(
-        { id_usuario },
-        { where: { id_trabajador: data.id_trabajador } }
-      );
+      await Trabajador.update({ id_usuario }, { where: { id_trabajador: data.id_trabajador } });
     }
   }
 

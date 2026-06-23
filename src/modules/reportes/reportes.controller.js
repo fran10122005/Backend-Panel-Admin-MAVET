@@ -2,7 +2,14 @@ const { generateTablePdf, generateCartaAvalPdf } = require('../../utils/pdfGener
 const { Libro, CategoriaLibro, AutorLibro } = require('../../models');
 const { Obra, Artista, TecnicaObra, EstadoObra } = require('../../models');
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../models');
-const { SolicitudEspacio, Usuario, EspacioMuseo, RegistroIngreso, Persona } = require('../../models');
+const {
+  SolicitudEspacio,
+  Usuario,
+  Role,
+  EspacioMuseo,
+  RegistroIngreso,
+  Persona,
+} = require('../../models');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
 const { Op } = require('sequelize');
@@ -11,11 +18,11 @@ const { Op } = require('sequelize');
 exports.reporteObras = catchAsync(async (req, res) => {
   const obras = await Obra.findAll({
     include: [{ model: Artista, as: 'Artista' }, TecnicaObra, EstadoObra],
-    order: [['id_obra', 'ASC']]
+    order: [['id_obra', 'ASC']],
   });
 
   const headers = ['Código', 'Título', 'Autor', 'Año', 'Técnica', 'Estado', 'Ubicación'];
-  const rows = obras.map(o => [
+  const rows = obras.map((o) => [
     o.codigo_inventario || o.id_obra.toString(),
     o.titulo || '—',
     o.Artista ? `${o.Artista.nombres} ${o.Artista.apellidos}` : 'Desconocido',
@@ -26,11 +33,7 @@ exports.reporteObras = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Inventario_Obras_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf(
-    'Inventario de Bóveda – Obras de Arte',
-    headers,
-    rows
-  );
+  const pdfBuffer = await generateTablePdf('Inventario de Bóveda – Obras de Arte', headers, rows);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -41,11 +44,20 @@ exports.reporteObras = catchAsync(async (req, res) => {
 exports.reporteLibros = catchAsync(async (req, res) => {
   const libros = await Libro.findAll({
     include: [CategoriaLibro],
-    order: [['titulo', 'ASC']]
+    order: [['titulo', 'ASC']],
   });
 
-  const headers = ['Unidad', 'Título', 'Año', 'Categoría', 'Total', 'Disponibles', 'Estado', 'F. Ingreso'];
-  const rows = libros.map(l => [
+  const headers = [
+    'Unidad',
+    'Título',
+    'Año',
+    'Categoría',
+    'Total',
+    'Disponibles',
+    'Estado',
+    'F. Ingreso',
+  ];
+  const rows = libros.map((l) => [
     l.unidad || '—',
     l.titulo || '—',
     l.ano_libro || '—',
@@ -57,11 +69,7 @@ exports.reporteLibros = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Biblioteca_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf(
-    'Catálogo de Biblioteca',
-    headers,
-    rows
-  );
+  const pdfBuffer = await generateTablePdf('Catálogo de Biblioteca', headers, rows);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -72,10 +80,19 @@ exports.reporteLibros = catchAsync(async (req, res) => {
 exports.reporteAsistencia = catchAsync(async (req, res) => {
   const asistencias = await AsistenciaQR.findAll({
     include: [{ model: Trabajador, include: [CargoTrabajador] }],
-    order: [['fecha', 'DESC']]
+    order: [['fecha', 'DESC']],
   });
 
-  const headers = ['Fecha', 'Cédula', 'Nombres y Apellidos', 'Cargo', 'Ent. Mañana', 'Sal. Mañana', 'Ent. Tarde', 'Sal. Tarde'];
+  const headers = [
+    'Fecha',
+    'Cédula',
+    'Nombres y Apellidos',
+    'Cargo',
+    'Ent. Mañana',
+    'Sal. Mañana',
+    'Ent. Tarde',
+    'Sal. Tarde',
+  ];
   const fmt = (dt) => {
     if (!dt) return '—';
     if (typeof dt === 'string' && dt.includes(':')) {
@@ -85,10 +102,11 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
     }
     // Si por alguna razón es un Date válido
     const d = new Date(dt);
-    if (!isNaN(d.getTime())) return d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+    if (!isNaN(d.getTime()))
+      return d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
     return '—';
   };
-  const rows = asistencias.map(a => {
+  const rows = asistencias.map((a) => {
     const t = a.Trabajador || {};
     return [
       a.fecha || '—',
@@ -103,11 +121,7 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
   });
 
   const filename = `MAVET_Asistencia_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf(
-    'Consolidado de Asistencia del Personal',
-    headers,
-    rows
-  );
+  const pdfBuffer = await generateTablePdf('Consolidado de Asistencia del Personal', headers, rows);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -120,7 +134,7 @@ exports.reporteCartaAval = catchAsync(async (req, res) => {
 
   const trabajador = await Trabajador.findOne({
     where: { cedula },
-    include: [CargoTrabajador]
+    include: [CargoTrabajador],
   });
 
   if (!trabajador) {
@@ -129,12 +143,12 @@ exports.reporteCartaAval = catchAsync(async (req, res) => {
 
   const asistencias = await AsistenciaQR.findAll({
     where: { id_trabajador: trabajador.id_trabajador },
-    order: [['fecha', 'DESC']]
+    order: [['fecha', 'DESC']],
   });
 
   const filename = `MAVET_CartaAval_${cedula}_${new Date().toISOString().split('T')[0]}.pdf`;
   const pdfBuffer = await generateCartaAvalPdf(trabajador, asistencias);
-  
+
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
   res.send(pdfBuffer);
@@ -144,11 +158,18 @@ exports.reporteCartaAval = catchAsync(async (req, res) => {
 exports.reporteEventos = catchAsync(async (req, res) => {
   const eventos = await SolicitudEspacio.findAll({
     include: [EspacioMuseo, Persona],
-    order: [['fecha_uso', 'DESC']]
+    order: [['fecha_uso', 'DESC']],
   });
 
-  const headers = ['Título del Evento / Motivo', 'Organizador', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Estado'];
-  const rows = eventos.map(e => {
+  const headers = [
+    'Título del Evento / Motivo',
+    'Organizador',
+    'Fecha',
+    'Hora Inicio',
+    'Hora Fin',
+    'Estado',
+  ];
+  const rows = eventos.map((e) => {
     const p = e.Persona || {};
     const orgName = [p.nombres, p.apellidos].filter(Boolean).join(' ') || e.institucion || '—';
     return [
@@ -157,7 +178,7 @@ exports.reporteEventos = catchAsync(async (req, res) => {
       e.fecha_uso || '—',
       e.hora_inicio || '—',
       e.hora_fin || '—',
-      e.estado || '—'
+      e.estado || '—',
     ];
   });
 
@@ -177,35 +198,35 @@ exports.reporteEventos = catchAsync(async (req, res) => {
 exports.getDashboardStats = catchAsync(async (req, res) => {
   const obrasCount = await Obra.count();
   const librosCount = await Libro.count();
-  
+
   // Visitantes del mes actual
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  
+
   const visitantesMesCount = await RegistroIngreso.count({
     where: {
       fecha_hora_entrada: {
-        [Op.gte]: firstDayOfMonth
-      }
-    }
+        [Op.gte]: firstDayOfMonth,
+      },
+    },
   });
 
   // Próximos eventos (3 más cercanos en el futuro)
   const proximosEventos = await SolicitudEspacio.findAll({
     where: {
       fecha_uso: {
-        [Op.gte]: now
-      }
+        [Op.gte]: now,
+      },
     },
     order: [['fecha_uso', 'ASC']],
-    limit: 3
+    limit: 3,
   });
 
   // Últimas obras registradas (3 más recientes)
   const ultimasObras = await Obra.findAll({
     include: [EstadoObra],
     order: [['created_at', 'DESC']],
-    limit: 3
+    limit: 3,
   });
 
   res.status(200).json({
@@ -214,9 +235,65 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
       totalObras: obrasCount,
       totalLibros: librosCount,
       visitantesMes: visitantesMesCount,
-      totalEventosActivos: await SolicitudEspacio.count({ where: { fecha_uso: { [Op.gte]: now } } }),
+      totalEventosActivos: await SolicitudEspacio.count({
+        where: { fecha_uso: { [Op.gte]: now } },
+      }),
       proximosEventos,
-      ultimasObras
-    }
+      ultimasObras,
+    },
   });
+});
+
+// ─── Reporte: Listado de Trabajadores ──────────────────────────────────────
+exports.reporteTrabajadores = catchAsync(async (req, res) => {
+  const trabajadores = await Trabajador.findAll({
+    include: [CargoTrabajador],
+    order: [['nombres', 'ASC']],
+  });
+
+  const headers = ['Cédula', 'Nombres y Apellidos', 'Teléfono', 'Correo', 'Cargo', 'Estado'];
+  const rows = trabajadores.map((t) => [
+    t.cedula || '—',
+    `${t.nombres || ''} ${t.apellidos || ''}`.trim() || '—',
+    t.telefono || '—',
+    t.correo_personal || '—',
+    t.CargoTrabajador?.nombre_cargo || '—',
+    t.estado || '—',
+  ]);
+
+  const filename = `MAVET_Trabajadores_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
+    'LISTADO DE TRABAJADORES ACTIVOS E INACTIVOS',
+    headers,
+    rows
+  );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Listado de Usuarios ──────────────────────────────────────────
+exports.reporteUsuarios = catchAsync(async (req, res) => {
+  const usuarios = await Usuario.findAll({
+    include: [Role, Trabajador],
+    order: [['correo', 'ASC']],
+  });
+
+  const headers = ['Correo', 'Trabajador Vinculado', 'Rol', 'Estado'];
+  const rows = usuarios.map((u) => [
+    u.correo || '—',
+    u.Trabajador
+      ? `${u.Trabajador.nombres || ''} ${u.Trabajador.apellidos || ''}`.trim()
+      : 'No vinculado',
+    u.Role ? u.Role.nombre_rol : '—',
+    u.estado ? 'Activo' : 'Inactivo',
+  ]);
+
+  const filename = `MAVET_Usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf('LISTADO DE USUARIOS DEL SISTEMA', headers, rows);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
 });
