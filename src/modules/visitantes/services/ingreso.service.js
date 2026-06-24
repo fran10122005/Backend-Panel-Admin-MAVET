@@ -87,17 +87,11 @@ exports.registrarIngreso = async (data) => {
       // Buscar o crear la persona menor
       persona = await Persona.findOne({ where: { cedula: cedulaFinal }, transaction: t });
       if (!persona) {
-        persona = await Persona.create(
-          {
-            cedula: cedulaFinal,
-            nombres,
-            apellidos,
-            telefono,
-            fecha_de_nac,
-            correo,
-          },
-          { transaction: t }
-        );
+        const datosPersona = { cedula: cedulaFinal, nombres, apellidos };
+        if (telefono !== undefined) datosPersona.telefono = telefono;
+        if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
+        if (correo !== undefined) datosPersona.correo = correo;
+        persona = await Persona.create(datosPersona, { transaction: t });
       }
 
       // Asegurar roles y vínculo
@@ -131,17 +125,11 @@ exports.registrarIngreso = async (data) => {
       if (!persona) {
         if (!nombres || !apellidos)
           throw new AppError('Faltan datos para registrar la persona', 400);
-        persona = await Persona.create(
-          {
-            cedula,
-            nombres,
-            apellidos,
-            telefono,
-            fecha_de_nac,
-            correo,
-          },
-          { transaction: t }
-        );
+        const datosPersona = { cedula, nombres, apellidos };
+        if (telefono !== undefined) datosPersona.telefono = telefono;
+        if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
+        if (correo !== undefined) datosPersona.correo = correo;
+        persona = await Persona.create(datosPersona, { transaction: t });
       }
     }
 
@@ -161,7 +149,8 @@ exports.registrarIngreso = async (data) => {
     return { persona, ingreso: nuevoIngreso };
   } catch (error) {
     await t.rollback();
-    throw new AppError(error.message, error.statusCode || 500);
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message, 500);
   }
 };
 
@@ -221,32 +210,38 @@ exports.getIngresosStats = async () => {
   return { visitasHoy, totalVisitantesUnicos, totalVisitasHistoricas, porMotivo };
 };
 
-exports.getTopVisitantes = async () => {
+exports.getTopVisitantes = async (limit = 3) => {
   const { fn, col } = require('sequelize');
+  const Sequelize = require('sequelize');
+
   const topRaw = await RegistroIngreso.findAll({
     attributes: [
-      'id_persona',
-      [fn('COUNT', col('RegistroIngreso.id_persona')), 'total_visitas'],
+      [col('id_persona'), 'id_persona'],
+      [fn('COUNT', col('id_persona')), 'total_visitas'],
       [fn('MAX', col('fecha_hora_entrada')), 'ultima_visita'],
     ],
-    include: [{ model: Persona, attributes: ['cedula', 'nombres', 'apellidos'] }],
-    group: [
-      'RegistroIngreso.id_persona',
-      'Persona.id_persona',
-      'Persona.cedula',
-      'Persona.nombres',
-      'Persona.apellidos',
-    ],
-    order: [[fn('COUNT', col('RegistroIngreso.id_persona')), 'DESC']],
-    limit: 10,
+    group: ['id_persona'],
+    order: [[fn('COUNT', col('id_persona')), 'DESC']],
+    limit,
+    raw: true,
   });
 
+  const ids = topRaw.map((r) => r.id_persona);
+  const personas = ids.length
+    ? await Persona.findAll({
+        where: { id_persona: ids },
+        attributes: ['id_persona', 'cedula', 'nombres', 'apellidos'],
+        raw: true,
+      })
+    : [];
+  const personaMap = Object.fromEntries(personas.map((p) => [p.id_persona, p]));
+
   return topRaw.map((t) => ({
-    cedula: t.Persona ? t.Persona.cedula : '',
-    nombre: t.Persona
-      ? `${t.Persona.nombres || ''} ${t.Persona.apellidos || ''}`.trim()
-      : 'Desconocido',
-    total_visitas: parseInt(t.getDataValue('total_visitas')),
-    ultima_visita: t.getDataValue('ultima_visita'),
+    cedula: personaMap[t.id_persona]?.cedula || '',
+    nombre:
+      `${personaMap[t.id_persona]?.nombres || ''} ${personaMap[t.id_persona]?.apellidos || ''}`.trim() ||
+      'Desconocido',
+    total_visitas: parseInt(t.total_visitas),
+    ultima_visita: t.ultima_visita,
   }));
 };

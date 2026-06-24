@@ -23,6 +23,7 @@ const CategoriaObra = require('../modules/obras/models/CategoriaObra.model');
 const Entrega = require('../modules/obras/models/Entrega.model');
 const Obra = require('../modules/obras/models/Obra.model');
 const HistorialUbicacionObra = require('../modules/obras/models/HistorialUbicacionObra.model');
+const ImagenWeb = require('../modules/obras/models/ImagenWeb.model');
 
 // Importar modelos Biblioteca
 const CategoriaLibro = require('../modules/biblioteca/models/CategoriaLibro.model');
@@ -76,8 +77,18 @@ CargoTrabajador.hasMany(Trabajador, { foreignKey: 'id_cargo' });
 Trabajador.belongsTo(CargoTrabajador, { foreignKey: 'id_cargo' });
 
 // trabajador_turnos (Many-to-Many)
-Trabajador.belongsToMany(Turno, { through: 'trabajador_turnos', foreignKey: 'id_trabajador', otherKey: 'id_turno', timestamps: false });
-Turno.belongsToMany(Trabajador, { through: 'trabajador_turnos', foreignKey: 'id_turno', otherKey: 'id_trabajador', timestamps: false });
+Trabajador.belongsToMany(Turno, {
+  through: 'trabajador_turnos',
+  foreignKey: 'id_trabajador',
+  otherKey: 'id_turno',
+  timestamps: false,
+});
+Turno.belongsToMany(Trabajador, {
+  through: 'trabajador_turnos',
+  foreignKey: 'id_turno',
+  otherKey: 'id_trabajador',
+  timestamps: false,
+});
 
 Trabajador.hasMany(AsistenciaQR, { foreignKey: 'id_trabajador' });
 AsistenciaQR.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
@@ -107,11 +118,20 @@ Obra.belongsTo(CategoriaObra, { foreignKey: 'id_categoria_obra' });
 Obra.hasMany(HistorialUbicacionObra, { foreignKey: 'id_obra' });
 HistorialUbicacionObra.belongsTo(Obra, { foreignKey: 'id_obra' });
 
+Obra.hasOne(ImagenWeb, { foreignKey: 'id_obra', onDelete: 'CASCADE' });
+ImagenWeb.belongsTo(Obra, { foreignKey: 'id_obra' });
+
 Usuario.hasMany(HistorialUbicacionObra, { foreignKey: 'id_usuario' });
 HistorialUbicacionObra.belongsTo(Usuario, { foreignKey: 'id_usuario' });
 
-EstadoObra.hasMany(HistorialUbicacionObra, { foreignKey: 'id_estado_anterior', as: 'EstadoAnterior' });
-HistorialUbicacionObra.belongsTo(EstadoObra, { foreignKey: 'id_estado_anterior', as: 'EstadoAnterior' });
+EstadoObra.hasMany(HistorialUbicacionObra, {
+  foreignKey: 'id_estado_anterior',
+  as: 'EstadoAnterior',
+});
+HistorialUbicacionObra.belongsTo(EstadoObra, {
+  foreignKey: 'id_estado_anterior',
+  as: 'EstadoAnterior',
+});
 
 EstadoObra.hasMany(HistorialUbicacionObra, { foreignKey: 'id_estado_nuevo', as: 'EstadoNuevo' });
 HistorialUbicacionObra.belongsTo(EstadoObra, { foreignKey: 'id_estado_nuevo', as: 'EstadoNuevo' });
@@ -130,8 +150,18 @@ Trabajador.hasMany(ConsultaSala, { foreignKey: 'id_trabajador' });
 ConsultaSala.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
 
 // libro_autores (Many-to-Many)
-Libro.belongsToMany(AutorLibro, { through: 'libro_autores', foreignKey: 'id_libro', otherKey: 'id_autor', timestamps: false });
-AutorLibro.belongsToMany(Libro, { through: 'libro_autores', foreignKey: 'id_autor', otherKey: 'id_libro', timestamps: false });
+Libro.belongsToMany(AutorLibro, {
+  through: 'libro_autores',
+  foreignKey: 'id_libro',
+  otherKey: 'id_autor',
+  timestamps: false,
+});
+AutorLibro.belongsToMany(Libro, {
+  through: 'libro_autores',
+  foreignKey: 'id_autor',
+  otherKey: 'id_libro',
+  timestamps: false,
+});
 
 // --- Visitantes (Recepción) ---
 Persona.hasMany(RegistroIngreso, { foreignKey: 'id_persona' });
@@ -154,8 +184,18 @@ EspacioMuseo.hasMany(Taller, { foreignKey: 'id_espacio' });
 Taller.belongsTo(EspacioMuseo, { foreignKey: 'id_espacio' });
 
 // Alumnos y Representantes (Tabla Puente)
-Alumno.belongsToMany(Representante, { through: AlumnoRepresentante, foreignKey: 'id_alumno', otherKey: 'id_representante', timestamps: false });
-Representante.belongsToMany(Alumno, { through: AlumnoRepresentante, foreignKey: 'id_representante', otherKey: 'id_alumno', timestamps: false });
+Alumno.belongsToMany(Representante, {
+  through: AlumnoRepresentante,
+  foreignKey: 'id_alumno',
+  otherKey: 'id_representante',
+  timestamps: false,
+});
+Representante.belongsToMany(Alumno, {
+  through: AlumnoRepresentante,
+  foreignKey: 'id_representante',
+  otherKey: 'id_alumno',
+  timestamps: false,
+});
 
 Taller.hasMany(InscripcionTaller, { foreignKey: 'id_taller' });
 InscripcionTaller.belongsTo(Taller, { foreignKey: 'id_taller' });
@@ -184,10 +224,38 @@ SolicitudEspacio.belongsTo(Persona, { foreignKey: 'id_persona' });
 
 module.exports = {
   sequelize,
-  Persona, Role, Usuario, BitacoraAuditoria,
-  CargoTrabajador, Turno, Trabajador, AsistenciaQR, HistorialHorario,
-  Artista, TecnicaObra, EstadoObra, CategoriaObra, Entrega, Obra, HistorialUbicacionObra,
-  CategoriaLibro, AutorLibro, Libro, ConsultaSala,
-  MotivoVisita, RegistroIngreso,
-  Instructor, Representante, Alumno, AlumnoRepresentante, EspacioMuseo, Taller, InscripcionTaller, SesionTaller, AsistenciaAlumno, SolicitudEspacio, InventarioTaller
+  Persona,
+  Role,
+  Usuario,
+  BitacoraAuditoria,
+  CargoTrabajador,
+  Turno,
+  Trabajador,
+  AsistenciaQR,
+  HistorialHorario,
+  Artista,
+  TecnicaObra,
+  EstadoObra,
+  CategoriaObra,
+  Entrega,
+  Obra,
+  HistorialUbicacionObra,
+  ImagenWeb,
+  CategoriaLibro,
+  AutorLibro,
+  Libro,
+  ConsultaSala,
+  MotivoVisita,
+  RegistroIngreso,
+  Instructor,
+  Representante,
+  Alumno,
+  AlumnoRepresentante,
+  EspacioMuseo,
+  Taller,
+  InscripcionTaller,
+  SesionTaller,
+  AsistenciaAlumno,
+  SolicitudEspacio,
+  InventarioTaller,
 };
