@@ -7,8 +7,13 @@ exports.createTrabajador = catchAsync(async (req, res) => {
 });
 
 exports.getAllTrabajadores = catchAsync(async (req, res) => {
-  const result = await trabajadorService.getAllTrabajadores();
-  res.status(200).json(result);
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await trabajadorService.getAllTrabajadores(page, limit);
+  res.status(200).json({
+    data: result.data || result,
+    meta: result.meta,
+  });
 });
 
 exports.getTrabajadorById = catchAsync(async (req, res) => {

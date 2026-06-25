@@ -154,11 +154,22 @@ exports.registrarIngreso = async (data) => {
   }
 };
 
-exports.getAllIngresos = async () => {
-  return await RegistroIngreso.findAll({
+exports.getAllIngresos = async (page, limit) => {
+  const query = {
     include: [{ model: Persona }, { model: MotivoVisita }],
     order: [['fecha_hora_entrada', 'DESC']],
-  });
+  };
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await RegistroIngreso.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+  return await RegistroIngreso.findAll(query);
 };
 
 exports.getIngresosStats = async () => {

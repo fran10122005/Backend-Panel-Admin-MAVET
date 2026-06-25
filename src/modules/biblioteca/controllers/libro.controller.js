@@ -7,7 +7,9 @@ exports.createLibro = catchAsync(async (req, res) => {
 });
 
 exports.getAllLibros = catchAsync(async (req, res) => {
-  const result = await libroService.getAllLibros();
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await libroService.getAllLibros(page, limit);
   res.status(200).json(result);
 });
 

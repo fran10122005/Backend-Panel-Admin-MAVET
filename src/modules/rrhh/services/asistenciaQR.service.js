@@ -3,27 +3,27 @@ const AppError = require('../../../utils/AppError');
 
 const calcularHoras = (inicio, fin) => {
   if (!inicio || !fin) return null;
-  return Math.round((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60) * 100) / 100;
+  return Math.round(((new Date(fin) - new Date(inicio)) / (1000 * 60 * 60)) * 100) / 100;
 };
 
 exports.registrarAsistencia = async (data) => {
   const { cedulaTrabajador, tipoMovimiento, timestamp } = data;
-  
+
   const trabajador = await Trabajador.findOne({ where: { cedula: cedulaTrabajador } });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const fecha = timestamp.split('T')[0];
-  let asistencia = await AsistenciaQR.findOne({ 
-    where: { 
-      id_trabajador: trabajador.id_trabajador, 
-      fecha 
-    } 
+  let asistencia = await AsistenciaQR.findOne({
+    where: {
+      id_trabajador: trabajador.id_trabajador,
+      fecha,
+    },
   });
 
   if (!asistencia) {
     asistencia = await AsistenciaQR.create({
       id_trabajador: trabajador.id_trabajador,
-      fecha
+      fecha,
     });
   }
 
@@ -44,7 +44,7 @@ exports.registrarAsistencia = async (data) => {
     default:
       throw new AppError('Tipo de movimiento inválido', 400);
   }
-  
+
   const horasManana = calcularHoras(asistencia.entrada_manana, asistencia.salida_manana);
   const horasTarde = calcularHoras(asistencia.entrada_tarde, asistencia.salida_tarde);
   const total = (horasManana || 0) + (horasTarde || 0);
@@ -54,12 +54,25 @@ exports.registrarAsistencia = async (data) => {
   return asistencia;
 };
 
-exports.getAllAsistencias = async () => {
-  return await AsistenciaQR.findAll({
-    include: [{
-      model: Trabajador,
-      include: [{ model: CargoTrabajador }]
-    }],
-    order: [['fecha', 'DESC']]
-  });
+exports.getAllAsistencias = async (page, limit) => {
+  const query = {
+    include: [
+      {
+        model: Trabajador,
+        include: [{ model: CargoTrabajador }],
+      },
+    ],
+    order: [['fecha', 'DESC']],
+  };
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await AsistenciaQR.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+  return await AsistenciaQR.findAll(query);
 };

@@ -4,8 +4,13 @@ const { body, param, validationResult } = require('express-validator');
 // GET /api/educacion/talleres/inventario
 exports.getAllInventario = async (req, res, next) => {
   try {
-    const talleres = await inventarioTallerService.getAll();
-    res.status(200).json({ data: talleres });
+    const page = req.query.page ? parseInt(req.query.page, 10) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+    const result = await inventarioTallerService.getAll(page, limit);
+    res.status(200).json({
+      data: result.data || result,
+      meta: result.meta,
+    });
   } catch (err) {
     next(err);
   }
@@ -26,7 +31,7 @@ exports.createInventario = [
     } catch (err) {
       next(err);
     }
-  }
+  },
 ];
 
 // PUT /api/educacion/talleres/inventario/:id
@@ -45,7 +50,7 @@ exports.updateInventario = [
     } catch (err) {
       next(err);
     }
-  }
+  },
 ];
 
 // DELETE /api/educacion/talleres/inventario/:id
@@ -62,5 +67,5 @@ exports.deleteInventario = [
     } catch (err) {
       next(err);
     }
-  }
+  },
 ];

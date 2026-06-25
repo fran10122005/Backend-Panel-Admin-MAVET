@@ -3,8 +3,19 @@ const { InventarioTaller } = require('../../../models');
 /**
  * Retrieve all inventory talleres.
  */
-async function getAll() {
-  return await InventarioTaller.findAll({ order: [['nombre', 'ASC']] });
+async function getAll(page, limit) {
+  const query = { order: [['nombre', 'ASC']] };
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await InventarioTaller.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+  return await InventarioTaller.findAll(query);
 }
 
 /**

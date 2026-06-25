@@ -33,11 +33,24 @@ exports.createLibro = async (data) => {
   }
 };
 
-exports.getAllLibros = async () => {
-  return await Libro.findAll({
+exports.getAllLibros = async (page, limit) => {
+  const query = {
     include: [{ model: CategoriaLibro }, { model: AutorLibro }],
     order: [['created_at', 'DESC']],
-  });
+  };
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Libro.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+
+  return await Libro.findAll(query);
 };
 
 exports.getLibroById = async (id) => {
