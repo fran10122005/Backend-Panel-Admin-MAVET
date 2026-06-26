@@ -35,7 +35,8 @@ exports.createConsulta = async (data) => {
     id_libro,
     id_persona: finalIdPersona || null,
     id_trabajador: id_trabajador || null,
-    mesa,
+    mesa: mesa || null,
+    hora_entrega: new Date(),
     estado: estado || 'ACTIVO'
   });
 
@@ -45,7 +46,10 @@ exports.createConsulta = async (data) => {
     await libro.decrement('cantidad_disponible', { by: 1 });
   }
 
-  return consulta;
+  // Devolver con relaciones para que el frontend tenga los datos
+  return await ConsultaSala.findByPk(consulta.id_consulta, {
+    include: [Persona, Libro, Trabajador]
+  });
 };
 
 exports.updateConsulta = async (id_consulta, data) => {
@@ -61,7 +65,13 @@ exports.updateConsulta = async (id_consulta, data) => {
 };
 
 exports.getAllConsultas = async () => {
-  return await ConsultaSala.findAll({
+  const consultas = await ConsultaSala.findAll({
     include: [Persona, Libro, Trabajador]
+  });
+  return consultas.map(c => {
+    const json = c.toJSON();
+    json.hora_entrega = json.hora_entrega || null;
+    json.hora_devolucion = json.hora_devolucion || null;
+    return json;
   });
 };

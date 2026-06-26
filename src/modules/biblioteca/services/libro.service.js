@@ -11,18 +11,43 @@ exports.createLibro = async (data) => {
       cuota: data.cuota || null,
       estante: data.estante || null,
       ano_libro: data.ano_libro || null,
-      id_categoria: data.id_categoria || null,
+      id_categoria: (data.id_categoria > 0) ? data.id_categoria : null,
       cantidad_total: data.cantidad_total || 1,
-      cantidad_disponible: data.cantidad_total || 1, // al crear, disponible = total
+      cantidad_disponible: data.cantidad_total || 1,
       estado: data.estado || 'Aprobado',
       fecha_ingreso: data.fecha_ingreso || new Date(),
     };
 
     const newLibro = await Libro.create(payload, { transaction: t });
+    const libroId = newLibro.id_libro || newLibro.id;
 
-    // Vincular autor via relación Many-to-Many (inserta en libro_autores automáticamente)
-    if (data.id_autor) {
-      await newLibro.setAutorLibros([data.id_autor], { transaction: t });
+    if (data.autor && !data.id_autor) {
+      const nombreCompleto = data.autor.trim();
+      const partes = nombreCompleto.split(/\s+/);
+      const nombre = partes[0];
+      const apellido = partes.slice(1).join(' ') || '';
+
+      const [autor] = await AutorLibro.findOrCreate({
+        where: { nombre, apellido },
+        defaults: { nombre, apellido },
+        transaction: t
+      });
+
+      await sequelize.query(
+        'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
+        {
+          replacements: { id_libro: libroId, id_autor: autor.id_autor },
+          transaction: t
+        }
+      );
+    } else if (data.id_autor) {
+      await sequelize.query(
+        'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
+        {
+          replacements: { id_libro: libroId, id_autor: data.id_autor },
+          transaction: t
+        }
+      );
     }
 
     await t.commit();
@@ -32,6 +57,16 @@ exports.createLibro = async (data) => {
     throw new AppError('Error al crear el libro: ' + error.message, 500);
   }
 };
+
+function serializarLibro(libro) {
+  const json = libro.toJSON?.() || libro;
+  const primerAutor = json.AutorLibros?.[0] || json.AutorLibro?.[0] || json.autores_libros?.[0];
+  json.autor = primerAutor
+    ? `${primerAutor.nombre || ''} ${primerAutor.apellido || ''}`.trim()
+    : json.autor || 'Desconocido';
+  json.id_autor = primerAutor?.id_autor || json.id_autor;
+  return json;
+}
 
 exports.getAllLibros = async (page, limit) => {
   const query = {
@@ -45,12 +80,13 @@ exports.getAllLibros = async (page, limit) => {
     query.offset = offset;
     const { count, rows } = await Libro.findAndCountAll(query);
     return {
-      data: rows,
+      data: rows.map(serializarLibro),
       meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
     };
   }
 
-  return await Libro.findAll(query);
+  const rows = await Libro.findAll(query);
+  return rows.map(serializarLibro);
 };
 
 exports.getLibroById = async (id) => {
@@ -58,7 +94,7 @@ exports.getLibroById = async (id) => {
     include: [{ model: CategoriaLibro }, { model: AutorLibro }],
   });
   if (!libro) throw new AppError('Libro no encontrado', 404);
-  return libro;
+  return serializarLibro(libro);
 };
 
 exports.updateLibro = async (id, data) => {
@@ -73,7 +109,7 @@ exports.updateLibro = async (id, data) => {
       cuota: data.cuota !== undefined ? data.cuota : libro.cuota,
       estante: data.estante !== undefined ? data.estante : libro.estante,
       ano_libro: data.ano_libro !== undefined ? data.ano_libro : libro.ano_libro,
-      id_categoria: data.id_categoria !== undefined ? data.id_categoria : libro.id_categoria,
+      id_categoria: data.id_categoria !== undefined ? (data.id_categoria > 0 ? data.id_categoria : null) : libro.id_categoria,
       cantidad_total:
         data.cantidad_total !== undefined ? data.cantidad_total : libro.cantidad_total,
       cantidad_disponible:
@@ -85,10 +121,41 @@ exports.updateLibro = async (id, data) => {
     };
 
     await libro.update(payload, { transaction: t });
+    const libroId = libro.id_libro || libro.id;
 
-    // Actualizar relación con autor (setAutorLibros reemplaza los anteriores)
-    if (data.id_autor) {
-      await libro.setAutorLibros([data.id_autor], { transaction: t });
+    // Limpiar autores anteriores y vincular el nuevo
+    await sequelize.query(
+      'DELETE FROM libro_autores WHERE id_libro = :id_libro',
+      { replacements: { id_libro: libroId }, transaction: t }
+    );
+
+    if (data.autor && !data.id_autor) {
+      const nombreCompleto = data.autor.trim();
+      const partes = nombreCompleto.split(/\s+/);
+      const nombre = partes[0];
+      const apellido = partes.slice(1).join(' ') || '';
+
+      const [autor] = await AutorLibro.findOrCreate({
+        where: { nombre, apellido },
+        defaults: { nombre, apellido },
+        transaction: t
+      });
+
+      await sequelize.query(
+        'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
+        {
+          replacements: { id_libro: libroId, id_autor: autor.id_autor },
+          transaction: t
+        }
+      );
+    } else if (data.id_autor) {
+      await sequelize.query(
+        'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
+        {
+          replacements: { id_libro: libroId, id_autor: data.id_autor },
+          transaction: t
+        }
+      );
     }
 
     await t.commit();
@@ -102,29 +169,28 @@ exports.updateLibro = async (id, data) => {
 exports.deleteLibro = async (id) => {
   const libro = await Libro.findByPk(id);
   if (!libro) throw new AppError('Libro no encontrado', 404);
-  // Las filas de libro_autores se eliminan automáticamente (ON DELETE CASCADE o setAutorLibros([]))
-  await libro.setAutorLibros([]);
+  await sequelize.query(
+    'DELETE FROM libro_autores WHERE id_libro = :id_libro',
+    { replacements: { id_libro: id } }
+  );
   return await libro.destroy();
 };
 
 exports.devolverLibro = async (id_libro) => {
   const { ConsultaSala, Libro } = require('../../../models');
 
-  // Buscar el préstamo activo de este libro
   const consulta = await ConsultaSala.findOne({
     where: { id_libro, estado: 'ACTIVO' },
     order: [['id_consulta', 'DESC']],
   });
 
   if (!consulta) {
-    // Intentar con estado alternativo 'Pendiente'
     const consultaAlternativa = await ConsultaSala.findOne({
       where: { id_libro, estado: 'Pendiente' },
       order: [['id_consulta', 'DESC']],
     });
 
     if (!consultaAlternativa) {
-      // Corrección de desincronización: si no hay consulta activa pero el libro no está completo
       const libro = await Libro.findByPk(id_libro);
       if (libro && libro.cantidad_disponible < libro.cantidad_total) {
         await libro.increment('cantidad_disponible', { by: 1 });
