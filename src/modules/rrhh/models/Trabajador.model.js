@@ -12,7 +12,8 @@ const Trabajador = sequelize.define('Trabajador', {
   id_cargo:      { type: DataTypes.INTEGER, allowNull: false },
   horas_semanales: { type: DataTypes.DECIMAL, allowNull: true },
   qr_uuid:       { type: DataTypes.STRING(255), unique: true },
-  estado:        { type: DataTypes.BOOLEAN, defaultValue: true }
+  estado:        { type: DataTypes.BOOLEAN, defaultValue: true },
+  foto_url:      { type: DataTypes.STRING(500), allowNull: true }
 }, {
   tableName: 'trabajadores',
   timestamps: true,

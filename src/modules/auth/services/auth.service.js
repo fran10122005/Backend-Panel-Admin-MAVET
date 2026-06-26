@@ -193,6 +193,39 @@ exports.updateMe = async (id_usuario, data) => {
   return true;
 };
 
+exports.subirFotoPerfil = async (id_usuario, filePath) => {
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  const cloudinary = require('../../config/cloudinary');
+  const fs = require('fs');
+
+  let url = filePath;
+
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'mavet_uploads',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif'],
+    });
+    url = result.secure_url;
+  } catch (uploadError) {
+    console.error('Error al subir a Cloudinary:', uploadError.message);
+    throw new AppError('Error al procesar la imagen. Intente nuevamente.', 500);
+  } finally {
+    try { fs.unlinkSync(filePath); } catch (_) {}
+  }
+
+  usuario.foto_url = url;
+  await usuario.save();
+
+  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
+  if (trabajador) {
+    await trabajador.update({ foto_url: url });
+  }
+
+  return url;
+};
+
 exports.updateUsuario = async (id_usuario, data) => {
   const usuario = await Usuario.findByPk(id_usuario);
   if (!usuario) throw new AppError('Usuario no encontrado', 404);

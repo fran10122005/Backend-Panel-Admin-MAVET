@@ -8,6 +8,7 @@ const Usuario = sequelize.define('Usuario', {
   password_hash: { type: DataTypes.STRING(255) },
   id_rol: { type: DataTypes.INTEGER },
   estado: { type: DataTypes.BOOLEAN },
+  foto_url: { type: DataTypes.STRING(500), allowNull: true },
   // Campos para recuperación de contraseña
   
   

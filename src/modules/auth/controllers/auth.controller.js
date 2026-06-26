@@ -110,6 +110,14 @@ exports.exportUsuariosPdf = catchAsync(async (req, res) => {
   res.send(pdfBuffer);
 });
 
+exports.subirFoto = catchAsync(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
+  }
+  const url = await authService.subirFotoPerfil(req.user.id_usuario, req.file.path);
+  res.status(200).json({ status: 'success', url });
+});
+
 exports.updateMe = catchAsync(async (req, res) => {
   await authService.updateMe(req.user.id_usuario, req.body);
 
