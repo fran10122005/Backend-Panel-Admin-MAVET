@@ -1,4 +1,5 @@
-const { Artista } = require('../../../models');
+const { Op } = require('sequelize');
+const { Artista, sequelize } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
 exports.createArtista = async (data) => {
@@ -13,6 +14,24 @@ exports.getArtistaById = async (id) => {
   const artista = await Artista.findByPk(id);
   if (!artista) throw new AppError('Artista no encontrado', 404);
   return artista;
+};
+
+exports.buscarArtista = async (query) => {
+  if (!query) throw new AppError('Debe proporcionar un término de búsqueda', 400);
+
+  const likeOp = sequelize.getDialect() === 'postgres' ? Op.iLike : Op.like;
+
+  const artistas = await Artista.findAll({
+    where: {
+      [Op.or]: [
+        { ci: { [likeOp]: `%${query}%` } },
+        { nombres: { [likeOp]: `%${query}%` } },
+        { apellidos: { [likeOp]: `%${query}%` } },
+      ],
+    },
+  });
+
+  return artistas;
 };
 
 exports.updateArtista = async (id, data) => {

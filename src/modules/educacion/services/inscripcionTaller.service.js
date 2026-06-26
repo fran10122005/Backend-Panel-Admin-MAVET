@@ -1,12 +1,17 @@
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
 const { PassThrough } = require('stream');
+
+const LOGO_PATH = path.join(__dirname, '../../../../public/images/logo/mavet2.png');
+const LOGO_IMG = fs.readFileSync(LOGO_PATH);
 
 // Export inscripciones for a specific taller in PDF or Excel
 const exportInscripciones = async (tallerId, format) => {
   // Fetch all detailed inscripciones and filter by taller
   const allInscripciones = await getInscripcionesConDetalles();
-  const filtered = allInscripciones.filter(ins => ins.Taller && ins.Taller.id_taller == tallerId);
+  const filtered = allInscripciones.filter((ins) => ins.Taller && ins.Taller.id_taller == tallerId);
 
   if (format === 'excel') {
     const workbook = new ExcelJS.Workbook();
@@ -15,13 +20,19 @@ const exportInscripciones = async (tallerId, format) => {
     worksheet.columns = [
       { header: 'Alumno', key: 'alumno', width: 30 },
       { header: 'Representante', key: 'representante', width: 30 },
-      { header: 'Fecha Inscripción', key: 'fecha', width: 20 }
+      { header: 'Fecha Inscripción', key: 'fecha', width: 20 },
     ];
     // Add rows
-    filtered.forEach(ins => {
-      const alumnoName = ins.Alumno ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim() : '-';
-      const repName = ins.Representante ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim() : '-';
-      const fecha = ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString() : '-';
+    filtered.forEach((ins) => {
+      const alumnoName = ins.Alumno
+        ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim()
+        : '-';
+      const repName = ins.Representante
+        ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim()
+        : '-';
+      const fecha = ins.fecha_inscripcion
+        ? new Date(ins.fecha_inscripcion).toLocaleDateString()
+        : '-';
       worksheet.addRow({ alumno: alumnoName, representante: repName, fecha });
     });
     const buffer = await workbook.xlsx.writeBuffer();
@@ -32,24 +43,96 @@ const exportInscripciones = async (tallerId, format) => {
     const doc = new PDFDocument({ margin: 30, size: 'A4' });
     const stream = new PassThrough();
     doc.pipe(stream);
-    // Header
-    doc.fontSize(16).text(`Inscripciones - Taller ${tallerId}`, { align: 'center' });
-    doc.moveDown();
-    // Table header
-    doc.fontSize(12).text('Alumno', 50, doc.y, { continued: true })
-       .text('Representante', 250, doc.y, { continued: true })
-       .text('Fecha', 450, doc.y);
-    doc.moveDown();
-    // Rows
-    filtered.forEach(ins => {
-      const alumnoName = ins.Alumno ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim() : '-';
-      const repName = ins.Representante ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim() : '-';
-      const fecha = ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString() : '-';
-      doc.text(alumnoName, 50, doc.y, { continued: true })
-         .text(repName, 250, doc.y, { continued: true })
-         .text(fecha, 450, doc.y);
-      doc.moveDown();
+
+    const MAVET_HEX = '#800000';
+    const GRAY_MED = '#666666';
+    const GRAY_LIGHT = '#999999';
+    const HEADER_BG = '#7C0F0F';
+    const PAGE_W = doc.page.width;
+
+    // ── Encabezado institucional ──
+    doc.rect(0, 0, PAGE_W, 70).fill(HEADER_BG);
+    doc.rect(0, 68, PAGE_W, 3).fill(MAVET_HEX);
+    try {
+      doc.image(LOGO_IMG, 15, 8, { width: 50 });
+    } catch (_e) {
+      /* Logo no disponible */
+    }
+    doc
+      .fillColor('#FFFFFF')
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', 75, 15);
+    doc.fontSize(10).font('Helvetica').text('MAVET – Sistema de Gestión Interna', 75, 35);
+    doc.fontSize(13).font('Helvetica-Bold').text(`Inscripciones — Taller #${tallerId}`, 75, 52);
+
+    // ── Fecha ──
+    doc.fillColor(GRAY_MED).fontSize(9).font('Helvetica');
+    const fechaGen = new Date().toLocaleDateString('es-VE', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
+    doc.text(`Generado el: ${fechaGen}`, 30, 85);
+
+    // ── Tabla ──
+    const tableHeaders = ['Alumno', 'Representante', 'Fecha Inscripción'];
+    const colW = (PAGE_W - 60) / 3;
+    let y = 110;
+
+    doc.rect(30, y, PAGE_W - 60, 22).fill(MAVET_HEX);
+    doc.fillColor('#FFFFFF').fontSize(9).font('Helvetica-Bold');
+    tableHeaders.forEach((h, i) => doc.text(h, 35 + i * colW, y + 6, { width: colW - 10 }));
+    y += 22;
+
+    filtered.forEach((ins, idx) => {
+      if (y > 720) {
+        doc.addPage();
+        y = 50;
+      }
+      const alumnoName = ins.Alumno
+        ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim()
+        : '-';
+      const repName = ins.Representante
+        ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim()
+        : '-';
+      const fecha = ins.fecha_inscripcion
+        ? new Date(ins.fecha_inscripcion).toLocaleDateString()
+        : '-';
+      if (idx % 2 !== 0) doc.rect(30, y, PAGE_W - 60, 18).fill('#F9F5F5');
+      doc.fillColor('#333333').fontSize(8).font('Helvetica');
+      [alumnoName, repName, fecha].forEach((text, i) =>
+        doc.text(String(text).substring(0, 50), 35 + i * colW, y + 5, { width: colW - 10 })
+      );
+      doc
+        .moveTo(30, y + 17.5)
+        .lineTo(PAGE_W - 30, y + 17.5)
+        .lineWidth(0.3)
+        .strokeColor('#E8E8E8')
+        .stroke();
+      y += 18;
+    });
+
+    // ── Pie ──
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      const w = doc.page.width;
+      const h = doc.page.height;
+      doc
+        .lineWidth(0.4)
+        .strokeColor(MAVET_HEX)
+        .moveTo(30, h - 35)
+        .lineTo(w - 30, h - 35)
+        .stroke();
+      doc
+        .fontSize(7)
+        .fillColor(GRAY_LIGHT)
+        .font('Helvetica')
+        .text(`Página ${i + 1} de ${pages.count}`, w / 2, h - 28, { align: 'center' })
+        .text('MAVET – Documento de uso interno', w - 30, h - 28, { align: 'right' });
+    }
+
     doc.end();
     const chunks = [];
     for await (const chunk of stream) {
@@ -64,7 +147,14 @@ const exportInscripciones = async (tallerId, format) => {
 };
 
 const sequelize = require('../../../config/db');
-const { InscripcionTaller, Taller, Alumno, Persona, AlumnoRepresentante, Representante } = require('../../../models');
+const {
+  InscripcionTaller,
+  Taller,
+  Alumno,
+  Persona,
+  AlumnoRepresentante,
+  Representante,
+} = require('../../../models');
 
 const getInscripcionesConDetalles = async () => {
   const inscripciones = await InscripcionTaller.findAll();
@@ -90,7 +180,7 @@ const getInscripcionesConDetalles = async () => {
       ...ins.toJSON(),
       Alumno: alumnoPersona,
       Taller: taller,
-      Representante: representante
+      Representante: representante,
     });
   }
   return result;
@@ -118,26 +208,32 @@ const inscribirAlumno = async (data) => {
     const nombreAlumno = namePartsAlumno[0] || alumnoData.nombre;
     const apellidoAlumno = namePartsAlumno.slice(1).join(' ') || '';
 
-    const alumnoPersona = await Persona.create({
-      cedula: `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      nombres: nombreAlumno,
-      apellidos: apellidoAlumno,
-      telefono: repData?.telefono || '',
-      fecha_de_nac: fechaNac,
-      fecha_registro: new Date()
-    }, { transaction: t });
+    const alumnoPersona = await Persona.create(
+      {
+        cedula: `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        nombres: nombreAlumno,
+        apellidos: apellidoAlumno,
+        telefono: repData?.telefono || '',
+        fecha_de_nac: fechaNac,
+        fecha_registro: new Date(),
+      },
+      { transaction: t }
+    );
 
     // 2. Crear Alumno
-    const alumnoRecord = await Alumno.create({
-      id_persona: alumnoPersona.id_persona,
-      nivel_experiencia: null
-    }, { transaction: t });
+    const alumnoRecord = await Alumno.create(
+      {
+        id_persona: alumnoPersona.id_persona,
+        nivel_experiencia: null,
+      },
+      { transaction: t }
+    );
 
     // 3. Si es menor, crear/traer Representante y vincular
     if (esMenor && repData) {
       let repPersona = await Persona.findOne({
         where: { cedula: repData.cedula },
-        transaction: t
+        transaction: t,
       });
 
       if (!repPersona) {
@@ -145,44 +241,53 @@ const inscribirAlumno = async (data) => {
         const nombreRep = namePartsRep[0] || repData.nombre;
         const apellidoRep = namePartsRep.slice(1).join(' ') || '';
 
-        repPersona = await Persona.create({
-          cedula: repData.cedula,
-          nombres: nombreRep,
-          apellidos: apellidoRep,
-          telefono: repData.telefono || '',
-          fecha_de_nac: null,
-          fecha_registro: new Date()
-        }, { transaction: t });
+        repPersona = await Persona.create(
+          {
+            cedula: repData.cedula,
+            nombres: nombreRep,
+            apellidos: apellidoRep,
+            telefono: repData.telefono || '',
+            fecha_de_nac: null,
+            fecha_registro: new Date(),
+          },
+          { transaction: t }
+        );
       }
 
       let repRecord = await Representante.findOne({
         where: { id_persona: repPersona.id_persona },
-        transaction: t
+        transaction: t,
       });
 
       if (!repRecord) {
-        repRecord = await Representante.create({
-          id_persona: repPersona.id_persona,
-          profesion_ocupacion: null
-        }, { transaction: t });
+        repRecord = await Representante.create(
+          {
+            id_persona: repPersona.id_persona,
+            profesion_ocupacion: null,
+          },
+          { transaction: t }
+        );
       }
 
       await AlumnoRepresentante.findOrCreate({
         where: { id_alumno: alumnoRecord.id_alumno, id_representante: repRecord.id_representante },
         defaults: { parentesco: 'Representante Legal' },
-        transaction: t
+        transaction: t,
       });
     }
 
     // 4. Crear Inscripcion
     const tId = parseInt(tallerId.toString().replace(/\D/g, ''), 10) || tallerId;
 
-    const inscripcion = await InscripcionTaller.create({
-      id_taller: tId,
-      id_alumno: alumnoRecord.id_alumno,
-      fecha_inscripcion: new Date(),
-      estado_inscripcion: 'Inscrito'
-    }, { transaction: t });
+    const inscripcion = await InscripcionTaller.create(
+      {
+        id_taller: tId,
+        id_alumno: alumnoRecord.id_alumno,
+        fecha_inscripcion: new Date(),
+        estado_inscripcion: 'Inscrito',
+      },
+      { transaction: t }
+    );
 
     await t.commit();
     return inscripcion;
@@ -195,5 +300,5 @@ const inscribirAlumno = async (data) => {
 module.exports = {
   getInscripcionesConDetalles,
   inscribirAlumno,
-  exportInscripciones
+  exportInscripciones,
 };

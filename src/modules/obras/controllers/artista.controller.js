@@ -16,6 +16,12 @@ exports.getArtistaById = catchAsync(async (req, res) => {
   res.status(200).json(artista);
 });
 
+exports.buscarArtista = catchAsync(async (req, res) => {
+  const query = req.query.q;
+  const resultados = await artistaService.buscarArtista(query);
+  res.status(200).json({ message: 'Búsqueda completada', data: resultados });
+});
+
 exports.updateArtista = catchAsync(async (req, res) => {
   const artista = await artistaService.updateArtista(req.params.id, req.body);
   res.status(200).json({ message: 'Artista actualizado correctamente', data: artista });
