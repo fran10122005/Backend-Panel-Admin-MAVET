@@ -3,7 +3,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed:motivos": "node src/seeders/motivosVisita.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
