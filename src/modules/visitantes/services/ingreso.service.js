@@ -149,8 +149,15 @@ exports.registrarIngreso = async (data) => {
     return { persona, ingreso: nuevoIngreso };
   } catch (error) {
     await t.rollback();
+    console.error('=== ERROR EN REGISTRAR INGRESO ===', error);
+    if (error.errors) {
+      console.error('Detalles de validación:', JSON.stringify(error.errors, null, 2));
+    }
     if (error instanceof AppError) throw error;
-    throw new AppError(error.message, 500);
+    throw new AppError(
+      error.errors ? error.errors.map((e) => e.message).join(', ') : error.message,
+      500
+    );
   }
 };
 

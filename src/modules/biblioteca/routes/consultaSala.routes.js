@@ -1,9 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const consultaController = require('../controllers/consultaSala.controller');
+const validateZod = require('../../../middleware/validateSchema');
+const {
+  createConsultaSalaSchema,
+  updateConsultaSalaSchema,
+  consultaSalaIdParamSchema,
+} = require('../schemas/consultaSala.schema');
 
-router.post('/', consultaController.createConsulta);
+router.post(
+  '/',
+  validateZod({ body: createConsultaSalaSchema }),
+  consultaController.createConsulta
+);
 router.get('/', consultaController.getAllConsultas);
-router.put('/:id', consultaController.updateConsulta);
+router.put(
+  '/:id',
+  validateZod({ params: consultaSalaIdParamSchema, body: updateConsultaSalaSchema }),
+  consultaController.updateConsulta
+);
 
 module.exports = router;
