@@ -26,6 +26,7 @@ export default [
         exports: "readonly",
         __dirname: "readonly",
         process: "readonly",
+        Buffer: "readonly",
         console: "readonly",
         jest: "readonly",
         describe: "readonly",

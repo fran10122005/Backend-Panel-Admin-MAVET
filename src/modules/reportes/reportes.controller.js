@@ -21,7 +21,15 @@ exports.reporteObras = catchAsync(async (req, res) => {
     order: [['id_obra', 'ASC']],
   });
 
-  const headers = ['Código', 'Título', 'Autor', 'Año', 'Técnica', 'Estado', 'Ubicación'];
+  const headers = [
+    { label: 'Código', width: 55, align: 'center' },
+    { label: 'Título', width: 140 },
+    { label: 'Autor', width: 120 },
+    { label: 'Año', width: 40, align: 'center' },
+    { label: 'Técnica', width: 90 },
+    { label: 'Estado', width: 80, align: 'center' },
+    { label: 'Ubicación', width: 100 },
+  ];
   const rows = obras.map((o) => [
     o.codigo_inventario || o.id_obra.toString(),
     o.titulo || '—',
@@ -48,14 +56,14 @@ exports.reporteLibros = catchAsync(async (req, res) => {
   });
 
   const headers = [
-    'Unidad',
-    'Título',
-    'Año',
-    'Categoría',
-    'Total',
-    'Disponibles',
-    'Estado',
-    'F. Ingreso',
+    { label: 'Unidad', width: 50, align: 'center' },
+    { label: 'Título', width: 150 },
+    { label: 'Año', width: 40, align: 'center' },
+    { label: 'Categoría', width: 100 },
+    { label: 'Total', width: 45, align: 'right' },
+    { label: 'Disp.', width: 45, align: 'right' },
+    { label: 'Estado', width: 70, align: 'center' },
+    { label: 'F. Ingreso', width: 65, align: 'center' },
   ];
   const rows = libros.map((l) => [
     l.unidad || '—',
@@ -84,14 +92,14 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
   });
 
   const headers = [
-    'Fecha',
-    'Cédula',
-    'Nombres y Apellidos',
-    'Cargo',
-    'Ent. Mañana',
-    'Sal. Mañana',
-    'Ent. Tarde',
-    'Sal. Tarde',
+    { label: 'Fecha', width: 70, align: 'center' },
+    { label: 'Cédula', width: 65, align: 'center' },
+    { label: 'Nombres y Apellidos', width: 140 },
+    { label: 'Cargo', width: 100 },
+    { label: 'Ent. Mañana', width: 55, align: 'center' },
+    { label: 'Sal. Mañana', width: 55, align: 'center' },
+    { label: 'Ent. Tarde', width: 55, align: 'center' },
+    { label: 'Sal. Tarde', width: 55, align: 'center' },
   ];
   const fmt = (dt) => {
     if (!dt) return '—';
@@ -162,12 +170,12 @@ exports.reporteEventos = catchAsync(async (req, res) => {
   });
 
   const headers = [
-    'Título del Evento / Motivo',
-    'Organizador',
-    'Fecha',
-    'Hora Inicio',
-    'Hora Fin',
-    'Estado',
+    { label: 'Evento / Motivo', width: 170 },
+    { label: 'Organizador', width: 120 },
+    { label: 'Fecha', width: 70, align: 'center' },
+    { label: 'Inicio', width: 55, align: 'center' },
+    { label: 'Fin', width: 55, align: 'center' },
+    { label: 'Estado', width: 70, align: 'center' },
   ];
   const rows = eventos.map((e) => {
     const p = e.Persona || {};
@@ -251,7 +259,14 @@ exports.reporteTrabajadores = catchAsync(async (req, res) => {
     order: [['nombres', 'ASC']],
   });
 
-  const headers = ['Cédula', 'Nombres y Apellidos', 'Teléfono', 'Correo', 'Cargo', 'Estado'];
+  const headers = [
+    { label: 'Cédula', width: 65, align: 'center' },
+    { label: 'Nombres y Apellidos', width: 150 },
+    { label: 'Teléfono', width: 80, align: 'center' },
+    { label: 'Correo', width: 120 },
+    { label: 'Cargo', width: 100 },
+    { label: 'Estado', width: 65, align: 'center' },
+  ];
   const rows = trabajadores.map((t) => [
     t.cedula || '—',
     `${t.nombres || ''} ${t.apellidos || ''}`.trim() || '—',
@@ -280,7 +295,12 @@ exports.reporteUsuarios = catchAsync(async (req, res) => {
     order: [['correo', 'ASC']],
   });
 
-  const headers = ['Correo', 'Trabajador Vinculado', 'Rol', 'Estado'];
+  const headers = [
+    { label: 'Correo', width: 150 },
+    { label: 'Trabajador Vinculado', width: 160 },
+    { label: 'Rol', width: 100, align: 'center' },
+    { label: 'Estado', width: 65, align: 'center' },
+  ];
   const rows = usuarios.map((u) => [
     u.correo || '—',
     u.Trabajador

@@ -2,66 +2,71 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 
-// ─── Constantes de diseño ───────────────────────────────────────────────────
-const MAVET_HEX = '#800000';
-const MAVET_ALT = '#7C0F0F';
-const GRAY_DARK = '#333333';
-const GRAY_MED = '#666666';
-const GRAY_LIGHT = '#999999';
-const BG_ROW = '#F9F5F5';
+// ─── Paleta de colores premium ──────────────────────────────────────────────
+const C = {
+  brand: '#800000',
+  brandDark: '#5C0000',
+  brandLight: '#A33D3D',
+  gold: '#C4985A',
+  goldLight: '#E8D5B0',
+  white: '#FFFFFF',
+  text: '#2D2D2D',
+  textSoft: '#6B6B6B',
+  textMuted: '#9B9B9B',
+  line: '#E4E4E4',
+  rowEven: '#FFFFFF',
+  rowOdd: '#FDF8F6',
+  headerBg: '#800000',
+  headerBgDark: '#6B0000',
+  bodyBg: '#FFFFFF',
+  accent: '#F5EDE8',
+};
+
 const FONT_BOLD = 'Helvetica-Bold';
 const FONT_NORMAL = 'Helvetica';
+const MARGIN = 30;
 
 const LOGO_PATH = path.join(__dirname, '../../public/images/logo/mavet2.png');
 const LOGO_IMG = fs.readFileSync(LOGO_PATH);
 
-const MARGIN = 30;
-
-// ─── Utilidad: dibujar encabezado institucional ─────────────────────────────
-function drawHeader(doc, title, pageWidth, _pageHeight) {
-  // Barra superior granate
-  doc.rect(0, 0, pageWidth, 75).fill(MAVET_ALT);
-
-  // Rectángulo granate más oscuro como acento
-  doc.rect(0, 73, pageWidth, 3).fill(MAVET_HEX);
+// ─── Encabezado institucional ───────────────────────────────────────────────
+function drawHeader(doc, title, pw) {
+  // Barra principal
+  doc.rect(0, 0, pw, 78).fill(C.brandDark);
+  doc.rect(0, 76, pw, 4).fill(C.gold);
 
   // Logo
   try {
-    doc.image(LOGO_IMG, 15, 8, { width: 50 });
+    doc.image(LOGO_IMG, 18, 10, { width: 48 });
   } catch (_e) {
-    // Logo no disponible
+    /* */
   }
 
-  const textX = 75;
+  const tx = 78;
 
   doc
-    .fillColor('#FFFFFF')
-    .fontSize(16)
+    .fillColor(C.white)
+    .fontSize(15)
     .font(FONT_BOLD)
-    .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', textX, 15, { align: 'left' });
+    .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', tx, 16);
 
-  doc
-    .fontSize(10)
-    .font(FONT_NORMAL)
-    .text('MAVET – Sistema de Gestión Interna', textX, 35, { align: 'left' });
+  doc.fontSize(9).font(FONT_NORMAL).text('MAVET – Sistema de Gestión Interna', tx, 34);
 
-  doc.fontSize(13).font(FONT_BOLD).text(title, textX, 52, { align: 'left' });
+  doc.fontSize(13).font(FONT_BOLD).text(title, tx, 54);
 }
 
-// ─── Utilidad: pie de página ────────────────────────────────────────────────
-function drawFooter(doc, _pageWidth, _pageHeight) {
+// ─── Pie de página ─────────────────────────────────────────────────────────
+function drawFooter(doc, pw) {
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
-
-    const w = doc.page.width;
     const h = doc.page.height;
 
     doc
       .lineWidth(0.4)
-      .strokeColor(MAVET_HEX)
-      .moveTo(MARGIN, h - 35)
-      .lineTo(w - MARGIN, h - 35)
+      .strokeColor(C.gold)
+      .moveTo(MARGIN, h - 38)
+      .lineTo(pw - MARGIN, h - 38)
       .stroke();
 
     const today = new Date().toLocaleDateString('es-VE', {
@@ -72,95 +77,103 @@ function drawFooter(doc, _pageWidth, _pageHeight) {
 
     doc
       .fontSize(7)
-      .fillColor(GRAY_LIGHT)
+      .fillColor(C.textMuted)
       .font(FONT_NORMAL)
-      .text(`Generado el ${today}`, MARGIN, h - 28)
-      .text(`Página ${i + 1} de ${range.count}`, w / 2, h - 28, { align: 'center' })
-      .text('Documento de uso interno', w - MARGIN, h - 28, { align: 'right' });
+      .text(today, MARGIN, h - 30)
+      .text(`Pág. ${i + 1} de ${range.count}`, pw / 2, h - 30, { align: 'center' })
+      .text('Documento de uso interno', pw - MARGIN, h - 30, { align: 'right' });
   }
 }
 
-// ─── Calcular anchos de columna ─────────────────────────────────────────────
-function calcColumnWidths(headers, totalWidth) {
-  let fixedWidth = 0;
-  let fluidCount = 0;
-  const widths = [];
-
+// ─── Calcula anchos de columna ─────────────────────────────────────────────
+function calcWidths(headers, totalW) {
+  let fixed = 0,
+    fluid = 0,
+    widths = [];
   headers.forEach((h) => {
     if (typeof h === 'object' && h.width) {
-      fixedWidth += h.width;
+      fixed += h.width;
       widths.push(h.width);
     } else {
       widths.push(null);
-      fluidCount++;
+      fluid++;
     }
   });
-
-  const fluidWidth = fluidCount > 0 ? Math.max(30, (totalWidth - fixedWidth) / fluidCount) : 0;
-  return widths.map((w) => (w == null ? fluidWidth : w));
+  const fw = fluid > 0 ? Math.max(30, (totalW - fixed) / fluid) : 0;
+  return widths.map((w) => (w == null ? fw : w));
 }
 
-// ─── Dibujar tabla completa ─────────────────────────────────────────────────
-function drawTable(doc, headers, rows, startY, pageWidth) {
-  const totalWidth = pageWidth - 2 * MARGIN;
-  const columnWidths = calcColumnWidths(headers, totalWidth);
-  const headerTexts = headers.map((h) => (typeof h === 'string' ? h : h.label || h.property));
+// ─── Tabla con diseño premium ──────────────────────────────────────────────
+function drawTable(doc, headers, rows, startY, pw) {
+  const tw = pw - 2 * MARGIN;
+  const cw = calcWidths(headers, tw);
+  const colMeta = headers.map((h) =>
+    typeof h === 'string'
+      ? { label: h, align: 'left' }
+      : { label: h.label || h.property, align: h.align || 'left' }
+  );
+  const padL = 8,
+    padR = 4,
+    rowH = 20,
+    headH = 26;
 
   let y = startY;
 
-  // Encabezado
-  doc.rect(MARGIN, y, totalWidth, 24).fill(MAVET_HEX);
-  doc.fillColor('#FFFFFF').fontSize(9).font(FONT_BOLD);
-  let cx = MARGIN + 5;
-  headerTexts.forEach((text, i) => {
-    doc.text(text, cx, y + 7, {
-      width: columnWidths[i] - 10,
-      align: 'left',
-    });
-    cx += columnWidths[i];
+  // ── Encabezado ──
+  doc.rect(MARGIN, y, tw, headH).fill(C.headerBg);
+  doc.rect(MARGIN, y + headH - 2, tw, 2).fill(C.brandDark);
+
+  doc.fillColor(C.white).fontSize(9).font(FONT_BOLD);
+  let cx = MARGIN + padL;
+  colMeta.forEach((m, i) => {
+    doc.text(m.label, cx, y + 8, { width: cw[i] - padL - padR, align: m.align });
+    cx += cw[i];
   });
-  y += 24;
+  y += headH;
 
-  // Filas
+  // ── Filas ──
   rows.forEach((row, ri) => {
-    // Row height estimation (simple: 1 line per cell)
-    const rowH = 18;
-
     if (y + rowH > doc.page.height - 50) {
       doc.addPage();
       y = 50;
     }
 
-    if (ri % 2 !== 0) {
-      doc.rect(MARGIN, y, totalWidth, rowH).fill(BG_ROW);
-    }
+    const bg = ri % 2 === 0 ? C.rowEven : C.rowOdd;
+    doc.rect(MARGIN, y, tw, rowH).fill(bg);
 
-    doc.fillColor(GRAY_DARK).fontSize(8).font(FONT_NORMAL);
-    cx = MARGIN + 5;
+    doc.fillColor(C.text).fontSize(8).font(FONT_NORMAL);
+    cx = MARGIN + padL;
     row.forEach((text, i) => {
-      const str = String(text == null ? '' : text).substring(0, 80);
-      doc.text(str, cx, y + 5, {
-        width: columnWidths[i] - 10,
-        align: 'left',
+      const align = colMeta[i]?.align || 'left';
+      doc.text(String(text == null ? '' : text).substring(0, 80), cx, y + 6, {
+        width: cw[i] - padL - padR,
+        align,
       });
-      cx += columnWidths[i];
+      cx += cw[i];
     });
 
-    // Línea divisoria
-    doc
-      .moveTo(MARGIN, y + rowH - 0.5)
-      .lineTo(pageWidth - MARGIN, y + rowH - 0.5)
-      .lineWidth(0.3)
-      .strokeColor('#E8E8E8')
-      .stroke();
-
+    if (ri < rows.length - 1) {
+      doc
+        .moveTo(MARGIN, y + rowH)
+        .lineTo(pw - MARGIN, y + rowH)
+        .lineWidth(0.2)
+        .strokeColor(C.line)
+        .stroke();
+    }
     y += rowH;
   });
 
-  return y; // final Y position
+  // ── Borde exterior ──
+  doc
+    .rect(MARGIN, startY, tw, y - startY)
+    .lineWidth(0.5)
+    .strokeColor(C.brandLight)
+    .stroke();
+
+  return y;
 }
 
-// ─── TABLA DE DATOS (principal, landscape) ──────────────────────────────────
+// ─── Generar PDF con tabla ─────────────────────────────────────────────────
 const generateTablePdf = async (title, headers, rows) => {
   return new Promise((resolve, reject) => {
     try {
@@ -170,35 +183,39 @@ const generateTablePdf = async (title, headers, rows) => {
         layout: 'landscape',
         bufferPages: true,
       });
-      const buffers = [];
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      const bufs = [];
+      doc.on('data', bufs.push.bind(bufs));
+      doc.on('end', () => resolve(Buffer.concat(bufs)));
 
       const pw = doc.page.width;
       const ph = doc.page.height;
 
-      // Encabezado
-      drawHeader(doc, title, pw, ph);
+      drawHeader(doc, title, pw);
 
-      // Fecha de generación
-      doc.fillColor(GRAY_MED).fontSize(9).font(FONT_NORMAL);
       const fecha = new Date().toLocaleDateString('es-VE', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      doc.text(`Generado el: ${fecha}`, MARGIN, 90);
 
-      // Tabla
-      drawTable(doc, headers, rows, 110, pw);
+      // ── Barra de metadatos ──
+      doc.rect(MARGIN, 90, pw - 2 * MARGIN, 20).fill(C.accent);
+      doc.rect(MARGIN, 90, 4, 20).fill(C.gold);
 
-      // Footer
-      drawFooter(doc, pw, ph);
+      doc.fillColor(C.textSoft).fontSize(8).font(FONT_NORMAL);
+      const infoY = 103;
+      doc.text(`Generado: ${fecha}`, MARGIN + 14, infoY);
+      doc.text(`${rows.length} registro${rows.length !== 1 ? 's' : ''}`, pw / 2, infoY, {
+        align: 'center',
+      });
+      doc.text('MAVET — Reporte oficial', pw - MARGIN - 8, infoY, { align: 'right' });
 
+      drawTable(doc, headers, rows, 120, pw);
+      drawFooter(doc, pw);
       doc.end();
-    } catch (error) {
-      console.error('Error generando PDF:', error);
-      reject(error);
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+      reject(err);
     }
   });
 };
@@ -213,106 +230,95 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
         layout: 'portrait',
         bufferPages: true,
       });
-      const buffers = [];
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      const bufs = [];
+      doc.on('data', bufs.push.bind(bufs));
+      doc.on('end', () => resolve(Buffer.concat(bufs)));
 
       const pw = doc.page.width;
       const ph = doc.page.height;
 
-      // ── Encabezado ──
-      drawHeader(doc, 'CARTA DE AVAL DE HORAS DE SERVICIO COMUNITARIO', pw, ph);
+      drawHeader(doc, 'CARTA DE AVAL', pw);
 
-      // Fecha
       const fechaHoy = new Date().toLocaleDateString('es-VE', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      doc.fillColor(GRAY_MED).fontSize(9).font(FONT_NORMAL).text(`Emitida el: ${fechaHoy}`, 75, 82);
+      doc
+        .fillColor(C.textSoft)
+        .fontSize(9)
+        .font(FONT_NORMAL)
+        .text(`Emitida el: ${fechaHoy}`, 78, 82);
 
       // ── Línea decorativa ──
       doc
-        .lineWidth(0.5)
-        .strokeColor(MAVET_HEX)
-        .moveTo(40, 95)
-        .lineTo(pw - 40, 95)
+        .lineWidth(0.4)
+        .strokeColor(C.gold)
+        .moveTo(40, 97)
+        .lineTo(pw - 40, 97)
         .stroke();
 
-      // ── Cuerpo ──
-      doc.y = 110;
-      doc.fillColor(GRAY_DARK).fontSize(11).font(FONT_NORMAL);
-
-      const intro =
-        'Quien suscribe, Director del Museo de Artes Visuales del Estado Táchira (MAVET), hace constar mediante la presente que:';
-      doc.text(intro, { align: 'justify' });
-      doc.moveDown(1);
+      doc.y = 112;
+      doc.fillColor(C.text).fontSize(11).font(FONT_NORMAL);
+      doc.text(
+        'Quien suscribe, Director del Museo de Artes Visuales del Estado Táchira (MAVET), hace constar mediante la presente que:',
+        { align: 'justify' }
+      );
+      doc.moveDown(1.2);
 
       // ── Recuadro del trabajador ──
       const cy = doc.y;
-      const boxH = 75;
-      doc
-        .rect(40, cy, pw - 80, boxH)
-        .fill('#F5F0F0')
-        .rect(40, cy, pw - 80, boxH)
-        .lineWidth(1)
-        .strokeColor(MAVET_HEX)
-        .stroke();
+      const boxH = 80;
+
+      // Sombra (desplazada)
+      doc.rect(42, cy + 1, pw - 80, boxH).fill(C.line);
+
+      // Fondo
+      doc.rect(40, cy, pw - 80, boxH).fill(C.accent);
+
+      // Borde izquierdo decorativo (gold)
+      doc.rect(40, cy, 4, boxH).fill(C.gold);
+
+      const cargo = trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || '—';
+      const nombre = `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`
+        .trim()
+        .toUpperCase();
 
       doc
-        .fillColor(MAVET_HEX)
-        .fontSize(14)
+        .fillColor(C.brand)
+        .fontSize(15)
         .font(FONT_BOLD)
-        .text(
-          `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`.trim().toUpperCase(),
-          55,
-          cy + 15
-        );
-
-      const cargo =
-        (trabajador.CargoTrabajador && trabajador.CargoTrabajador.nombre_cargo) ||
-        trabajador.cargo ||
-        '—';
+        .text(nombre, 56, cy + 14);
 
       doc
-        .fillColor(GRAY_DARK)
-        .fontSize(10)
+        .fillColor(C.text)
+        .fontSize(9.5)
         .font(FONT_NORMAL)
-        .text(`Cédula: ${trabajador.cedula || '—'}`, 55, cy + 35)
-        .text(`Cargo: ${cargo}`, 55, cy + 48)
+        .text(`Cédula: ${trabajador.cedula || '—'}    Cargo: ${cargo}`, 56, cy + 34)
         .text(
-          `Estado: ${trabajador.estado || 'Activo'}  ·  Correo: ${trabajador.correo || '—'}  ·  Teléfono: ${trabajador.telefono || '—'}`,
-          55,
-          cy + 61,
+          `Estado: ${trabajador.estado || 'Activo'}    Correo: ${trabajador.correo || '—'}    Tel: ${trabajador.telefono || '—'}`,
+          56,
+          cy + 48,
           { width: pw - 110 }
         );
 
-      doc.y = cy + boxH + 20;
+      doc.y = cy + boxH + 22;
 
-      const body =
-        'Ha cumplido sus horas de servicio en esta institución de manera satisfactoria, de acuerdo con los registros de asistencia que se detallan a continuación:';
-      doc.fillColor(GRAY_DARK).fontSize(11).font(FONT_NORMAL).text(body, {
-        align: 'justify',
-      });
+      doc.fillColor(C.text).fontSize(11).font(FONT_NORMAL);
+      doc.text(
+        'Ha cumplido sus horas de servicio en esta institución de manera satisfactoria, de acuerdo con los registros de asistencia que se detallan a continuación:',
+        { align: 'justify' }
+      );
       doc.moveDown(1.5);
 
       // ── Tabla de asistencias ──
-      const tableHeaders = [
-        'Fecha',
-        'Entrada Mañana',
-        'Salida Mañana',
-        'Entrada Tarde',
-        'Salida Tarde',
-      ];
-      const tableRows =
+      const th = ['Fecha', 'Entrada Mañana', 'Salida Mañana', 'Entrada Tarde', 'Salida Tarde'];
+      const trows =
         asistencias.length > 0
           ? asistencias.map((a) => {
               const fmt = (dt) =>
                 dt
-                  ? new Date(dt).toLocaleTimeString('es-VE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
+                  ? new Date(dt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
                   : '—';
               return [
                 a.fecha || '—',
@@ -322,86 +328,98 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
                 fmt(a.salida_tarde),
               ];
             })
-          : [['Sin registros de asistencia', '', '', '', '']];
+          : [['Sin registros', '', '', '', '']];
 
-      const colW = (pw - 80) / tableHeaders.length;
-
+      const cw = (pw - 80) / 5;
       let y = doc.y;
 
-      // Encabezado de tabla
-      doc.rect(40, y, pw - 80, 22).fill(MAVET_HEX);
-      doc.fillColor('#FFFFFF').fontSize(9).font(FONT_BOLD);
-      tableHeaders.forEach((h, i) => doc.text(h, 45 + i * colW, y + 6, { width: colW - 10 }));
+      // Sombra encabezado
+      doc.rect(42, y + 1, pw - 80, 22).fill(C.line);
+      doc.rect(40, y, pw - 80, 22).fill(C.headerBg);
+      doc.rect(40, y + 20, pw - 80, 2).fill(C.brandDark);
+
+      doc.fillColor(C.white).fontSize(8.5).font(FONT_BOLD);
+      th.forEach((h, i) => doc.text(h, 46 + i * cw, y + 6, { width: cw - 10 }));
       y += 22;
 
-      // Filas
-      tableRows.forEach((row, ri) => {
-        if (y > ph - 100) {
+      trows.forEach((row, ri) => {
+        if (y > ph - 110) {
           doc.addPage();
           y = 50;
         }
-        if (ri % 2 !== 0) doc.rect(40, y, pw - 80, 18).fill(BG_ROW);
-        doc.fillColor(GRAY_DARK).fontSize(8).font(FONT_NORMAL);
-        row.forEach((text, i) =>
-          doc.text(String(text), 45 + i * colW, y + 5, {
-            width: colW - 10,
-          })
-        );
-        doc
-          .moveTo(40, y + 17.5)
-          .lineTo(pw - 40, y + 17.5)
-          .lineWidth(0.3)
-          .strokeColor('#E8E8E8')
-          .stroke();
+        const bg = ri % 2 === 0 ? C.rowEven : C.rowOdd;
+        doc.rect(40, y, pw - 80, 18).fill(bg);
+        doc.fillColor(C.text).fontSize(8).font(FONT_NORMAL);
+        row.forEach((text, i) => doc.text(String(text), 46 + i * cw, y + 5, { width: cw - 10 }));
+        if (ri < trows.length - 1) {
+          doc
+            .moveTo(40, y + 18)
+            .lineTo(pw - 40, y + 18)
+            .lineWidth(0.2)
+            .strokeColor(C.line)
+            .stroke();
+        }
         y += 18;
       });
-
-      // ── Firma ──
-      doc.moveDown(3);
-      y = doc.y;
-      if (y > ph - 120) {
-        doc.addPage();
-        y = 50;
-      }
-
-      doc.lineWidth(0.5).strokeColor(GRAY_DARK).moveTo(40, y).lineTo(200, y).stroke();
       doc
+        .rect(40, y - trows.length * 18, pw - 80, trows.length * 18)
+        .lineWidth(0.4)
+        .strokeColor(C.brandLight)
+        .stroke();
+
+      // ── Totales ──
+      const totalDias = asistencias.length;
+      const totalHoras = asistencias.reduce((s, a) => s + (a.horasCumplidas || 0), 0);
+      doc.moveDown(1.5);
+      y = Math.max(doc.y, y + 10);
+      doc
+        .fillColor(C.brand)
         .fontSize(10)
         .font(FONT_BOLD)
-        .fillColor(GRAY_DARK)
-        .text('Director(a) MAVET', 40, y + 5);
+        .text(`Total: ${totalDias} días  ·  ${totalHoras} horas cumplidas`, 40, y);
+
+      // ── Firma ──
+      y += 30;
+      if (y > ph - 130) {
+        doc.addPage();
+        y = 60;
+      }
+
+      doc.lineWidth(0.5).strokeColor(C.text).moveTo(40, y).lineTo(200, y).stroke();
+
+      doc
+        .fillColor(C.text)
+        .fontSize(10)
+        .font(FONT_BOLD)
+        .text('Director(a) MAVET', 40, y + 6);
       doc
         .fontSize(9)
         .font(FONT_NORMAL)
-        .text('Firma Autorizada', 40, y + 18);
+        .text('Firma Autorizada', 40, y + 20);
 
       // ── Sello ──
-      const selloCX = pw - 70;
-      const selloCY = y - 5;
-      doc.lineWidth(0.8).strokeColor(MAVET_HEX).circle(selloCX, selloCY, 20).stroke();
+      const sx = pw - 65,
+        sy = y - 8;
+      doc.lineWidth(0.6).strokeColor(C.brand).circle(sx, sy, 18).stroke();
       doc
-        .fontSize(8)
+        .fontSize(7)
         .font(FONT_BOLD)
-        .fillColor(MAVET_HEX)
-        .text('MAVET', selloCX, selloCY - 4, { align: 'center' });
+        .fillColor(C.brand)
+        .text('MAVET', sx, sy - 3, { align: 'center' });
       doc
-        .fontSize(6)
+        .fontSize(5.5)
         .font(FONT_NORMAL)
-        .text('MUSEO DE ARTES', selloCX, selloCY + 4, { align: 'center' })
-        .text('VISUALES TÁCHIRA', selloCX, selloCY + 10, { align: 'center' });
+        .text('MUSEO DE', sx, sy + 4, { align: 'center' })
+        .text('ARTES VISUALES', sx, sy + 9, { align: 'center' })
+        .text('DEL TÁCHIRA', sx, sy + 14, { align: 'center' });
 
-      // ── Footer ──
-      drawFooter(doc, pw, ph);
-
+      drawFooter(doc, pw);
       doc.end();
-    } catch (error) {
-      console.error('Error dibujando la tabla de asistencia en Carta de Aval:', error);
-      reject(error);
+    } catch (err) {
+      console.error('Error en Carta de Aval:', err);
+      reject(err);
     }
   });
 };
 
-module.exports = {
-  generateTablePdf,
-  generateCartaAvalPdf,
-};
+module.exports = { generateTablePdf, generateCartaAvalPdf };
