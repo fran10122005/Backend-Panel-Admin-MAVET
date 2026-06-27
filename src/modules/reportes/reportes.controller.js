@@ -219,6 +219,32 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
     },
   });
 
+  const ingresosMes = await RegistroIngreso.findAll({
+    where: {
+      fecha_hora_entrada: {
+        [Op.gte]: firstDayOfMonth,
+      },
+    },
+    attributes: ['fecha_hora_entrada'],
+  });
+
+  const visitantesDiariosMap = {};
+  ingresosMes.forEach((ingreso) => {
+    const d = new Date(ingreso.fecha_hora_entrada);
+    const day = d.getDate();
+    visitantesDiariosMap[day] = (visitantesDiariosMap[day] || 0) + 1;
+  });
+
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const currentMonthName = firstDayOfMonth.toLocaleString('es-ES', { month: 'short' });
+  const visitantesDiarios = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    visitantesDiarios.push({
+      name: `${i} ${currentMonthName.substring(0, 3)}`,
+      visitantes: visitantesDiariosMap[i] || 0,
+    });
+  }
+
   // Próximos eventos (3 más cercanos en el futuro)
   const proximosEventos = await SolicitudEspacio.findAll({
     where: {
@@ -243,6 +269,7 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
       totalObras: obrasCount,
       totalLibros: librosCount,
       visitantesMes: visitantesMesCount,
+      visitantesDiarios,
       totalEventosActivos: await SolicitudEspacio.count({
         where: { fecha_uso: { [Op.gte]: now } },
       }),
