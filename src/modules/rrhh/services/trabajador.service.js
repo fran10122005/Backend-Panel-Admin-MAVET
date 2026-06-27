@@ -61,3 +61,41 @@ exports.deleteTrabajador = async (id) => {
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
   return await trabajador.destroy();
 };
+
+exports.subirFotoTrabajador = async (id_trabajador, filePath) => {
+  const trabajador = await Trabajador.findByPk(id_trabajador);
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const cloudinary = require('../../../config/cloudinary');
+  const fs = require('fs');
+  let url = filePath;
+
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'mavet_trabajadores',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif'],
+    });
+    url = result.secure_url;
+  } catch (uploadError) {
+    // eslint-disable-next-line no-console
+    console.error('Error al subir a Cloudinary:', uploadError.message);
+    throw new AppError('Error al procesar la imagen. Intente nuevamente.', 500);
+  } finally {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (e) {
+      // Ignorar error de eliminación
+    }
+  }
+
+  trabajador.foto_url = url;
+  await trabajador.save();
+
+  // Si tiene usuario vinculado, actualizar su foto_url también
+  if (trabajador.id_usuario) {
+    const { Usuario } = require('../../../models');
+    await Usuario.update({ foto_url: url }, { where: { id_usuario: trabajador.id_usuario } });
+  }
+
+  return url;
+};

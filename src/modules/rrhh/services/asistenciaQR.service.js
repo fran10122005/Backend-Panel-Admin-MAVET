@@ -7,12 +7,28 @@ const calcularHoras = (inicio, fin) => {
 };
 
 exports.registrarAsistencia = async (data) => {
-  const { cedulaTrabajador, tipoMovimiento, timestamp } = data;
+  const { cedulaTrabajador, qr_uuid, tipoMovimiento } = data;
 
-  const trabajador = await Trabajador.findOne({ where: { cedula: cedulaTrabajador } });
+  const whereClause = {};
+  if (qr_uuid) {
+    whereClause.qr_uuid = qr_uuid;
+  } else if (cedulaTrabajador) {
+    whereClause.cedula = cedulaTrabajador;
+  } else {
+    throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
+  }
+
+  const trabajador = await Trabajador.findOne({ where: whereClause });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
-  const fecha = timestamp.split('T')[0];
+  // Usar hora del servidor
+  const dateObj = new Date();
+
+  // Ajuste para la zona horaria local de Venezuela (-04:00)
+  // o simplemente usar toLocaleDateString('en-CA') que da YYYY-MM-DD
+  const offset = dateObj.getTimezoneOffset() * 60000;
+  const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
+
   let asistencia = await AsistenciaQR.findOne({
     where: {
       id_trabajador: trabajador.id_trabajador,
@@ -26,8 +42,6 @@ exports.registrarAsistencia = async (data) => {
       fecha,
     });
   }
-
-  const dateObj = new Date(timestamp);
   switch (tipoMovimiento) {
     case 'Entrada Mañana':
       asistencia.entrada_manana = dateObj;
