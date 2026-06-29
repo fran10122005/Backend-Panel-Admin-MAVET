@@ -9,6 +9,12 @@ exports.registrarAsistencia = catchAsync(async (req, res) => {
   });
 });
 
+exports.getEstadoAsistencia = catchAsync(async (req, res) => {
+  const { qr_uuid, cedulaTrabajador } = req.query;
+  const estado = await asistenciaQRService.getEstadoAsistencia({ qr_uuid, cedulaTrabajador });
+  res.status(200).json({ status: 'success', data: estado });
+});
+
 exports.getAllAsistencias = catchAsync(async (req, res) => {
   const page = req.query.page ? parseInt(req.query.page, 10) : null;
   const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;

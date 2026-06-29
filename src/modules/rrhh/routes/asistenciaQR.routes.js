@@ -5,6 +5,9 @@ const { verifyToken } = require('../../../middleware/authMiddleware');
 const validateZod = require('../../../middleware/validateSchema');
 const { registrarAsistenciaSchema } = require('../schemas/asistenciaQR.schema');
 
+// Consultar estado actual del trabajador (sin token para uso en el kiosko de recepción)
+router.get('/estado', asistenciaQRController.getEstadoAsistencia);
+
 router.post(
   '/',
   validateZod({ body: registrarAsistenciaSchema }),

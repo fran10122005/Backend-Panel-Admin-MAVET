@@ -96,10 +96,8 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
     { label: 'Cédula', width: 65, align: 'center' },
     { label: 'Nombres y Apellidos', width: 140 },
     { label: 'Cargo', width: 100 },
-    { label: 'Ent. Mañana', width: 55, align: 'center' },
-    { label: 'Sal. Mañana', width: 55, align: 'center' },
-    { label: 'Ent. Tarde', width: 55, align: 'center' },
-    { label: 'Sal. Tarde', width: 55, align: 'center' },
+    { label: 'Entrada', width: 70, align: 'center' },
+    { label: 'Salida', width: 70, align: 'center' },
   ];
   const fmt = (dt) => {
     if (!dt) return '—';
@@ -123,8 +121,6 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
       t.CargoTrabajador?.nombre_cargo || '—',
       fmt(a.entrada_manana),
       fmt(a.salida_manana),
-      fmt(a.entrada_tarde),
-      fmt(a.salida_tarde),
     ];
   });
 
