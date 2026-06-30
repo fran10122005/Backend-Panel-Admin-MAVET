@@ -21,11 +21,46 @@ const calcularEdad = (fecha_nac) => {
   return edad;
 };
 
-// Verificar si una persona existe por cédula
+// Verificar si una persona existe por cédula y traer sus talleres inscritos
 exports.checkVisitante = async (cedula) => {
   if (!cedula) throw new AppError('La cédula es requerida', 400);
+
   const persona = await Persona.findOne({ where: { cedula } });
-  return persona;
+  if (!persona) return null;
+
+  // Buscar si es alumno y traer talleres
+  const { Alumno, InscripcionTaller, Taller } = require('../../../models');
+  const alumno = await Alumno.findOne({
+    where: { id_persona: persona.id_persona },
+    include: [
+      {
+        model: InscripcionTaller,
+        where: { estado_inscripcion: 'Inscrito' },
+        required: false,
+        include: [
+          {
+            model: Taller,
+            where: { estado: 'Activo' },
+            required: false,
+          },
+        ],
+      },
+    ],
+  });
+
+  const talleres_inscritos = [];
+  if (alumno && alumno.InscripcionTallers) {
+    alumno.InscripcionTallers.forEach((ins) => {
+      if (ins.Taller) {
+        talleres_inscritos.push({
+          id_taller: ins.Taller.id_taller,
+          nombre: ins.Taller.nombre_curso,
+        });
+      }
+    });
+  }
+
+  return { ...persona.toJSON(), talleres_inscritos };
 };
 
 // Registrar el ingreso
@@ -155,7 +190,9 @@ exports.registrarIngreso = async (data) => {
     }
     if (error instanceof AppError) throw error;
     throw new AppError(
-      error.errors ? error.errors.map((e) => e.message).join(', ') : error.message,
+      error.errors
+        ? error.errors.map((e) => e.message).join(', ')
+        : error.message || JSON.stringify(error),
       500
     );
   }

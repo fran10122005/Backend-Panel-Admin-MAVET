@@ -22,6 +22,8 @@ const Trabajador = sequelize.define(
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: false,
+    paranoid: true,
+    deletedAt: 'deleted_at',
     hooks: {
       beforeCreate: (trabajador) => {
         if (!trabajador.qr_uuid) {

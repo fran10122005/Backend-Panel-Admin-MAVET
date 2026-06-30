@@ -203,31 +203,53 @@ const inscribirAlumno = async (data) => {
     const hoy = new Date();
     const fechaNac = new Date(hoy.getFullYear() - edad, hoy.getMonth(), hoy.getDate());
 
-    // 1. Crear Persona del alumno
-    const namePartsAlumno = (alumnoData.nombre || '').trim().split(' ');
-    const nombreAlumno = namePartsAlumno[0] || alumnoData.nombre;
-    const apellidoAlumno = namePartsAlumno.slice(1).join(' ') || '';
+    // 1. Encontrar o Crear Persona del alumno
+    let alumnoPersona = null;
 
-    const alumnoPersona = await Persona.create(
-      {
-        cedula: `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        nombres: nombreAlumno,
-        apellidos: apellidoAlumno,
-        telefono: repData?.telefono || '',
-        fecha_de_nac: fechaNac,
-        fecha_registro: new Date(),
-      },
-      { transaction: t }
-    );
+    if (alumnoData.cedula) {
+      alumnoPersona = await Persona.findOne({
+        where: { cedula: alumnoData.cedula },
+        transaction: t,
+      });
+    }
 
-    // 2. Crear Alumno
-    const alumnoRecord = await Alumno.create(
-      {
-        id_persona: alumnoPersona.id_persona,
-        nivel_experiencia: null,
-      },
-      { transaction: t }
-    );
+    if (!alumnoPersona) {
+      const namePartsAlumno = (alumnoData.nombre || '').trim().split(' ');
+      const nombreAlumno = namePartsAlumno[0] || alumnoData.nombre;
+      const apellidoAlumno = namePartsAlumno.slice(1).join(' ') || '';
+
+      // Si no envían cédula (caso anómalo) generamos un temporal, de lo contrario usamos la enviada
+      const cedulaAlumno =
+        alumnoData.cedula || `V-INF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      alumnoPersona = await Persona.create(
+        {
+          cedula: cedulaAlumno,
+          nombres: nombreAlumno,
+          apellidos: apellidoAlumno,
+          telefono: repData?.telefono || '',
+          fecha_de_nac: fechaNac,
+          fecha_registro: new Date(),
+        },
+        { transaction: t }
+      );
+    }
+
+    // 2. Crear o buscar Alumno
+    let alumnoRecord = await Alumno.findOne({
+      where: { id_persona: alumnoPersona.id_persona },
+      transaction: t,
+    });
+
+    if (!alumnoRecord) {
+      alumnoRecord = await Alumno.create(
+        {
+          id_persona: alumnoPersona.id_persona,
+          nivel_experiencia: null,
+        },
+        { transaction: t }
+      );
+    }
 
     // 3. Si es menor, crear/traer Representante y vincular
     if (esMenor && repData) {

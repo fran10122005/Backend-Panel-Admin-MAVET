@@ -66,13 +66,18 @@ const { subirFotoPerfil } = require('./modules/auth/services/auth.service');
 const catchAsync = require('./utils/catchAsync');
 
 // Ruta directa para subir foto de perfil (antes de authRoutes para evitar conflictos de ruteo anidado)
-app.post('/api/auth/me/foto', verifyToken, upload.single('foto'), catchAsync(async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
-  }
-  const url = await subirFotoPerfil(req.user.id_usuario, req.file.path);
-  res.status(200).json({ status: 'success', url });
-}));
+app.post(
+  '/api/auth/me/foto',
+  verifyToken,
+  upload.single('foto'),
+  catchAsync(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
+    }
+    const url = await subirFotoPerfil(req.user.id_usuario, req.file.path);
+    res.status(200).json({ status: 'success', url });
+  })
+);
 
 app.use('/api/auth', authRoutes); // Público
 
@@ -119,6 +124,9 @@ app.use('/api/educacion', verifyToken, educacionRoutes);
 
 const reportesRoutes = require('./modules/reportes/reportes.routes');
 app.use('/api/reportes', verifyToken, reportesRoutes);
+
+const papeleraRoutes = require('./modules/papelera/papelera.routes');
+app.use('/api/papelera', verifyToken, papeleraRoutes);
 
 const personaRoutes = require('./modules/personas/routes/persona.routes');
 app.use('/api/personas', verifyToken, personaRoutes);
@@ -193,6 +201,12 @@ async function migrateTablas() {
     `ALTER TABLE personas ADD COLUMN IF NOT EXISTS correo VARCHAR(255);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE libros ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS codigo_espacio VARCHAR(255);`,
   ];
   for (const sql of cambios) {
     try {

@@ -15,7 +15,10 @@ exports.getAllInscripciones = catchAsync(async (req, res) => {
 exports.getInscripcionesByTaller = catchAsync(async (req, res) => {
   const { id } = req.params;
   const allInscripciones = await inscripcionService.getInscripcionesConDetalles();
-  const filtered = allInscripciones.filter((ins) => ins.Taller && ins.Taller.id_taller == id);
+  console.log('Filtering para taller:', id);
+  console.log('Total inscripciones:', allInscripciones.length);
+  const filtered = allInscripciones.filter((ins) => String(ins.id_taller) === String(id));
+  console.log('Filtered length:', filtered.length);
   res.status(200).json(filtered);
 });
 

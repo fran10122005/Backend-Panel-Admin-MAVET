@@ -1,4 +1,4 @@
-const { Taller, Instructor, EspacioMuseo, InventarioTaller } = require('../../../models');
+const { Taller, Instructor, EspacioMuseo, InventarioTaller, Persona } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
 exports.createTaller = async (data) => {
@@ -18,15 +18,21 @@ exports.planificarTaller = async (data) => {
   // Map inventory name to taller's nombre_curso field.
   const tallerData = {
     nombre_curso: inventario.nombre,
-    ...rest
+    ...rest,
   };
   return await Taller.create(tallerData);
 };
 
 exports.getAllTalleres = async (page, limit) => {
   const query = {
-    include: [Instructor, EspacioMuseo],
-    order: [['id_taller', 'DESC']]
+    include: [
+      {
+        model: Instructor,
+        include: [Persona],
+      },
+      EspacioMuseo,
+    ],
+    order: [['id_taller', 'DESC']],
   };
 
   if (page && limit) {
@@ -36,7 +42,7 @@ exports.getAllTalleres = async (page, limit) => {
     const { count, rows } = await Taller.findAndCountAll(query);
     return {
       data: rows,
-      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page }
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
     };
   }
 
@@ -45,7 +51,13 @@ exports.getAllTalleres = async (page, limit) => {
 
 exports.getTallerById = async (id) => {
   const taller = await Taller.findByPk(id, {
-    include: [Instructor, EspacioMuseo]
+    include: [
+      {
+        model: Instructor,
+        include: [Persona],
+      },
+      EspacioMuseo,
+    ],
   });
   if (!taller) throw new AppError('Taller no encontrado', 404);
   return taller;
