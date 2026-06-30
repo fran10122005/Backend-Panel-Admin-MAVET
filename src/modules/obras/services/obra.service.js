@@ -111,14 +111,14 @@ exports.getAllObras = async (page, limit) => {
 
 exports.getObrasPublicas = async (page, limit) => {
   const query = {
-    attributes: ['id_obra', 'titulo', 'anio'],
+    attributes: ['id_obra', 'titulo', 'anio', 'imagen_url', 'descripcion', 'medidas'],
     include: [
       { model: Artista, as: 'Artista', attributes: ['nombres', 'apellidos'] },
       { model: TecnicaObra, attributes: ['nombre_tecnica'] },
       { model: CategoriaObra, attributes: ['nombre_categoria'] },
       {
         model: ImagenWeb,
-        attributes: ['url', 'titulo', 'descripcion', 'seccion'],
+        attributes: ['url', 'titulo', 'descripcion'],
         where: { activo: true },
         required: false,
       },

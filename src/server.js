@@ -103,6 +103,10 @@ app.get(
 const agendaController = require('./modules/educacion/controllers/agenda.controller');
 app.get('/api/public/agenda', agendaController.getAgenda);
 
+// Ruta Pública de Biblioteca (Libros)
+const libroController = require('./modules/biblioteca/controllers/libro.controller');
+app.get('/api/public/libros', libroController.getLibrosPublicos);
+
 // ── Catálogos de solo-lectura: PÚBLICOS (para poblar selects del frontend) ──
 const artistaController = require('./modules/obras/controllers/artista.controller');
 const tecnicaController = require('./modules/obras/controllers/tecnicaObra.controller');

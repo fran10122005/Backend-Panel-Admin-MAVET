@@ -18,6 +18,13 @@ exports.getLibroById = catchAsync(async (req, res) => {
   res.status(200).json(libro);
 });
 
+exports.getLibrosPublicos = catchAsync(async (req, res) => {
+  const page = req.query.page ? parseInt(req.query.page, 10) : null;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+  const result = await libroService.getLibrosPublicos(page, limit);
+  res.status(200).json(result);
+});
+
 exports.updateLibro = catchAsync(async (req, res) => {
   const libro = await libroService.updateLibro(req.params.id, req.body);
   res.status(200).json({ message: 'Libro actualizado', data: libro });

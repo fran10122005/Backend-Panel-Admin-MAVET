@@ -11,7 +11,7 @@ exports.createLibro = async (data) => {
       cuota: data.cuota || null,
       estante: data.estante || null,
       ano_libro: data.ano_libro || null,
-      id_categoria: (data.id_categoria > 0) ? data.id_categoria : null,
+      id_categoria: data.id_categoria > 0 ? data.id_categoria : null,
       cantidad_total: data.cantidad_total || 1,
       cantidad_disponible: data.cantidad_total || 1,
       estado: data.estado || 'Aprobado',
@@ -30,14 +30,14 @@ exports.createLibro = async (data) => {
       const [autor] = await AutorLibro.findOrCreate({
         where: { nombre, apellido },
         defaults: { nombre, apellido },
-        transaction: t
+        transaction: t,
       });
 
       await sequelize.query(
         'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
         {
           replacements: { id_libro: libroId, id_autor: autor.id_autor },
-          transaction: t
+          transaction: t,
         }
       );
     } else if (data.id_autor) {
@@ -45,7 +45,7 @@ exports.createLibro = async (data) => {
         'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
         {
           replacements: { id_libro: libroId, id_autor: data.id_autor },
-          transaction: t
+          transaction: t,
         }
       );
     }
@@ -97,6 +97,32 @@ exports.getLibroById = async (id) => {
   return serializarLibro(libro);
 };
 
+exports.getLibrosPublicos = async (page, limit) => {
+  const query = {
+    attributes: ['id_libro', 'titulo', 'ano_libro', 'estado'],
+    include: [
+      { model: CategoriaLibro, attributes: ['nombre_categoria'] },
+      { model: AutorLibro, attributes: ['nombre', 'apellido'] },
+    ],
+    where: { estado: 'Aprobado' },
+    order: [['created_at', 'DESC']],
+  };
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Libro.findAndCountAll(query);
+    return {
+      data: rows.map(serializarLibro),
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+
+  const rows = await Libro.findAll(query);
+  return rows.map(serializarLibro);
+};
+
 exports.updateLibro = async (id, data) => {
   const t = await sequelize.transaction();
   try {
@@ -109,7 +135,12 @@ exports.updateLibro = async (id, data) => {
       cuota: data.cuota !== undefined ? data.cuota : libro.cuota,
       estante: data.estante !== undefined ? data.estante : libro.estante,
       ano_libro: data.ano_libro !== undefined ? data.ano_libro : libro.ano_libro,
-      id_categoria: data.id_categoria !== undefined ? (data.id_categoria > 0 ? data.id_categoria : null) : libro.id_categoria,
+      id_categoria:
+        data.id_categoria !== undefined
+          ? data.id_categoria > 0
+            ? data.id_categoria
+            : null
+          : libro.id_categoria,
       cantidad_total:
         data.cantidad_total !== undefined ? data.cantidad_total : libro.cantidad_total,
       cantidad_disponible:
@@ -124,10 +155,10 @@ exports.updateLibro = async (id, data) => {
     const libroId = libro.id_libro || libro.id;
 
     // Limpiar autores anteriores y vincular el nuevo
-    await sequelize.query(
-      'DELETE FROM libro_autores WHERE id_libro = :id_libro',
-      { replacements: { id_libro: libroId }, transaction: t }
-    );
+    await sequelize.query('DELETE FROM libro_autores WHERE id_libro = :id_libro', {
+      replacements: { id_libro: libroId },
+      transaction: t,
+    });
 
     if (data.autor && !data.id_autor) {
       const nombreCompleto = data.autor.trim();
@@ -138,14 +169,14 @@ exports.updateLibro = async (id, data) => {
       const [autor] = await AutorLibro.findOrCreate({
         where: { nombre, apellido },
         defaults: { nombre, apellido },
-        transaction: t
+        transaction: t,
       });
 
       await sequelize.query(
         'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
         {
           replacements: { id_libro: libroId, id_autor: autor.id_autor },
-          transaction: t
+          transaction: t,
         }
       );
     } else if (data.id_autor) {
@@ -153,7 +184,7 @@ exports.updateLibro = async (id, data) => {
         'INSERT INTO libro_autores (id_libro, id_autor) VALUES (:id_libro, :id_autor)',
         {
           replacements: { id_libro: libroId, id_autor: data.id_autor },
-          transaction: t
+          transaction: t,
         }
       );
     }
@@ -169,10 +200,9 @@ exports.updateLibro = async (id, data) => {
 exports.deleteLibro = async (id) => {
   const libro = await Libro.findByPk(id);
   if (!libro) throw new AppError('Libro no encontrado', 404);
-  await sequelize.query(
-    'DELETE FROM libro_autores WHERE id_libro = :id_libro',
-    { replacements: { id_libro: id } }
-  );
+  await sequelize.query('DELETE FROM libro_autores WHERE id_libro = :id_libro', {
+    replacements: { id_libro: id },
+  });
   return await libro.destroy();
 };
 

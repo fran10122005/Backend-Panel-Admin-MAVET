@@ -7,13 +7,15 @@ const handleSequelizeUniqueConstraintError = (err) => {
 };
 
 const handleSequelizeValidationError = (err) => {
-  const errors = Object.values(err.errors).map(el => el.message);
+  const errors = Object.values(err.errors).map((el) => el.message);
   const message = `Datos inválidos. ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
 
 const handleZodError = (err) => {
-  const errors = Array.isArray(err.errors) ? err.errors.map(e => e.message) : [err.message || 'error de validación'];
+  const errors = Array.isArray(err.errors)
+    ? err.errors.map((e) => e.message)
+    : [err.message || 'error de validación'];
   const message = `Error de validación: ${errors.join(', ')}`;
   return new AppError(message, 400);
 };
@@ -36,10 +38,12 @@ const errorHandler = (err, req, res, next) => {
   error.message = err.message;
   error.name = err.name;
 
-  if (error.name === 'SequelizeUniqueConstraintError') error = handleSequelizeUniqueConstraintError(error);
+  if (error.name === 'SequelizeUniqueConstraintError')
+    error = handleSequelizeUniqueConstraintError(error);
   if (error.name === 'SequelizeValidationError') error = handleSequelizeValidationError(error);
   if (error.name === 'ZodError') error = handleZodError(error);
-  if (error.name === 'SequelizeForeignKeyConstraintError') error = handleSequelizeForeignKeyConstraintError(error);
+  if (error.name === 'SequelizeForeignKeyConstraintError')
+    error = handleSequelizeForeignKeyConstraintError(error);
 
   // Modo desarrollo
   if (process.env.NODE_ENV === 'development') {
@@ -47,7 +51,7 @@ const errorHandler = (err, req, res, next) => {
       status: error.status,
       error: error,
       message: error.message,
-      stack: err.stack
+      stack: err.stack,
     });
   }
 
@@ -55,7 +59,7 @@ const errorHandler = (err, req, res, next) => {
   if (error.isOperational) {
     return res.status(error.statusCode).json({
       status: error.status,
-      message: error.message
+      message: error.message,
     });
   }
 
@@ -63,11 +67,12 @@ const errorHandler = (err, req, res, next) => {
   console.error('ERROR 💥', err);
   return res.status(500).json({
     status: 'error',
-    message: 'Algo salió muy mal!'
+    message: err.message || 'Algo salió muy mal!',
+    stack: err.stack,
   });
 };
 
 module.exports = {
   notFound,
-  errorHandler
+  errorHandler,
 };
