@@ -22,6 +22,8 @@ const SolicitudEspacio = sequelize.define(
     timestamps: true,
     createdAt: 'fecha_creacion',
     updatedAt: 'fecha_modificacion',
+    paranoid: true,
+    deletedAt: 'deleted_at',
   }
 );
 

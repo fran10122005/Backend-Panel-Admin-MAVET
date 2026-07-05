@@ -3,6 +3,7 @@ const AppError = require('../utils/AppError');
 const { Role, Usuario } = require('../models');
 
 const verifyToken = async (req, res, next) => {
+
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

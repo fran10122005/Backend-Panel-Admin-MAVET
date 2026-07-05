@@ -2,6 +2,7 @@ const {
   Persona,
   RegistroIngreso,
   MotivoVisita,
+  Visitante,
   Alumno,
   Representante,
   AlumnoRepresentante,
@@ -127,6 +128,18 @@ exports.registrarIngreso = async (data) => {
         if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
         if (correo !== undefined) datosPersona.correo = correo;
         persona = await Persona.create(datosPersona, { transaction: t });
+        // Also create Visitante record for this new person
+        await Visitante.findOrCreate({
+          where: { cedula: persona.cedula },
+          defaults: {
+            cedula: persona.cedula,
+            nombres: persona.nombres,
+            apellidos: persona.apellidos,
+            telefono: persona.telefono,
+            fecha_nacimiento: persona.fecha_de_nac,
+          },
+          transaction: t,
+        });
       }
 
       // Asegurar roles y vínculo
@@ -165,6 +178,18 @@ exports.registrarIngreso = async (data) => {
         if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
         if (correo !== undefined) datosPersona.correo = correo;
         persona = await Persona.create(datosPersona, { transaction: t });
+        // Also create Visitante record for this new person
+        await Visitante.findOrCreate({
+          where: { cedula: persona.cedula },
+          defaults: {
+            cedula: persona.cedula,
+            nombres: persona.nombres,
+            apellidos: persona.apellidos,
+            telefono: persona.telefono,
+            fecha_nacimiento: persona.fecha_de_nac,
+          },
+          transaction: t,
+        });
       }
     }
 

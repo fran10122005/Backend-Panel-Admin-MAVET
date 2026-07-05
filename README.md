@@ -64,3 +64,6 @@ Está diseñado con una arquitectura modular y robusta basada en Node.js, Expres
 
 ## 🛡️ Seguridad Implementada
 Este servidor cuenta con validación estricta en cada endpoint, limitador de peticiones masivas (Rate Limit) y rutas públicas apartadas en controladores específicos (ej. `/api/publico/`) que no exponen información sensible del museo.
+
+Invoke-WebRequest -Uri "http://localhost:4000/api/auth/   login" -Method POST -ContentType "application/json" -Body   ervicio comunitario\Backend MAVET\src\
+'{"email":"admin@mavet.com","password":"123"}

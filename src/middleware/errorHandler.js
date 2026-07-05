@@ -47,6 +47,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Modo desarrollo
   if (process.env.NODE_ENV === 'development') {
+    console.error('API Error [Dev]:', error.statusCode, error.message);
+    if (error.statusCode === 400 && error.error) console.error('Details:', error.error);
     return res.status(error.statusCode).json({
       status: error.status,
       error: error,
@@ -57,6 +59,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Modo producción
   if (error.isOperational) {
+    console.error('API Error [Prod]:', error.statusCode, error.message);
     return res.status(error.statusCode).json({
       status: error.status,
       message: error.message,
