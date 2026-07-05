@@ -59,6 +59,23 @@ Copy `.env.example` to `.env`. Key vars: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPI
 
 `.npmrc` has `legacy-peer-deps=true` — preserve this if changing dependencies.
 
+## ⚠️ Seguridad: Tests contra BD real
+
+**NUNCA ejecute `npm test` sin `NODE_ENV=test`.** Los tests usan `sequelize.sync({ force: true })` que **borra todas las tablas** de la base de datos a la que apunte Sequelize.
+
+El comando `npm test` usa `cross-env NODE_ENV=test` para proteger la BD real. Sin embargo, `cross-env` puede fallar en Windows/PowerShell. Por eso existe `npm run test:win` que usa la sintaxis nativa de PowerShell.
+
+Además se agregaron dos capas de seguridad:
+1. **`jest.setup.js`** — Lanza un error si `NODE_ENV !== 'test'` antes de ejecutar cualquier test.
+2. **`src/config/db.js`** — Lanza un error si `NODE_ENV` no está definido al intentar conectar a PostgreSQL.
+
+Si necesita ejecutar tests localmente en Windows:
+```powershell
+npm run test:win
+# o manualmente:
+$env:NODE_ENV="test"; npx jest --detectOpenHandles --forceExit
+```
+
 ## Sibling Frontend
 
 Located at `../Fronted-Panel-Admin-Mavet/` — React + TypeScript + Vite, axios instance configured with `VITE_API_URL` env var, token injected via interceptor. The photo upload endpoint sends FormData with field `"foto"` without explicit Content-Type.
