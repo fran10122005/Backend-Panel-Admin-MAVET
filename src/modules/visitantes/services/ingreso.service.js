@@ -2,7 +2,6 @@ const {
   Persona,
   RegistroIngreso,
   MotivoVisita,
-  Visitante,
   Alumno,
   Representante,
   AlumnoRepresentante,
@@ -78,7 +77,6 @@ exports.registrarIngreso = async (data) => {
       apellidos,
       telefono,
       fecha_de_nac,
-      correo,
     } = data;
 
     if (!id_motivo) throw new AppError('El motivo de la visita es requerido', 400);
@@ -126,20 +124,7 @@ exports.registrarIngreso = async (data) => {
         const datosPersona = { cedula: cedulaFinal, nombres, apellidos };
         if (telefono !== undefined) datosPersona.telefono = telefono;
         if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
-        if (correo !== undefined) datosPersona.correo = correo;
         persona = await Persona.create(datosPersona, { transaction: t });
-        // Also create Visitante record for this new person
-        await Visitante.findOrCreate({
-          where: { cedula: persona.cedula },
-          defaults: {
-            cedula: persona.cedula,
-            nombres: persona.nombres,
-            apellidos: persona.apellidos,
-            telefono: persona.telefono,
-            fecha_nacimiento: persona.fecha_de_nac,
-          },
-          transaction: t,
-        });
       }
 
       // Asegurar roles y vínculo
@@ -176,20 +161,7 @@ exports.registrarIngreso = async (data) => {
         const datosPersona = { cedula, nombres, apellidos };
         if (telefono !== undefined) datosPersona.telefono = telefono;
         if (fecha_de_nac !== undefined) datosPersona.fecha_de_nac = fecha_de_nac;
-        if (correo !== undefined) datosPersona.correo = correo;
         persona = await Persona.create(datosPersona, { transaction: t });
-        // Also create Visitante record for this new person
-        await Visitante.findOrCreate({
-          where: { cedula: persona.cedula },
-          defaults: {
-            cedula: persona.cedula,
-            nombres: persona.nombres,
-            apellidos: persona.apellidos,
-            telefono: persona.telefono,
-            fecha_nacimiento: persona.fecha_de_nac,
-          },
-          transaction: t,
-        });
       }
     }
 
@@ -258,12 +230,16 @@ exports.getIngresosStats = async () => {
 
   const motivosRaw = await RegistroIngreso.findAll({
     attributes: [
-      'id_motivo',
-      [fn('COUNT', col('id_ingreso')), 'base_count'],
-      [fn('SUM', col('cantidad_acompanantes')), 'extra_count'],
+      [col('RegistroIngreso.id_motivo'), 'id_motivo'],
+      [fn('COUNT', col('RegistroIngreso.id_ingreso')), 'base_count'],
+      [fn('SUM', col('RegistroIngreso.cantidad_acompanantes')), 'extra_count'],
     ],
     include: [{ model: MotivoVisita, attributes: ['descripcion'] }],
-    group: ['id_motivo', 'MotivoVisita.id_motivo', 'MotivoVisita.descripcion'],
+    group: [
+      col('RegistroIngreso.id_motivo'),
+      col('MotivoVisitum.id_motivo'),
+      col('MotivoVisitum.descripcion'),
+    ],
   });
 
   const porMotivo = motivosRaw.map((m) => {

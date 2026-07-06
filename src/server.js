@@ -202,7 +202,6 @@ async function seedInventarioTalleres() {
 async function migrateTablas() {
   const cambios = [
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS cantidad_acompanantes INTEGER DEFAULT 0;`,
-    `ALTER TABLE personas ADD COLUMN IF NOT EXISTS correo VARCHAR(255);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,

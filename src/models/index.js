@@ -34,7 +34,6 @@ const ConsultaSala = require('../modules/biblioteca/models/ConsultaSala.model');
 // Importar modelos Visitantes
 const MotivoVisita = require('../modules/visitantes/models/MotivoVisita.model');
 const RegistroIngreso = require('../modules/visitantes/models/RegistroIngreso.model');
-const Visitante = require('../modules/visitantes/models/Visitante.model');
 
 // Importar modelos Educacion
 const Instructor = require('../modules/educacion/models/Instructor.model');
@@ -248,7 +247,6 @@ module.exports = {
   ConsultaSala,
   MotivoVisita,
   RegistroIngreso,
-  Visitante,
   Instructor,
   Representante,
   Alumno,

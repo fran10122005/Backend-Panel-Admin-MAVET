@@ -1,18 +1,47 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../../config/db');
 
-const ConsultaSala = sequelize.define('ConsultaSala', {
-  id_consulta: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  id_libro: { type: DataTypes.INTEGER, allowNull: false },
-  id_persona: { type: DataTypes.INTEGER, allowNull: true },
-  id_trabajador: { type: DataTypes.INTEGER, allowNull: true },
-  estado: { type: DataTypes.STRING(255) },
-  hora_entrega: { type: DataTypes.DATE },
-  hora_devolucion: { type: DataTypes.DATE, allowNull: true },
-  observaciones: { type: DataTypes.TEXT }
-}, { 
-  tableName: 'consultas_sala', 
-  timestamps: false 
-});
+const ConsultaSala = sequelize.define(
+  'ConsultaSala',
+  {
+    id_consulta: { type: DataTypes.STRING(15), primaryKey: true },
+    id_libro: { type: DataTypes.STRING(15), allowNull: false },
+    id_persona: { type: DataTypes.STRING(15), allowNull: true },
+    id_trabajador: { type: DataTypes.STRING(15), allowNull: true },
+    estado: { type: DataTypes.STRING(255) },
+    hora_entrega: { type: DataTypes.DATE },
+    hora_devolucion: { type: DataTypes.DATE, allowNull: true },
+    observaciones: { type: DataTypes.TEXT },
+  },
+  {
+    tableName: 'consultas_sala',
+    hooks: {
+      beforeCreate: async (instance, options) => {
+        // Obtenemos el nombre de la clave primaria
+        const pkField = instance.constructor.primaryKeyAttribute;
+        if (!pkField || (pkField === 'id' && instance.rawAttributes.id.type.key !== 'STRING'))
+          return; // En caso de tablas pivot sin PK explícito
+
+        const lastRecord = await instance.constructor.findOne({
+          order: [[pkField, 'DESC']],
+          transaction: options.transaction,
+          raw: true,
+          paranoid: false, // Para incluir registros eliminados si hay soft deletes
+        });
+
+        let newNumber = 1;
+        if (lastRecord && lastRecord[pkField] && lastRecord[pkField].startsWith('CSA-')) {
+          const lastNumber = parseInt(lastRecord[pkField].replace('CSA-', ''), 10);
+          if (!isNaN(lastNumber)) {
+            newNumber = lastNumber + 1;
+          }
+        }
+
+        instance[pkField] = `CSA-${String(newNumber).padStart(5, '0')}`;
+      },
+    },
+    timestamps: false,
+  }
+);
 
 module.exports = ConsultaSala;
