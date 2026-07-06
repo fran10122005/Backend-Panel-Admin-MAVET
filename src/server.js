@@ -147,6 +147,115 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 
 // SINCRONIZACIÓN Y ARRANQUE
+async function seedCatalogosObras() {
+  const { EstadoObra, CategoriaObra, TecnicaObra } = require('./models');
+
+  const estadosBase = [
+    { nombre_estado: 'Excelente', descripcion: 'Obra en perfecto estado, sin daños visibles.' },
+    {
+      nombre_estado: 'Bueno',
+      descripcion: 'Obra en buen estado, con ligeros signos de desgaste normal.',
+    },
+    {
+      nombre_estado: 'En Restauración',
+      descripcion: 'Obra que requiere o está en proceso de restauración.',
+    },
+    {
+      nombre_estado: 'Deteriorado',
+      descripcion: 'Obra con daños significativos que requieren intervención urgente.',
+    },
+  ];
+
+  const categoriasBase = [
+    {
+      nombre_categoria: 'Pintura',
+      descripcion: 'Obra pictórica realizada sobre lienzo, tabla, papel u otras superficies.',
+    },
+    {
+      nombre_categoria: 'Escultura',
+      descripcion: 'Obra tridimensional modelada, tallada o esculpida en diversos materiales.',
+    },
+    {
+      nombre_categoria: 'Tejido',
+      descripcion: 'Obra textil elaborada mediante técnicas de tejido, bordado o tapicería.',
+    },
+    {
+      nombre_categoria: 'Grabado',
+      descripcion: 'Impresión artística realizada a partir de una matriz grabada.',
+    },
+    {
+      nombre_categoria: 'Fotografía',
+      descripcion:
+        'Imagen artística obtenida mediante procesos fotográficos analógicos o digitales.',
+    },
+    {
+      nombre_categoria: 'Dibujo',
+      descripcion: 'Representación gráfica realizada con lápiz, carboncillo, tinta u otros medios.',
+    },
+  ];
+
+  const tecnicasBase = [
+    {
+      nombre_tecnica: 'Óleo sobre lienzo',
+      descripcion: 'Técnica pictórica con pigmentos aglutinados con aceite sobre tela.',
+    },
+    {
+      nombre_tecnica: 'Óleo sobre tabla',
+      descripcion: 'Técnica pictórica al óleo sobre soporte de madera.',
+    },
+    {
+      nombre_tecnica: 'Acrílico sobre lienzo',
+      descripcion: 'Técnica pictórica con pintura acrílica sobre tela.',
+    },
+    {
+      nombre_tecnica: 'Acuarela',
+      descripcion: 'Técnica pictórica con pigmentos diluidos en agua sobre papel.',
+    },
+    {
+      nombre_tecnica: 'Temple',
+      descripcion: 'Técnica pictórica con pigmentos aglutinados con huevo o caseína.',
+    },
+    {
+      nombre_tecnica: 'Pastel',
+      descripcion: 'Técnica pictórica con barras de pigmento seco sobre papel.',
+    },
+    {
+      nombre_tecnica: 'Técnica mixta',
+      descripcion: 'Combinación de varias técnicas pictóricas en una misma obra.',
+    },
+    {
+      nombre_tecnica: 'Carboncillo',
+      descripcion: 'Técnica de dibujo con carboncillo vegetal sobre papel.',
+    },
+    {
+      nombre_tecnica: 'Tinta china',
+      descripcion: 'Técnica de dibujo o caligrafía con tinta china sobre papel.',
+    },
+  ];
+
+  for (const e of estadosBase) {
+    const existe = await EstadoObra.findOne({ where: { nombre_estado: e.nombre_estado } });
+    if (!existe) {
+      await EstadoObra.create(e);
+      console.log(`  📋 Estado de obra: "${e.nombre_estado}" creado.`);
+    }
+  }
+  for (const c of categoriasBase) {
+    const existe = await CategoriaObra.findOne({ where: { nombre_categoria: c.nombre_categoria } });
+    if (!existe) {
+      await CategoriaObra.create(c);
+      console.log(`  📋 Categoría: "${c.nombre_categoria}" creada.`);
+    }
+  }
+  for (const t of tecnicasBase) {
+    const existe = await TecnicaObra.findOne({ where: { nombre_tecnica: t.nombre_tecnica } });
+    if (!existe) {
+      await TecnicaObra.create(t);
+      console.log(`  📋 Técnica: "${t.nombre_tecnica}" creada.`);
+    }
+  }
+}
+
 async function seedInventarioTalleres() {
   const { InventarioTaller, Taller } = require('./models');
   const talleresBase = [
@@ -210,7 +319,6 @@ async function migrateTablas() {
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
-    `ALTER TABLE inscripciones_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS codigo_espacio VARCHAR(255);`,
     `UPDATE espacios_museo SET codigo_espacio = CONCAT('SALA-', LPAD(id_espacio::text, 3, '0')) WHERE codigo_espacio IS NULL;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
@@ -234,6 +342,7 @@ async function startServer() {
     await sequelize.sync();
     await migrateTablas();
     console.log('✅ Base de datos sincronizada exitosamente');
+    await seedCatalogosObras();
     await seedInventarioTalleres();
 
     if (require.main === module) {
