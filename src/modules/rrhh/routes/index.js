@@ -8,7 +8,7 @@ const { verifyToken } = require('../../../middleware/authMiddleware');
 
 router.use('/cargos', verifyToken, cargoRoutes);
 router.use('/turnos', verifyToken, turnoRoutes);
-router.use('/trabajadores', verifyToken, trabajadorRoutes);
+router.use('/trabajadores', trabajadorRoutes);
 router.use('/asistencias', require('./asistenciaQR.routes'));
 router.use('/horarios', require('./horario.routes'));
 

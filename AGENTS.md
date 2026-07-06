@@ -39,7 +39,7 @@ All **associations** live in `src/models/index.js` (not in individual model file
 ## Express 5 + multer v2 Quirks
 
 - `multer-storage-cloudinary` v4 is **incompatible** with multer v2. Profile photo upload uses disk storage + manual Cloudinary upload in the service layer. See `src/middleware/uploadMiddleware.js` and `auth.service.js:subirFotoPerfil`.
-- The `/api/auth/me/foto` route is registered as an `app.post()` in `server.js` **before** `app.use('/api/auth', authRoutes)` to avoid nested-router issues in Express 5.
+- The `/api/auth/me/foto` route is registered as an `app.post()` in `server.js` only (not duplicated inside `auth.routes.js`).
 
 ## Database
 

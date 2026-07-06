@@ -15,9 +15,17 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * - cedulaTrabajador: siempre busca por cedula
  */
 const resolverWhereTrabajador = (qr_uuid, cedulaTrabajador) => {
-  if (cedulaTrabajador) return { cedula: cedulaTrabajador };
+  if (cedulaTrabajador) {
+    const cleanCedula = cedulaTrabajador.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
+    return { cedula: cleanCedula };
+  }
   if (qr_uuid) {
-    return UUID_REGEX.test(qr_uuid) ? { qr_uuid } : { cedula: qr_uuid }; // el QR contiene cédula en carnets sin qr_uuid
+    if (UUID_REGEX.test(qr_uuid)) {
+      return { qr_uuid };
+    } else {
+      const cleanCedula = qr_uuid.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
+      return { cedula: cleanCedula };
+    }
   }
   return null;
 };

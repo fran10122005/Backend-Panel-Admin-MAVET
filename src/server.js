@@ -44,7 +44,33 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.use(express.json());
+// File upload routes — deben ir antes de express.json() en Express 5
+const upload = require('./middleware/uploadMiddleware');
+const { subirFotoPerfil } = require('./modules/auth/services/auth.service');
+const catchAsync = require('./utils/catchAsync');
+
+app.post(
+  '/api/auth/me/foto',
+  upload.single('foto'),
+  verifyToken,
+  catchAsync(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
+    }
+    const url = await subirFotoPerfil(req.user.id_usuario, req.file.path);
+    res.status(200).json({ status: 'success', url });
+  })
+);
+
+// Express 5: body parsers pueden consumir el stream de multipart antes que multer
+// Saltamos express.json() para peticiones multipart
+app.use((req, res, next) => {
+  if (req.headers['content-type']?.startsWith('multipart/form-data')) {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 app.use(morgan('dev'));
 
 // Servir archivos estáticos
@@ -61,23 +87,6 @@ const bibliotecaRoutes = require('./modules/biblioteca/routes');
 const visitantesRoutes = require('./modules/visitantes/routes');
 const educacionRoutes = require('./modules/educacion/routes');
 const authRoutes = require('./modules/auth/routes');
-const upload = require('./middleware/uploadMiddleware');
-const { subirFotoPerfil } = require('./modules/auth/services/auth.service');
-const catchAsync = require('./utils/catchAsync');
-
-// Ruta directa para subir foto de perfil (antes de authRoutes para evitar conflictos de ruteo anidado)
-app.post(
-  '/api/auth/me/foto',
-  verifyToken,
-  upload.single('foto'),
-  catchAsync(async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
-    }
-    const url = await subirFotoPerfil(req.user.id_usuario, req.file.path);
-    res.status(200).json({ status: 'success', url });
-  })
-);
 
 app.use('/api/auth', authRoutes); // Público
 
@@ -312,6 +321,8 @@ async function migrateTablas() {
   const cambios = [
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS cantidad_acompanantes INTEGER DEFAULT 0;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_password_token VARCHAR(255);`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_password_expires TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
@@ -323,6 +334,7 @@ async function migrateTablas() {
     `UPDATE espacios_museo SET codigo_espacio = CONCAT('SALA-', LPAD(id_espacio::text, 3, '0')) WHERE codigo_espacio IS NULL;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_disponible TYPE INTEGER USING COALESCE(NULLIF(cantidad_disponible, ''), '0')::INTEGER;`,
+    `ALTER TABLE obras ALTER COLUMN imagen_url TYPE VARCHAR(500);`,
   ];
   for (const sql of cambios) {
     try {
