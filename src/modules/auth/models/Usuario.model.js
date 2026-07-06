@@ -11,7 +11,8 @@ const Usuario = sequelize.define(
     id_rol: { type: DataTypes.STRING(15) },
     estado: { type: DataTypes.BOOLEAN },
     foto_url: { type: DataTypes.STRING(500), allowNull: true },
-    // Campos para recuperación de contraseña
+    reset_password_token: { type: DataTypes.STRING(255), allowNull: true },
+    reset_password_expires: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'usuarios',

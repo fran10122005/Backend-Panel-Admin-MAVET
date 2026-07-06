@@ -2,19 +2,43 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
+const dns = require('dns');
 
 let transporter;
+let resolvedHost = null;
 
 async function getTransporter() {
   if (transporter) return transporter;
 
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT) || 587;
+
+  if (!resolvedHost) {
+    try {
+      const [addr] = await new Promise((resolve, reject) => {
+        dns.lookup(host, { family: 4 }, (err, address) => {
+          if (err) return reject(err);
+          resolve([address]);
+        });
+      });
+      resolvedHost = addr;
+      console.log(`📧 SMTP ${host} → ${addr}`);
+    } catch (err) {
+      console.warn('⚠️ DNS lookup falló, usando hostname:', err.message);
+      resolvedHost = host;
+    }
+  }
+
   const transportConfig = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: parseInt(process.env.SMTP_PORT) === 465,
+    host: resolvedHost,
+    port,
+    secure: port === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      servername: host,
     },
   };
 
@@ -36,7 +60,7 @@ class EmailService {
 
     const fullContext = {
       ...context,
-      currentYear: new Date().getFullYear()
+      currentYear: new Date().getFullYear(),
     };
 
     return handlebars.compile(templateSource)(fullContext);

@@ -12,6 +12,10 @@ const signToken = (id) => {
 };
 
 exports.register = async (data) => {
+  if (!data.correo) throw new AppError('El correo es obligatorio', 400);
+  if (!data.password) throw new AppError('La contraseña es obligatoria', 400);
+  if (!data.id_rol) throw new AppError('El rol del sistema es obligatorio', 400);
+
   // Verificar si ya existe un usuario con ese correo
   const existingUser = await Usuario.findOne({ where: { correo: data.correo } });
   if (existingUser) {
@@ -212,11 +216,7 @@ exports.subirFotoPerfil = async (id_usuario, filePath) => {
     console.error('Error al subir a Cloudinary:', uploadError.message);
     throw new AppError('Error al procesar la imagen. Intente nuevamente.', 500);
   } finally {
-    try {
-      fs.unlinkSync(filePath);
-    } catch (_) {
-      /* ignore */
-    }
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
 
   usuario.foto_url = url;
