@@ -37,6 +37,8 @@ const InscripcionTaller = sequelize.define(
         instance[pkField] = `ITA-${String(newNumber).padStart(5, '0')}`;
       },
     },
+    paranoid: true,
+    deletedAt: 'deleted_at',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',

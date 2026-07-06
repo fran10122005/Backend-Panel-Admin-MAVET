@@ -1,4 +1,4 @@
-const { Obra, Libro, Trabajador, Taller, Artista } = require('../../models');
+const { Obra, Libro, Trabajador, Taller, Artista, InscripcionTaller } = require('../../models');
 const { Op } = require('sequelize');
 
 const getModelByName = (modelName) => {
@@ -13,6 +13,8 @@ const getModelByName = (modelName) => {
       return Taller;
     case 'Artista':
       return Artista;
+    case 'InscripcionTaller':
+      return InscripcionTaller;
     default:
       throw new Error('Modelo no soportado en papelera');
   }
@@ -30,6 +32,8 @@ const getIdField = (modelName) => {
       return 'id_taller';
     case 'Artista':
       return 'id_artista';
+    case 'InscripcionTaller':
+      return 'id_inscripcion';
     default:
       return 'id';
   }
@@ -47,6 +51,8 @@ const formatTitle = (modelName, item) => {
       return item.nombre_curso || 'Taller sin nombre';
     case 'Artista':
       return `${item.nombres || ''} ${item.apellidos || ''}`.trim();
+    case 'InscripcionTaller':
+      return `Inscripción #${item.id_inscripcion || ''}`;
     default:
       return 'Item eliminado';
   }
@@ -109,6 +115,17 @@ exports.getPapeleraGlobal = async () => {
         titulo: formatTitle('Artista', a),
         fecha_eliminacion: a.deleted_at,
         detalle: a.ci,
+      })
+    );
+
+    const inscripciones = await InscripcionTaller.findAll(query);
+    inscripciones.forEach((ins) =>
+      items.push({
+        id: ins.id_inscripcion,
+        tipo: 'InscripcionTaller',
+        titulo: formatTitle('InscripcionTaller', ins),
+        fecha_eliminacion: ins.deleted_at,
+        detalle: ins.estado_inscripcion,
       })
     );
   } catch (error) {

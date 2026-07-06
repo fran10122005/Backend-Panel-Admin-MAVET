@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const { PassThrough } = require('stream');
+const AppError = require('../../../utils/AppError');
 
 const LOGO_PATH = path.join(__dirname, '../../../../public/images/logo/mavet2.png');
 const LOGO_IMG = fs.readFileSync(LOGO_PATH);
@@ -299,11 +300,9 @@ const inscribirAlumno = async (data) => {
     }
 
     // 4. Crear Inscripcion
-    const tId = parseInt(tallerId.toString().replace(/\D/g, ''), 10) || tallerId;
-
     const inscripcion = await InscripcionTaller.create(
       {
-        id_taller: tId,
+        id_taller: tallerId,
         id_alumno: alumnoRecord.id_alumno,
         fecha_inscripcion: new Date(),
         estado_inscripcion: 'Inscrito',
@@ -319,8 +318,18 @@ const inscribirAlumno = async (data) => {
   }
 };
 
+const eliminarInscripcion = async (id) => {
+  const inscripcion = await InscripcionTaller.findByPk(id);
+  if (!inscripcion) {
+    throw new AppError('Inscripción no encontrada', 404);
+  }
+  await inscripcion.destroy();
+  return { message: 'Inscripción eliminada correctamente. Puede restaurarla desde la papelera.' };
+};
+
 module.exports = {
   getInscripcionesConDetalles,
   inscribirAlumno,
   exportInscripciones,
+  eliminarInscripcion,
 };

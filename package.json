@@ -6,7 +6,8 @@
     "test:win": "$env:NODE_ENV='test'; jest --detectOpenHandles --forceExit",
     "prepare": "husky",
     "seed:motivos": "node src/seeders/motivosVisita.js",
-    "seed:rrhh": "node src/seeders/catalogosRRHH.js"
+    "seed:rrhh": "node src/seeders/catalogosRRHH.js",
+    "seed:espacios": "node src/seeders/espaciosMuseo.js"
   },
   "jest": {
     "setupFiles": ["./jest.setup.js"]

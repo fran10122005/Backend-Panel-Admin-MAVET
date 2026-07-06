@@ -6,5 +6,6 @@ router.post('/', inscripcionController.inscribirAlumno);
 router.get('/', inscripcionController.getAllInscripciones);
 router.get('/taller/:id', inscripcionController.getInscripcionesByTaller);
 router.get('/taller/:id/export', inscripcionController.exportPlanilla);
+router.delete('/:id', inscripcionController.eliminarInscripcion);
 
 module.exports = router;
