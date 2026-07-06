@@ -10,5 +10,8 @@ router.get('/eventos', reportesController.reporteEventos);
 router.get('/trabajadores', reportesController.reporteTrabajadores);
 router.get('/usuarios', reportesController.reporteUsuarios);
 router.get('/dashboard', reportesController.getDashboardStats);
+router.get('/carnet/:id', reportesController.reporteCarnet);
+router.get('/credenciales-masivas', reportesController.reporteCredencialesMasivas);
+router.get('/qr', reportesController.reporteQR);
 
 module.exports = router;

@@ -1,4 +1,11 @@
-const { generateTablePdf, generateCartaAvalPdf } = require('../../utils/pdfGenerator');
+/* global fetch */
+const {
+  generateTablePdf,
+  generateCartaAvalPdf,
+  generateCarnetPdf,
+  generateCredencialesMasivasPdf,
+  generateQRPdf,
+} = require('../../utils/pdfGenerator');
 const { Libro, CategoriaLibro, AutorLibro } = require('../../models');
 const { Obra, Artista, TecnicaObra, EstadoObra } = require('../../models');
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../models');
@@ -335,6 +342,67 @@ exports.reporteUsuarios = catchAsync(async (req, res) => {
 
   const filename = `MAVET_Usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
   const pdfBuffer = await generateTablePdf('LISTADO DE USUARIOS DEL SISTEMA', headers, rows);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Carnet Individual de Trabajador ─────────────────────────────
+exports.reporteCarnet = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const trabajador = await Trabajador.findByPk(id, {
+    include: [CargoTrabajador],
+  });
+
+  if (!trabajador) {
+    throw new AppError('Trabajador no encontrado', 404);
+  }
+
+  const filename = `MAVET_Carnet_${trabajador.cedula || id}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateCarnetPdf(trabajador);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Credenciales Masivas ─────────────────────────────────────────
+exports.reporteCredencialesMasivas = catchAsync(async (req, res) => {
+  const trabajadores = await Trabajador.findAll({
+    where: { estado: 'Activo' },
+    include: [CargoTrabajador],
+    order: [['nombres', 'ASC']],
+  });
+
+  const filename = `MAVET_Credenciales_Masivas_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateCredencialesMasivasPdf(trabajadores);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Código QR de Auto Ingreso ────────────────────────────────────
+exports.reporteQR = catchAsync(async (req, res) => {
+  const { publicUrl } = req.query;
+  if (!publicUrl) {
+    throw new AppError('Debe proveer publicUrl', 400);
+  }
+
+  // Fetch QR code image
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(publicUrl)}`;
+  const response = await fetch(qrUrl);
+  let qrBuffer = null;
+  if (response.ok) {
+    const arrayBuffer = await response.arrayBuffer();
+    qrBuffer = Buffer.from(arrayBuffer);
+  } else {
+    throw new AppError('Error al obtener el código QR de api.qrserver.com', 500);
+  }
+
+  const filename = `MAVET_QR_AutoIngreso_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateQRPdf(publicUrl, qrBuffer);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
