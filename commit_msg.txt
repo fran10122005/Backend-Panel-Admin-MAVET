@@ -1,7 +1,0 @@
-2. Auditorio (Gestión de Reservas)
-
-• [ ] Visualización de código de reserva: Mostrar automáticamente el código asignado a la reserva dentro del formulario al momento de intentar registrarla.
-• [ ] Nueva categoría de evento: Añadir la opción "Otros" dentro del selector de tipos de eventos. Guiarse de lo implementado en el formulario de boveda
-• [ ] Borrado lógico y alertas: Implementar borrado lógico (soft delete) en las entidades del módulo y emitir una notificación automática al rol Administrador cuando se elimine un registro.
-• [ ] Bloqueo de botón Guardar: Mantener deshabilitado (disabled) el botón "Guardar" hasta que todos los campos obligatorios del formulario estén completos y validados.
-• [ ] Auditoría de códigos de sala: Identificar y asignar un código único a las salas que actualmente carecen de identificador en la base de datos.

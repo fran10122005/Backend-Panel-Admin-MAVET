@@ -36,7 +36,7 @@ exports.createInventario = [
 
 // PUT /api/educacion/talleres/inventario/:id
 exports.updateInventario = [
-  param('id').isInt().withMessage('ID inválido'),
+  param('id').isString().withMessage('ID inválido'),
   body('nombre').notEmpty().withMessage('Nombre es requerido'),
   body('descripcion').optional(),
   async (req, res, next) => {
@@ -55,7 +55,7 @@ exports.updateInventario = [
 
 // DELETE /api/educacion/talleres/inventario/:id
 exports.deleteInventario = [
-  param('id').isInt().withMessage('ID inválido'),
+  param('id').isString().withMessage('ID inválido'),
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

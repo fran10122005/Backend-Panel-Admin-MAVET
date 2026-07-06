@@ -25,11 +25,34 @@ const Trabajador = sequelize.define(
     paranoid: true,
     deletedAt: 'deleted_at',
     hooks: {
-      beforeCreate: (trabajador) => {
-        if (!trabajador.qr_uuid) {
+      beforeCreate: async (instance, options) => {
+        // Generar UUID para QR si no existe
+        if (!instance.qr_uuid) {
           const crypto = require('crypto');
-          trabajador.qr_uuid = crypto.randomUUID();
+          instance.qr_uuid = crypto.randomUUID();
         }
+
+        // Generar ID de trabajador (TRB-XXXXX)
+        const pkField = instance.constructor.primaryKeyAttribute;
+        if (!pkField || (pkField === 'id' && instance.rawAttributes.id.type.key !== 'STRING'))
+          return;
+
+        const lastRecord = await instance.constructor.findOne({
+          order: [[pkField, 'DESC']],
+          transaction: options.transaction,
+          raw: true,
+          paranoid: false,
+        });
+
+        let newNumber = 1;
+        if (lastRecord && lastRecord[pkField] && lastRecord[pkField].startsWith('TRB-')) {
+          const lastNumber = parseInt(lastRecord[pkField].replace('TRB-', ''), 10);
+          if (!isNaN(lastNumber)) {
+            newNumber = lastNumber + 1;
+          }
+        }
+
+        instance[pkField] = `TRB-${String(newNumber).padStart(5, '0')}`;
       },
     },
   }

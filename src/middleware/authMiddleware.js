@@ -3,7 +3,6 @@ const AppError = require('../utils/AppError');
 const { Role, Usuario } = require('../models');
 
 const verifyToken = async (req, res, next) => {
-
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,8 +16,10 @@ const verifyToken = async (req, res, next) => {
       return next(new AppError('Token inválido.', 401));
     }
 
-    const usuario = await Usuario.findByPk(decoded.id, {
-      include: [{ model: Role }]
+    const usuarioId = String(decoded.id);
+
+    const usuario = await Usuario.findByPk(usuarioId, {
+      include: [{ model: Role }],
     });
 
     if (!usuario) {
@@ -26,7 +27,7 @@ const verifyToken = async (req, res, next) => {
     }
 
     req.user = usuario;
-    
+
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -42,7 +43,7 @@ const verifyToken = async (req, res, next) => {
 const requireRoles = (...roles) => {
   return (req, res, next) => {
     const userRole = req.user?.Role?.nombre_rol || req.user?.role || '';
-    
+
     if (!roles.includes(userRole)) {
       return next(new AppError('No tiene permisos para realizar esta acción.', 403));
     }
@@ -53,5 +54,5 @@ const requireRoles = (...roles) => {
 
 module.exports = {
   verifyToken,
-  requireRoles
+  requireRoles,
 };
