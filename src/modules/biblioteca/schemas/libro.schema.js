@@ -9,23 +9,21 @@ const createLibroSchema = z.object({
     (val) => (val ? Number(val) : null),
     z.number().min(1000, 'Año inválido').max(2099, 'Año inválido').nullable().optional()
   ),
-  id_categoria: z.preprocess(
-    (val) => (val ? Number(val) : null),
-    z.number().int().nullable().optional()
-  ),
+  id_categoria: z
+    .union([z.string(), z.number()])
+    .transform((val) => String(val))
+    .optional()
+    .nullable(),
   cantidad_total: z.preprocess(
-    (val) => (val ? Number(val) : 1),
+    (val) => (val !== undefined && val !== null && val !== '' ? Number(val) : 1),
     z.number().int().min(1, 'La cantidad total debe ser al menos 1')
   ),
   estado: z.string().max(255).optional().nullable(),
   fecha_ingreso: z.string().optional().nullable(),
   autor: z.string().max(255).optional().nullable(),
-  id_autor: z.preprocess(
-    (val) => (val ? Number(val) : null),
-    z.number().int().positive().nullable().optional()
-  ),
+  id_autor: z.string().optional().nullable(),
   cantidad_disponible: z.preprocess(
-    (val) => (val ? Number(val) : null),
+    (val) => (val !== undefined && val !== null && val !== '' ? Number(val) : null),
     z.number().int().nullable().optional()
   ),
 });
@@ -33,7 +31,7 @@ const createLibroSchema = z.object({
 const updateLibroSchema = createLibroSchema.partial();
 
 const libroIdParamSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'El ID debe ser un número entero positivo'),
+  id: z.string().min(1, 'El ID es obligatorio'),
 });
 
 module.exports = {

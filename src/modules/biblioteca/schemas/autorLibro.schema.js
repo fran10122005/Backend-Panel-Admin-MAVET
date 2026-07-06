@@ -8,7 +8,7 @@ const createAutorLibroSchema = z.object({
 const updateAutorLibroSchema = createAutorLibroSchema.partial();
 
 const autorLibroIdParamSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'El ID debe ser un número entero positivo'),
+  id: z.string().min(1, 'El ID es obligatorio'),
 });
 
 module.exports = {

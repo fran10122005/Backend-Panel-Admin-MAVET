@@ -10,8 +10,8 @@ const Libro = sequelize.define(
     titulo: { type: DataTypes.STRING(255) },
     ano_libro: { type: DataTypes.STRING(15) }, // Año de publicación (solo el número)
     id_categoria: { type: DataTypes.STRING(15) },
-    cantidad_total: { type: DataTypes.STRING(15) },
-    cantidad_disponible: { type: DataTypes.STRING(15) },
+    cantidad_total: { type: DataTypes.INTEGER, defaultValue: 1 },
+    cantidad_disponible: { type: DataTypes.INTEGER, defaultValue: 1 },
     estado: { type: DataTypes.STRING(255) },
     estante: { type: DataTypes.STRING(255) }, // Ubicación física en la biblioteca
     fecha_ingreso: { type: DataTypes.DATEONLY },

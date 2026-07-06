@@ -11,7 +11,7 @@ exports.createLibro = async (data) => {
       cuota: data.cuota || null,
       estante: data.estante || null,
       ano_libro: data.ano_libro || null,
-      id_categoria: data.id_categoria > 0 ? data.id_categoria : null,
+      id_categoria: data.id_categoria || null,
       cantidad_total: data.cantidad_total || 1,
       cantidad_disponible: data.cantidad_total || 1,
       estado: data.estado || 'Aprobado',
@@ -136,11 +136,7 @@ exports.updateLibro = async (id, data) => {
       estante: data.estante !== undefined ? data.estante : libro.estante,
       ano_libro: data.ano_libro !== undefined ? data.ano_libro : libro.ano_libro,
       id_categoria:
-        data.id_categoria !== undefined
-          ? data.id_categoria > 0
-            ? data.id_categoria
-            : null
-          : libro.id_categoria,
+        data.id_categoria !== undefined ? data.id_categoria || null : libro.id_categoria,
       cantidad_total:
         data.cantidad_total !== undefined ? data.cantidad_total : libro.cantidad_total,
       cantidad_disponible:
@@ -222,8 +218,9 @@ exports.devolverLibro = async (id_libro) => {
 
     if (!consultaAlternativa) {
       const libro = await Libro.findByPk(id_libro);
-      if (libro && libro.cantidad_disponible < libro.cantidad_total) {
-        await libro.increment('cantidad_disponible', { by: 1 });
+      if (libro && parseInt(libro.cantidad_disponible, 10) < parseInt(libro.cantidad_total, 10)) {
+        const nueva = String(parseInt(libro.cantidad_disponible, 10) + 1);
+        await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
         return true;
       }
       throw new AppError('No se encontró un préstamo activo para este libro', 404);
@@ -231,16 +228,21 @@ exports.devolverLibro = async (id_libro) => {
 
     await consultaAlternativa.update({ estado: 'Devuelto' });
     const libroAlt = await Libro.findByPk(id_libro);
-    if (libroAlt && libroAlt.cantidad_disponible < libroAlt.cantidad_total) {
-      await libroAlt.increment('cantidad_disponible', { by: 1 });
+    if (
+      libroAlt &&
+      parseInt(libroAlt.cantidad_disponible, 10) < parseInt(libroAlt.cantidad_total, 10)
+    ) {
+      const nueva = String(parseInt(libroAlt.cantidad_disponible, 10) + 1);
+      await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
     }
     return true;
   }
 
   await consulta.update({ estado: 'Devuelto', hora_devolucion: new Date() });
   const libro = await Libro.findByPk(id_libro);
-  if (libro && libro.cantidad_disponible < libro.cantidad_total) {
-    await libro.increment('cantidad_disponible', { by: 1 });
+  if (libro && parseInt(libro.cantidad_disponible, 10) < parseInt(libro.cantidad_total, 10)) {
+    const nueva = String(parseInt(libro.cantidad_disponible, 10) + 1);
+    await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
   }
   return true;
 };

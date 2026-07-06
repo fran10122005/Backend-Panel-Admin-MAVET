@@ -12,7 +12,11 @@ exports.createConsulta = async (data) => {
     try {
       let persona = await Persona.findOne({ where: { cedula } });
       if (!persona) {
-        if (!nombre) throw new AppError('Se requiere el nombre para crear una nueva persona asociada a la cédula', 400);
+        if (!nombre)
+          throw new AppError(
+            'Se requiere el nombre para crear una nueva persona asociada a la cédula',
+            400
+          );
         let nombres = nombre;
         let apellidos = '';
         const parts = nombre.split(' ');
@@ -29,7 +33,8 @@ exports.createConsulta = async (data) => {
     }
   }
 
-  if (!finalIdPersona && !id_trabajador) throw new AppError('Debe asociarse a una persona (o proveer cédula) o un trabajador', 400);
+  if (!finalIdPersona && !id_trabajador)
+    throw new AppError('Debe asociarse a una persona (o proveer cédula) o un trabajador', 400);
 
   const consulta = await ConsultaSala.create({
     id_libro,
@@ -37,18 +42,19 @@ exports.createConsulta = async (data) => {
     id_trabajador: id_trabajador || null,
     mesa: mesa || null,
     hora_entrega: new Date(),
-    estado: estado || 'ACTIVO'
+    estado: estado || 'ACTIVO',
   });
 
   // Decrease stock available
   const libro = await Libro.findByPk(id_libro);
-  if (libro && libro.cantidad_disponible > 0) {
-    await libro.decrement('cantidad_disponible', { by: 1 });
+  if (libro && parseInt(libro.cantidad_disponible, 10) > 0) {
+    const nueva = String(parseInt(libro.cantidad_disponible, 10) - 1);
+    await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
   }
 
   // Devolver con relaciones para que el frontend tenga los datos
   return await ConsultaSala.findByPk(consulta.id_consulta, {
-    include: [Persona, Libro, Trabajador]
+    include: [Persona, Libro, Trabajador],
   });
 };
 
@@ -66,9 +72,9 @@ exports.updateConsulta = async (id_consulta, data) => {
 
 exports.getAllConsultas = async () => {
   const consultas = await ConsultaSala.findAll({
-    include: [Persona, Libro, Trabajador]
+    include: [Persona, Libro, Trabajador],
   });
-  return consultas.map(c => {
+  return consultas.map((c) => {
     const json = c.toJSON();
     json.hora_entrega = json.hora_entrega || null;
     json.hora_devolucion = json.hora_devolucion || null;
