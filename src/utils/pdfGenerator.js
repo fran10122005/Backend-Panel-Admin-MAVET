@@ -456,120 +456,144 @@ const drawSingleCarnet = async (
 
   doc.save();
 
-  // 1. Background
-  doc.roundedRect(originX, originY, cardW, cardH, mmToPt(4)).fill('#FDF8F6');
+  // 1. Background (off-white)
+  doc.roundedRect(originX, originY, cardW, cardH, mmToPt(3)).fill('#FFFDFB');
 
-  // 2. Left side bar
-  const sideW = cardW * 0.35;
-  doc.roundedRect(originX, originY, sideW, cardH, mmToPt(4)).fill('#800000');
-  // Cover right border of side bar to keep it flat against content
-  doc.rect(originX + sideW - mmToPt(4), originY, mmToPt(4), cardH).fill('#800000');
+  // Outer gold border
+  doc
+    .roundedRect(originX, originY, cardW, cardH, mmToPt(3))
+    .lineWidth(mmToPt(0.6))
+    .strokeColor('#C4985A')
+    .stroke();
 
-  // 3. Logo MAVET
+  // Draw faint watermark behind everything
   if (logoImg) {
     try {
-      const logoSize = sideW * 0.3;
-      doc.image(logoImg, originX + (sideW - logoSize) / 2, originY + mmToPt(3), {
-        width: logoSize,
+      doc.save();
+      doc.opacity(0.06);
+      const wmSize = cardW * 0.7;
+      doc.image(
+        logoImg,
+        originX + (cardW - wmSize) / 2,
+        originY + (cardH - wmSize) / 2 - mmToPt(10),
+        { width: wmSize }
+      );
+      // Watermark text MAVET
+      doc
+        .opacity(0.04)
+        .fillColor('#800000')
+        .fontSize(cardW * 0.25)
+        .font(FONT_BOLD);
+      doc.text('MAVET', originX, originY + cardH / 2 - mmToPt(5), {
+        width: cardW,
+        align: 'center',
       });
+      doc.restore();
     } catch (e) {
-      console.error('Error drawing logo in carnet:', e);
+      console.error('Error drawing watermark:', e);
     }
   }
 
-  // 4. Photo circular centered
-  const photoCenterX = originX + sideW / 2;
-  const photoSize = sideW * 0.6;
-  const photoY = originY + cardH / 2 - photoSize / 2 - mmToPt(4);
+  // 2. Header
+  const headerY = originY + mmToPt(3);
+  const logoW = mmToPt(11);
+  const leftPad = originX + mmToPt(2);
 
-  // Gold border circle
-  doc.circle(photoCenterX, photoY + photoSize / 2, photoSize / 2 + mmToPt(1.5)).fill('#C4985A');
-  // Light grey circle background
-  doc.circle(photoCenterX, photoY + photoSize / 2, photoSize / 2).fill('#F0F0F0');
+  if (logoImg) {
+    try {
+      doc.image(logoImg, leftPad, headerY, { width: logoW });
+    } catch (e) {
+      /* ignore */
+    }
+  }
 
-  const drawInitials = (doc, t, pcX, pY, pSize) => {
-    const name = t.nombres || t.nombre || '';
-    const surname = t.apellidos || t.apellido || '';
-    const iniciales = `${name.charAt(0) || ''}${surname.charAt(0) || ''}`.toUpperCase();
-    doc
-      .fillColor('#FFFFFF')
-      .font(FONT_BOLD)
-      .fontSize(pSize * 0.4)
-      .text(iniciales || '?', pcX - 15, pY + pSize / 2 - 6, { width: 30, align: 'center' });
-  };
+  const textX = leftPad + logoW + mmToPt(1.5);
+  const textW = cardW - textX - mmToPt(2);
+
+  doc.fillColor('#800000').font(FONT_BOLD).fontSize(mmToPt(2.5));
+  doc.text('MUSEO DE ARTES VISUALES', textX, headerY + mmToPt(1.5), { width: textW });
+
+  doc.fillColor('#C4985A').font(FONT_BOLD).fontSize(mmToPt(1.8));
+  doc.text('ESTADO TÁCHIRA', textX, headerY + mmToPt(4.5), { width: textW });
+
+  // Horizontal gold line
+  const lineY = headerY + mmToPt(9);
+  doc
+    .moveTo(leftPad, lineY)
+    .lineTo(originX + cardW - mmToPt(3), lineY)
+    .lineWidth(mmToPt(0.3))
+    .strokeColor('#C4985A')
+    .stroke();
+
+  // 3. Photo or Initials
+  const photoSize = mmToPt(22);
+  const photoCenterX = originX + cardW / 2;
+  const photoCenterY = lineY + mmToPt(3) + photoSize / 2;
+
+  // Gold ring around photo
+  doc
+    .circle(photoCenterX, photoCenterY, photoSize / 2 + mmToPt(1))
+    .lineWidth(mmToPt(0.6))
+    .strokeColor('#C4985A')
+    .stroke();
 
   if (photoBuffer) {
     try {
       doc.save();
-      doc.circle(photoCenterX, photoY + photoSize / 2, photoSize / 2).clip();
-      doc.image(photoBuffer, photoCenterX - photoSize / 2, photoY, {
+      doc.circle(photoCenterX, photoCenterY, photoSize / 2).clip();
+      doc.image(photoBuffer, photoCenterX - photoSize / 2, photoCenterY - photoSize / 2, {
         width: photoSize,
         height: photoSize,
       });
       doc.restore();
     } catch (e) {
-      console.error('Error drawing photo in carnet:', e);
-      drawInitials(doc, trabajador, photoCenterX, photoY, photoSize);
+      photoBuffer = null;
     }
-  } else {
-    drawInitials(doc, trabajador, photoCenterX, photoY, photoSize);
   }
 
-  // 5. Right side data
-  const leftEdge = originX + sideW + mmToPt(3);
-  const rightW = cardW - sideW - mmToPt(6);
-  const textX = leftEdge + mmToPt(1);
-  let y = originY + mmToPt(7);
+  if (!photoBuffer) {
+    doc.circle(photoCenterX, photoCenterY, photoSize / 2).fill('#FFFFFF');
+    const name = trabajador.nombres || trabajador.nombre || '';
+    const surname = trabajador.apellidos || trabajador.apellido || '';
+    const iniciales = `${name.charAt(0) || ''}${surname.charAt(0) || ''}`.toUpperCase();
+    doc
+      .fillColor('#800000')
+      .font(FONT_BOLD)
+      .fontSize(photoSize * 0.45);
+    doc.text(iniciales || '?', originX, photoCenterY - (photoSize * 0.45) / 3, {
+      width: cardW,
+      align: 'center',
+    });
+  }
 
-  // Name
-  const nombreCompleto =
-    `${trabajador.nombres || trabajador.nombre || ''} ${trabajador.apellidos || trabajador.apellido || ''}`.trim();
-  doc
-    .fillColor('#800000')
-    .font(FONT_BOLD)
-    .fontSize(cardW * 0.065)
-    .text(nombreCompleto, textX, y, { width: rightW, height: mmToPt(10) });
-
-  y += mmToPt(4.5);
+  // 4. Texts under photo
+  let currentY = photoCenterY + photoSize / 2 + mmToPt(1.5);
 
   // Cargo
   const cargoStr = trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || 'TRABAJADOR';
-  doc
-    .fillColor('#C4985A')
-    .font(FONT_BOLD)
-    .fontSize(cardW * 0.048)
-    .text(cargoStr.toUpperCase(), textX, y, { width: rightW, height: mmToPt(6) });
+  doc.fillColor('#C4985A').font(FONT_BOLD).fontSize(mmToPt(2.5));
+  doc.text(cargoStr.toUpperCase(), originX, currentY, { width: cardW, align: 'center' });
+  currentY += mmToPt(3.5);
 
-  y += mmToPt(5);
+  // Nombre
+  const nombreStr = (trabajador.nombres || trabajador.nombre || '').split(' ')[0];
+  const apellidoStr = (trabajador.apellidos || trabajador.apellido || '').split(' ')[0];
+  const fullName = `${nombreStr} ${apellidoStr}`.trim().toUpperCase();
+  doc.fillColor('#000000').font(FONT_BOLD).fontSize(mmToPt(4));
+  doc.text(fullName, originX, currentY, { width: cardW, align: 'center' });
+  currentY += mmToPt(5);
 
-  // Separator
-  doc
-    .lineWidth(mmToPt(0.3))
-    .strokeColor('#E8D5B0')
-    .moveTo(textX, y)
-    .lineTo(originX + cardW - mmToPt(3), y)
-    .stroke();
-
-  y += mmToPt(3.5);
-
-  // Fields
-  const fields = [
-    { label: 'Cédula', value: trabajador.cedula || '—' },
-    { label: 'Teléfono', value: trabajador.telefono || '—' },
-    { label: 'Correo', value: trabajador.correo_personal || trabajador.correo || '—' },
-  ];
-
-  doc.fontSize(cardW * 0.038);
-  fields.forEach((f) => {
-    doc.fillColor('#8C8C8C').font(FONT_BOLD).text(`${f.label}: `, textX, y, { continued: true });
-    doc.fillColor('#2D2D2D').font(FONT_NORMAL).text(f.value);
-    y += mmToPt(3.8);
+  // Cedula
+  doc.fillColor('#444444').font(FONT_BOLD).fontSize(mmToPt(2.8));
+  doc.text(`C.I: ${trabajador.cedula || '—'}`, originX, currentY, {
+    width: cardW,
+    align: 'center',
   });
 
-  // 6. QR Code at bottom-right
-  const qrSize = cardW * 0.12;
-  const qrX = originX + cardW - qrSize - mmToPt(3);
-  const qrY = originY + cardH - qrSize - mmToPt(3);
+  // 5. QR Code
+  const qrSize = mmToPt(21);
+  const qrY = originY + cardH - mmToPt(12) - qrSize;
+  const qrX = originX + (cardW - qrSize) / 2;
 
   if (qrBuffer) {
     try {
@@ -579,35 +603,159 @@ const drawSingleCarnet = async (
           qrY - mmToPt(1.5),
           qrSize + mmToPt(3),
           qrSize + mmToPt(3),
-          2
+          mmToPt(2)
         )
-        .stroke('#C4985A');
+        .lineWidth(mmToPt(0.4))
+        .strokeColor('#C4985A')
+        .stroke();
       doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
     } catch (e) {
-      console.error('Error drawing QR:', e);
+      /* ignore */
     }
   }
 
-  // 7. Dates
+  // Validity
   const today = new Date();
-  const fechaStr = today.toLocaleDateString('es-VE', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  const validYear = today.getFullYear();
+  const nextYear = validYear + 1;
+  doc.fillColor('#888888').font(FONT_NORMAL).fontSize(mmToPt(2.8));
+  doc.text(`VÁLIDO ${validYear} - ${nextYear}`, originX, originY + cardH - mmToPt(9), {
+    width: cardW,
+    align: 'center',
   });
-  doc
-    .fillColor('#8C8C8C')
-    .font(FONT_NORMAL)
-    .fontSize(cardW * 0.036);
-  doc.text(`Emitido: ${fechaStr}`, textX, originY + cardH - mmToPt(7));
-  doc.text('Válido: mientras dure la relación laboral', textX, originY + cardH - mmToPt(4));
 
-  // 8. Outer border
+  // 6. Footer bar
+  const footerH = mmToPt(6);
+  doc.save();
+  doc.roundedRect(originX, originY, cardW, cardH, mmToPt(3)).clip();
+  doc.rect(originX, originY + cardH - footerH, cardW, footerH).fill('#800000');
+  doc.restore();
+
+  // Footer text
+  doc.fillColor('#FFFFFF').font(FONT_BOLD).fontSize(mmToPt(2.5));
+  doc.text('MUSEO DE ARTES VISUALES', originX, originY + cardH - mmToPt(4.5), {
+    width: cardW,
+    align: 'center',
+  });
+
+  // Re-draw outer border on top just to be clean
   doc
-    .roundedRect(originX, originY, cardW, cardH, mmToPt(4))
-    .lineWidth(mmToPt(0.4))
+    .roundedRect(originX, originY, cardW, cardH, mmToPt(3))
+    .lineWidth(mmToPt(0.6))
     .strokeColor('#C4985A')
     .stroke();
+
+  doc.restore();
+};
+
+const drawSingleCarnetBack = async (doc, originX, originY, cardW, cardH, logoImg) => {
+  const mmToPt = (mm) => mm * 2.83465;
+  doc.save();
+
+  // Background and border
+  doc.roundedRect(originX, originY, cardW, cardH, mmToPt(3)).fill('#FFFDFB');
+  doc
+    .roundedRect(originX, originY, cardW, cardH, mmToPt(3))
+    .lineWidth(mmToPt(0.6))
+    .strokeColor('#C4985A')
+    .stroke();
+
+  // Watermark
+  if (logoImg) {
+    try {
+      doc.save();
+      doc.opacity(0.06);
+      const wmSize = cardW * 0.7;
+      doc.image(
+        logoImg,
+        originX + (cardW - wmSize) / 2,
+        originY + (cardH - wmSize) / 2 - mmToPt(10),
+        { width: wmSize }
+      );
+      doc
+        .opacity(0.04)
+        .fillColor('#800000')
+        .fontSize(cardW * 0.25)
+        .font(FONT_BOLD);
+      doc.text('MAVET', originX, originY + cardH / 2 - mmToPt(5), {
+        width: cardW,
+        align: 'center',
+      });
+      doc.restore();
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  // Header Logo smaller on top center
+  if (logoImg) {
+    try {
+      const logoW = mmToPt(16);
+      doc.image(logoImg, originX + (cardW - logoW) / 2, originY + mmToPt(6), { width: logoW });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  // Texts
+  let y = originY + mmToPt(24);
+  const cx = originX + mmToPt(4);
+  const innerW = cardW - mmToPt(8);
+
+  doc.fillColor('#800000').font(FONT_BOLD).fontSize(mmToPt(2.3));
+  let str = 'ESTA CREDENCIAL ES PROPIEDAD DEL';
+  doc.text(str, cx, y, { width: innerW, align: 'center' });
+  y += doc.heightOfString(str, { width: innerW, align: 'center' }) + mmToPt(0.5);
+
+  doc.fillColor('#C4985A').fontSize(mmToPt(2.2));
+  str = 'MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA';
+  doc.text(str, cx, y, { width: innerW, align: 'center' });
+  y += doc.heightOfString(str, { width: innerW, align: 'center' }) + mmToPt(1.5);
+
+  doc.fillColor('#444444').font(FONT_NORMAL).fontSize(mmToPt(1.8));
+  str = 'Es de uso personal e intransferible y acredita al portador en el cargo mencionado.';
+  doc.text(str, cx, y, { width: innerW, align: 'center' });
+  y += doc.heightOfString(str, { width: innerW, align: 'center' }) + mmToPt(3);
+
+  doc.text('En caso de emergencia avisar a:', cx, y, { width: innerW, align: 'left' });
+  y += mmToPt(3.5);
+  doc.text('Nombre: ________________________', cx, y);
+  y += mmToPt(3.5);
+  doc.text('Tel: ___________________________', cx, y);
+  y += mmToPt(3.5);
+  doc.text('Tipo de sangre: _______', cx, y);
+
+  y += mmToPt(5);
+  str = 'En caso de extravío devolver a:';
+  doc.text(str, cx, y, { width: innerW, align: 'center' });
+  y += doc.heightOfString(str, { width: innerW, align: 'center' }) + mmToPt(1);
+
+  str = 'Carrera 6 con calle 4, Casona 25\nCentro, San Cristóbal, Táchira';
+  doc.text(str, cx, y, { width: innerW, align: 'center', lineGap: mmToPt(0.5) });
+
+  // Signatures
+  const sigY = originY + cardH - mmToPt(6);
+  const sigW = mmToPt(18);
+  doc
+    .moveTo(originX + mmToPt(4), sigY)
+    .lineTo(originX + mmToPt(4) + sigW, sigY)
+    .lineWidth(mmToPt(0.3))
+    .strokeColor('#888888')
+    .stroke();
+  doc
+    .moveTo(originX + cardW - mmToPt(4) - sigW, sigY)
+    .lineTo(originX + cardW - mmToPt(4), sigY)
+    .stroke();
+
+  doc.fontSize(mmToPt(1.6)).fillColor('#666666');
+  doc.text('Firma del Titular', originX + mmToPt(4), sigY + mmToPt(1), {
+    width: sigW,
+    align: 'center',
+  });
+  doc.text('Dirección General', originX + cardW - mmToPt(4) - sigW, sigY + mmToPt(1), {
+    width: sigW,
+    align: 'center',
+  });
 
   doc.restore();
 };
@@ -632,15 +780,18 @@ const generateCarnetPdf = async (trabajador) => {
         const ph = doc.page.height;
         const mmToPt = (mm) => mm * 2.83465;
 
-        const cardW = mmToPt(88);
-        const cardH = mmToPt(56);
-        const originX = (pw - cardW) / 2;
+        const cardW = mmToPt(54);
+        const cardH = mmToPt(86);
+        const gap = mmToPt(10);
+        const totalW = cardW * 2 + gap;
+        const originX = (pw - totalW) / 2;
         const originY = (ph - cardH) / 2;
 
         // Fetch photo and QR buffers
         let photoBuffer = null;
         if (trabajador.foto_url && trabajador.foto_url.startsWith('http')) {
-          photoBuffer = await fetchImageBuffer(trabajador.foto_url);
+          const safePhotoUrl = trabajador.foto_url.replace(/\.[^/.]+$/, '.jpg');
+          photoBuffer = await fetchImageBuffer(safePhotoUrl);
         }
 
         const nombreCompleto =
@@ -648,7 +799,7 @@ const generateCarnetPdf = async (trabajador) => {
         const cargoStr =
           trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || 'TRABAJADOR';
         const qrData = `MAVET|${trabajador.cedula || ''}|${nombreCompleto}|${cargoStr}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=800000&data=${encodeURIComponent(qrData)}`;
         const qrBuffer = await fetchImageBuffer(qrUrl);
 
         // Draw carnet centered
@@ -663,6 +814,9 @@ const generateCarnetPdf = async (trabajador) => {
           photoBuffer,
           qrBuffer
         );
+
+        // Draw back of carnet next to it
+        await drawSingleCarnetBack(doc, originX + cardW + gap, originY, cardW, cardH, LOGO_IMG);
 
         doc.end();
       } catch (err) {
@@ -693,8 +847,8 @@ const generateCredencialesMasivasPdf = async (trabajadores) => {
         const ph = doc.page.height;
         const mmToPt = (mm) => mm * 2.83465;
 
-        const cardW = mmToPt(75);
-        const cardH = mmToPt(120);
+        const cardW = mmToPt(54);
+        const cardH = mmToPt(86);
         const gapX = (pw - cardW * 2) / 3;
         const gapY = (ph - cardH * 2) / 3;
 
@@ -705,61 +859,76 @@ const generateCredencialesMasivasPdf = async (trabajadores) => {
           { x: gapX * 2 + cardW, y: gapY * 2 + cardH },
         ];
 
-        for (let i = 0; i < trabajadores.length; i++) {
-          const posIndex = i % 4;
+        for (let pageIdx = 0; pageIdx < Math.ceil(trabajadores.length / 4); pageIdx++) {
+          if (pageIdx > 0) doc.addPage();
 
-          if (i > 0 && posIndex === 0) {
-            doc.addPage();
+          // ── Draw Front Page ──
+          doc.rect(0, 0, pw, ph).fill('#FAF8F6');
+          doc.save();
+          doc.strokeColor('#C8C8C8').lineWidth(0.5).dash(3, { space: 3 });
+          doc
+            .moveTo(10, ph / 2)
+            .lineTo(pw - 10, ph / 2)
+            .stroke();
+          doc
+            .moveTo(pw / 2, 10)
+            .lineTo(pw / 2, ph - 10)
+            .stroke();
+          doc.restore();
+
+          const pageWorkers = trabajadores.slice(pageIdx * 4, pageIdx * 4 + 4);
+
+          for (let i = 0; i < pageWorkers.length; i++) {
+            const trabajador = pageWorkers[i];
+            const pos = positions[i];
+
+            let photoBuffer = null;
+            if (trabajador.foto_url && trabajador.foto_url.startsWith('http')) {
+              const safePhotoUrl = trabajador.foto_url.replace(/\.[^/.]+$/, '.jpg');
+              photoBuffer = await fetchImageBuffer(safePhotoUrl);
+            }
+            const nombreCompleto =
+              `${trabajador.nombres || trabajador.nombre || ''} ${trabajador.apellidos || trabajador.apellido || ''}`.trim();
+            const cargoStr =
+              trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || 'TRABAJADOR';
+            const qrData = `MAVET|${trabajador.cedula || ''}|${nombreCompleto}|${cargoStr}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=800000&data=${encodeURIComponent(qrData)}`;
+            const qrBuffer = await fetchImageBuffer(qrUrl);
+
+            await drawSingleCarnet(
+              doc,
+              trabajador,
+              pos.x,
+              pos.y,
+              cardW,
+              cardH,
+              LOGO_IMG,
+              photoBuffer,
+              qrBuffer
+            );
           }
 
-          if (posIndex === 0) {
-            // Draw background for new page
-            doc.rect(0, 0, pw, ph).fill('#FAF8F6');
+          // ── Draw Back Page (for double-sided printing) ──
+          doc.addPage();
+          doc.rect(0, 0, pw, ph).fill('#FAF8F6');
+          doc.save();
+          doc.strokeColor('#C8C8C8').lineWidth(0.5).dash(3, { space: 3 });
+          doc
+            .moveTo(10, ph / 2)
+            .lineTo(pw - 10, ph / 2)
+            .stroke();
+          doc
+            .moveTo(pw / 2, 10)
+            .lineTo(pw / 2, ph - 10)
+            .stroke();
+          doc.restore();
 
-            // Draw dotted cutting lines
-            doc.save();
-            doc.strokeColor('#C8C8C8').lineWidth(0.5).dash(3, { space: 3 });
-            // Horizontal line
-            doc
-              .moveTo(10, ph / 2)
-              .lineTo(pw - 10, ph / 2)
-              .stroke();
-            // Vertical line
-            doc
-              .moveTo(pw / 2, 10)
-              .lineTo(pw / 2, ph - 10)
-              .stroke();
-            doc.restore();
+          for (let i = 0; i < pageWorkers.length; i++) {
+            // Mirror positions horizontally: index 0 (top-left) goes to index 1 (top-right), 1->0, 2->3, 3->2
+            const mirroredIndex = i % 2 === 0 ? i + 1 : i - 1;
+            const pos = positions[mirroredIndex];
+            await drawSingleCarnetBack(doc, pos.x, pos.y, cardW, cardH, LOGO_IMG);
           }
-
-          const trabajador = trabajadores[i];
-          const pos = positions[posIndex];
-
-          // Fetch photo and QR buffers for this worker
-          let photoBuffer = null;
-          if (trabajador.foto_url && trabajador.foto_url.startsWith('http')) {
-            photoBuffer = await fetchImageBuffer(trabajador.foto_url);
-          }
-
-          const nombreCompleto =
-            `${trabajador.nombres || trabajador.nombre || ''} ${trabajador.apellidos || trabajador.apellido || ''}`.trim();
-          const cargoStr =
-            trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || 'TRABAJADOR';
-          const qrData = `MAVET|${trabajador.cedula || ''}|${nombreCompleto}|${cargoStr}`;
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
-          const qrBuffer = await fetchImageBuffer(qrUrl);
-
-          await drawSingleCarnet(
-            doc,
-            trabajador,
-            pos.x,
-            pos.y,
-            cardW,
-            cardH,
-            LOGO_IMG,
-            photoBuffer,
-            qrBuffer
-          );
         }
 
         doc.end();

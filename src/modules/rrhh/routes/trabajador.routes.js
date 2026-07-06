@@ -13,23 +13,27 @@ const { verifyToken } = require('../../../middleware/authMiddleware');
 
 router.post(
   '/',
+  verifyToken,
   validateZod({ body: createTrabajadorSchema }),
   trabajadorController.createTrabajador
 );
-router.post('/:id/foto', verifyToken, upload.single('foto'), trabajadorController.subirFoto);
-router.get('/', trabajadorController.getAllTrabajadores);
+router.post('/:id/foto', upload.single('foto'), verifyToken, trabajadorController.subirFoto);
+router.get('/', verifyToken, trabajadorController.getAllTrabajadores);
 router.get(
   '/:id',
+  verifyToken,
   validateZod({ params: trabajadorIdParamSchema }),
   trabajadorController.getTrabajadorById
 );
 router.put(
   '/:id',
+  verifyToken,
   validateZod({ params: trabajadorIdParamSchema, body: updateTrabajadorSchema }),
   trabajadorController.updateTrabajador
 );
 router.delete(
   '/:id',
+  verifyToken,
   validateZod({ params: trabajadorIdParamSchema }),
   trabajadorController.deleteTrabajador
 );

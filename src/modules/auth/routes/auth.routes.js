@@ -3,17 +3,16 @@ const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../../../middleware/authMiddleware');
 const validateZod = require('../../../middleware/validateSchema');
-const upload = require('../../../middleware/uploadMiddleware');
 const { z } = require('zod');
 
 // --- Esquemas de validación Zod ---
 const forgotPasswordSchema = z.object({
-  correo: z.email({ message: 'Debe ser un correo electrónico válido.' })
+  correo: z.email({ message: 'Debe ser un correo electrónico válido.' }),
 });
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, { message: 'El token es requerido.' }),
-  nuevaPassword: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' })
+  nuevaPassword: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
 });
 
 // Rutas públicas
@@ -26,7 +25,6 @@ router.post('/reset-password', validateZod(resetPasswordSchema), authController.
 router.get('/', verifyToken, authController.getAllUsuarios);
 router.get('/me', verifyToken, authController.getMe);
 router.put('/me', verifyToken, authController.updateMe);
-router.post('/me/foto', verifyToken, upload.single('foto'), authController.subirFoto);
 router.put('/:id', verifyToken, authController.updateUsuario);
 router.get('/export/pdf', verifyToken, authController.exportUsuariosPdf);
 

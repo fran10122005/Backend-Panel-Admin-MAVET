@@ -13,7 +13,7 @@ const Obra = sequelize.define(
     medidas: { type: DataTypes.STRING(255) },
     peso: { type: DataTypes.NUMERIC },
     id_tecnica: { type: DataTypes.STRING(15) },
-    imagen_url: { type: DataTypes.STRING(255) },
+    imagen_url: { type: DataTypes.STRING(500) },
     tipo_ingreso: { type: DataTypes.STRING(255) },
     id_estado_actual: { type: DataTypes.STRING(15) },
     ubicacion_actual: { type: DataTypes.STRING(255) },
