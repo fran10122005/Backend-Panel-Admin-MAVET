@@ -21,11 +21,28 @@ const calcularEdad = (fecha_nac) => {
   return edad;
 };
 
+const buscarPersonaFlexible = async (cedulaLimpia, transaction = null) => {
+  if (!cedulaLimpia) return null;
+  // Si tiene guion (ej. cédula derivada de menor 12345-1), buscar exacto
+  if (cedulaLimpia.includes('-')) {
+    return await Persona.findOne({ where: { cedula: cedulaLimpia }, transaction });
+  }
+  // Buscar ignorando caracteres no numéricos en la DB (para tolerar V-12.345)
+  return await Persona.findOne({
+    where: sequelize.where(
+      sequelize.fn('REGEXP_REPLACE', sequelize.col('cedula'), '[^0-9]', '', 'g'),
+      cedulaLimpia
+    ),
+    transaction,
+  });
+};
+
 // Verificar si una persona existe por cédula y traer sus talleres inscritos
-exports.checkVisitante = async (cedula) => {
+exports.checkVisitante = async (rawCedula) => {
+  const cedula = rawCedula ? rawCedula.replace(/^[VEve]-?/g, '').replace(/\D/g, '') : null;
   if (!cedula) throw new AppError('La cédula es requerida', 400);
 
-  const persona = await Persona.findOne({ where: { cedula } });
+  const persona = await buscarPersonaFlexible(cedula);
   if (!persona) return null;
 
   // Buscar si es alumno y traer talleres
@@ -68,7 +85,6 @@ exports.registrarIngreso = async (data) => {
   const t = await sequelize.transaction();
   try {
     const {
-      cedula, // Opcional si es < 9 años y viene con id_representante_persona
       id_representante_persona, // Obligatorio si es menor de 18
       id_motivo,
       id_taller,
@@ -78,6 +94,8 @@ exports.registrarIngreso = async (data) => {
       telefono,
       fecha_de_nac,
     } = data;
+
+    const cedula = data.cedula ? data.cedula.replace(/^[VEve]-?/g, '').replace(/\D/g, '') : null;
 
     if (!id_motivo) throw new AppError('El motivo de la visita es requerido', 400);
 
@@ -114,12 +132,15 @@ exports.registrarIngreso = async (data) => {
         });
 
         cedulaFinal = `${representantePersona.cedula}-${numVinculos + 1}`;
-      } else if (!cedula) {
-        throw new AppError('Los mayores de 9 años deben tener cédula', 400);
+      } else if (!cedula || cedula.trim() === 'V-' || cedula.trim() === 'E-') {
+        throw new AppError(
+          'Los mayores de 9 años deben tener cédula válida (no solo V- o E-)',
+          400
+        );
       }
 
       // Buscar o crear la persona menor
-      persona = await Persona.findOne({ where: { cedula: cedulaFinal }, transaction: t });
+      persona = await buscarPersonaFlexible(cedulaFinal, t);
       if (!persona) {
         const datosPersona = { cedula: cedulaFinal, nombres, apellidos };
         if (telefono !== undefined) datosPersona.telefono = telefono;
@@ -153,8 +174,10 @@ exports.registrarIngreso = async (data) => {
       });
     } else {
       // Adulto
-      if (!cedula) throw new AppError('La cédula es requerida', 400);
-      persona = await Persona.findOne({ where: { cedula }, transaction: t });
+      if (!cedula || cedula.trim() === 'V-' || cedula.trim() === 'E-') {
+        throw new AppError('La cédula es requerida para adultos y debe ser válida', 400);
+      }
+      persona = await buscarPersonaFlexible(cedula, t);
       if (!persona) {
         if (!nombres || !apellidos)
           throw new AppError('Faltan datos para registrar la persona', 400);

@@ -10,7 +10,7 @@ const Persona = sequelize.define(
     apellidos: { type: DataTypes.STRING(255), allowNull: false },
     telefono: { type: DataTypes.STRING(255), allowNull: true },
     fecha_de_nac: { type: DataTypes.DATEONLY, allowNull: true },
-    fecha_registro: { type: DataTypes.DATE },
+    fecha_registro: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   {
     tableName: 'personas',
@@ -32,6 +32,28 @@ const Persona = sequelize.define(
         }
 
         persona.id_persona = `PER-${String(newNumber).padStart(5, '0')}`;
+        if (!persona.fecha_registro) {
+          persona.fecha_registro = new Date();
+        }
+
+        if (persona.telefono) {
+          const digits = persona.telefono.replace(/\D/g, '');
+          if (digits.length >= 5) {
+            persona.telefono = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+          } else {
+            persona.telefono = digits;
+          }
+        }
+      },
+      beforeUpdate: async (persona, options) => {
+        if (persona.telefono) {
+          const digits = persona.telefono.replace(/\D/g, '');
+          if (digits.length >= 5) {
+            persona.telefono = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+          } else {
+            persona.telefono = digits;
+          }
+        }
       },
     },
   }
