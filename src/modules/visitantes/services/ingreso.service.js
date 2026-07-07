@@ -88,6 +88,7 @@ exports.registrarIngreso = async (data) => {
       id_representante_persona, // Obligatorio si es menor de 18
       id_motivo,
       id_taller,
+      id_solicitud,
       cantidad_acompanantes,
       nombres,
       apellidos,
@@ -194,6 +195,7 @@ exports.registrarIngreso = async (data) => {
         id_persona: persona.id_persona,
         id_motivo,
         id_taller: id_taller || null,
+        id_solicitud: id_solicitud || null,
         cantidad_acompanantes: cantidad_acompanantes || 0,
         fecha_hora_entrada: new Date(),
       },
@@ -218,8 +220,19 @@ exports.registrarIngreso = async (data) => {
   }
 };
 
-exports.getAllIngresos = async (page, limit) => {
+exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
+  const { Op } = require('sequelize');
+  const where = {};
+  if (fecha) {
+    const start = new Date(`${fecha}T00:00:00.000Z`);
+    const end = new Date(`${fecha}T23:59:59.999Z`);
+    where.fecha_hora_entrada = { [Op.between]: [start, end] };
+  }
+  if (id_solicitud) {
+    where.id_solicitud = id_solicitud;
+  }
   const query = {
+    where,
     include: [{ model: Persona }, { model: MotivoVisita }],
     order: [['fecha_hora_entrada', 'DESC']],
   };

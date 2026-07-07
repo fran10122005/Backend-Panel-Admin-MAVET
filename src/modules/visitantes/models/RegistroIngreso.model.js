@@ -8,6 +8,7 @@ const RegistroIngreso = sequelize.define(
     id_persona: { type: DataTypes.STRING(15), allowNull: false },
     id_motivo: { type: DataTypes.STRING(15), allowNull: false },
     id_taller: { type: DataTypes.STRING(15), allowNull: true },
+    id_solicitud: { type: DataTypes.STRING(15), allowNull: true },
     cantidad_acompanantes: { type: DataTypes.STRING(15), defaultValue: 0 },
     fecha_hora_entrada: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
