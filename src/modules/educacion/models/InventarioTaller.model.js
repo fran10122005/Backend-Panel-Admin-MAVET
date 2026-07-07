@@ -46,7 +46,10 @@ const InventarioTaller = sequelize.define(
       },
     },
     timestamps: true,
-    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    paranoid: true,
+    deletedAt: 'deleted_at',
   }
 );
 

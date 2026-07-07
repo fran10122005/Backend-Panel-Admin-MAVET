@@ -41,7 +41,11 @@ const Usuario = sequelize.define(
         instance[pkField] = `USU-${String(newNumber).padStart(5, '0')}`;
       },
     },
-    timestamps: false,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    paranoid: true,
+    deletedAt: 'deleted_at',
   }
 );
 

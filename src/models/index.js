@@ -173,6 +173,9 @@ RegistroIngreso.belongsTo(MotivoVisita, { foreignKey: 'id_motivo' });
 Taller.hasMany(RegistroIngreso, { foreignKey: 'id_taller' });
 RegistroIngreso.belongsTo(Taller, { foreignKey: 'id_taller' });
 
+SolicitudEspacio.hasMany(RegistroIngreso, { foreignKey: 'id_solicitud' });
+RegistroIngreso.belongsTo(SolicitudEspacio, { foreignKey: 'id_solicitud' });
+
 // --- Educación y Talleres ---
 InventarioTaller.hasMany(Taller, { foreignKey: 'inventario_id', as: 'talleresPlanificados' });
 Taller.belongsTo(InventarioTaller, { foreignKey: 'inventario_id', as: 'inventarioTaller' });

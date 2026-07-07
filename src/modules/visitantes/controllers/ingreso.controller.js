@@ -20,7 +20,9 @@ exports.registrarIngreso = catchAsync(async (req, res) => {
 exports.getAllIngresos = catchAsync(async (req, res) => {
   const page = req.query.page ? parseInt(req.query.page, 10) : null;
   const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-  const result = await ingresoService.getAllIngresos(page, limit);
+  const fecha = req.query.fecha || null;
+  const id_solicitud = req.query.id_solicitud || null;
+  const result = await ingresoService.getAllIngresos(page, limit, fecha, id_solicitud);
   res.status(200).json({
     message: 'Registros de ingreso obtenidos',
     data: result.data || result,

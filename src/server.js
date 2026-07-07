@@ -219,7 +219,7 @@ async function seedInventarioTalleres() {
 
 async function migrateTablas() {
   const cambios = [
-    `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS cantidad_acompanantes INTEGER DEFAULT 0;`,
+    `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS id_solicitud VARCHAR(15);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
@@ -229,6 +229,14 @@ async function migrateTablas() {
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE inscripciones_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE inventario_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE inventario_talleres ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS codigo_espacio VARCHAR(255);`,
     `UPDATE espacios_museo SET codigo_espacio = CONCAT('SALA-', LPAD(id_espacio::text, 3, '0')) WHERE codigo_espacio IS NULL;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
