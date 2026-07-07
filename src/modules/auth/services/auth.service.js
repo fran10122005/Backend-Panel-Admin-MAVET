@@ -230,6 +230,21 @@ exports.subirFotoPerfil = async (id_usuario, filePath) => {
   return url;
 };
 
+exports.eliminarFotoPerfil = async (id_usuario) => {
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  usuario.foto_url = null;
+  await usuario.save();
+
+  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
+  if (trabajador) {
+    await trabajador.update({ foto_url: null });
+  }
+
+  return true;
+};
+
 exports.updateUsuario = async (id_usuario, data) => {
   const usuario = await Usuario.findByPk(id_usuario);
   if (!usuario) throw new AppError('Usuario no encontrado', 404);

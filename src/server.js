@@ -46,7 +46,7 @@ app.use(cors(corsOptions));
 
 // File upload routes — deben ir antes de express.json() en Express 5
 const upload = require('./middleware/uploadMiddleware');
-const { subirFotoPerfil } = require('./modules/auth/services/auth.service');
+const { subirFotoPerfil, eliminarFotoPerfil } = require('./modules/auth/services/auth.service');
 const catchAsync = require('./utils/catchAsync');
 
 app.post(
@@ -59,6 +59,15 @@ app.post(
     }
     const url = await subirFotoPerfil(req.user.id_usuario, req.file.path);
     res.status(200).json({ status: 'success', url });
+  })
+);
+
+app.delete(
+  '/api/auth/me/foto',
+  verifyToken,
+  catchAsync(async (req, res) => {
+    await eliminarFotoPerfil(req.user.id_usuario);
+    res.status(200).json({ status: 'success', message: 'Foto eliminada correctamente' });
   })
 );
 
