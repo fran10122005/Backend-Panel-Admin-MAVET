@@ -1,50 +1,57 @@
-const { MotivoVisita } = require('../models');
+const { MotivoVisita, RegistroIngreso } = require('../models');
 
-const motivosAGregar = [
-  {
-    nombre: 'Visita Guiada',
-    descripcion: 'Recorrido guiado por las instalaciones y exhibiciones del museo',
-  },
-  {
-    nombre: 'Exposición Temporal',
-    descripcion: 'Visita a una exposición temporal o muestra especial',
-  },
+const motivos = [
+  { nombre: 'Visita Guiada', descripcion: 'Recorrido guiado por el museo' },
+  { nombre: 'Exposición', descripcion: 'Visita a exposiciones del museo' },
+  { nombre: 'Biblioteca', descripcion: 'Consulta e investigación en biblioteca' },
   { nombre: 'Exposición Permanente', descripcion: 'Visita a la colección permanente del museo' },
+  { nombre: 'Trámites', descripcion: 'Trámites administrativos y documentación' },
+  { nombre: 'Visita Escolar', descripcion: 'Visita educativa de instituciones' },
+  { nombre: 'Mantenimiento', descripcion: 'Trabajos de mantenimiento o instalación' },
+  { nombre: 'Otro', descripcion: 'Otro motivo no contemplado' },
+];
 
-  {
-    nombre: 'Investigación',
-    descripcion: 'Consulta de archivo, biblioteca o investigación académica',
-  },
-  {
-    nombre: 'Entrega de Obra',
-    descripcion: 'Entrega de obra para exposición, restauración o depósito',
-  },
-  {
-    nombre: 'Trámite Administrativo',
-    descripcion: 'Gestión documental, permisos, solicitudes o certificados',
-  },
-  {
-    nombre: 'Visita Escolar',
-    descripcion: 'Visita educativa de instituciones escolares o universitarias',
-  },
-  {
-    nombre: 'Mantenimiento',
-    descripcion: 'Personal externo realizando trabajos de mantenimiento o instalación',
-  },
-  { nombre: 'Otro', descripcion: 'Otro motivo no contemplado en las categorías anteriores' },
+const oldNames = [
+  'Exposición Temporal',
+  'Investigación',
+  'Visita de Obras',
+  'Entrega de Obra',
+  'Trámite Administrativo',
 ];
 
 const seedMotivos = async () => {
   try {
-    for (const motivo of motivosAGregar) {
+    // Eliminar motivos antiguos que no tienen registros asociados
+    for (const oldName of oldNames) {
+      const old = await MotivoVisita.findOne({ where: { nombre: oldName } });
+      if (old) {
+        const count = await RegistroIngreso.count({ where: { id_motivo: old.id_motivo } });
+        if (count === 0) {
+          await old.destroy();
+          console.log(`🗑️  Motivo antiguo "${oldName}" eliminado.`);
+        } else {
+          console.log(`⏭️  "${oldName}" tiene ${count} ingresos asociados — se conserva.`);
+        }
+      }
+    }
+
+    // Crear o actualizar motivos nuevos
+    for (const motivo of motivos) {
       const existe = await MotivoVisita.findOne({ where: { nombre: motivo.nombre } });
       if (!existe) {
         await MotivoVisita.create(motivo);
         console.log(`✅ Motivo "${motivo.nombre}" creado.`);
       } else {
-        console.log(`ℹ️  Motivo "${motivo.nombre}" ya existe (id=${existe.id_motivo}).`);
+        // Actualizar descripción por si cambió
+        if (existe.descripcion !== motivo.descripcion) {
+          await existe.update({ descripcion: motivo.descripcion });
+          console.log(`🔄 Motivo "${motivo.nombre}" actualizado.`);
+        } else {
+          console.log(`ℹ️  Motivo "${motivo.nombre}" ya existe (id=${existe.id_motivo}).`);
+        }
       }
     }
+
     console.log('🚀 Seed de motivos completado.');
     process.exit(0);
   } catch (error) {

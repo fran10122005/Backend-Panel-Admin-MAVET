@@ -14,5 +14,8 @@ router.post(
   asistenciaQRController.registrarAsistencia
 );
 router.get('/', verifyToken, asistenciaQRController.getAllAsistencias);
+router.get('/semana/resumen', verifyToken, asistenciaQRController.getResumenSemanalTodos);
+router.get('/semana', asistenciaQRController.getSemanaAsistencia);
+router.patch('/:id', verifyToken, asistenciaQRController.updateAsistenciaObservaciones);
 
 module.exports = router;

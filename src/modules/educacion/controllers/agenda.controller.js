@@ -48,15 +48,14 @@ exports.getAgenda = catchAsync(async (req, res) => {
     });
   });
 
-  // Ordenar por fecha (los más próximos primero)
+  // Ordenar por fecha (los más próximos primero) y luego por hora
   agenda.sort((a, b) => {
     const dateA = new Date(a.fecha);
     const dateB = new Date(b.fecha);
-    return dateA - dateB;
+    if (dateA - dateB !== 0) return dateA - dateB;
+    return (a.hora_inicio || '').localeCompare(b.hora_inicio || '');
   });
 
-  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-  const limitedAgenda = agenda.slice(0, limit);
-
-  res.status(200).json(limitedAgenda);
+  // Sin límite para que recepción pueda mostrar todos los de hoy
+  res.status(200).json(agenda);
 });

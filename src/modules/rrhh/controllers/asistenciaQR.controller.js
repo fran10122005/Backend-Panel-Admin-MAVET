@@ -24,3 +24,27 @@ exports.getAllAsistencias = catchAsync(async (req, res) => {
     meta: result.meta,
   });
 });
+
+exports.getSemanaAsistencia = catchAsync(async (req, res) => {
+  const { cedulaTrabajador } = req.query;
+  if (!cedulaTrabajador) {
+    return res.status(400).json({ message: 'cedulaTrabajador es requerido' });
+  }
+  const data = await asistenciaQRService.getSemanaAsistencia(cedulaTrabajador);
+  res.status(200).json({ status: 'success', data });
+});
+
+exports.updateAsistenciaObservaciones = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { observaciones } = req.body;
+  if (observaciones === undefined) {
+    return res.status(400).json({ message: 'observaciones es requerido' });
+  }
+  const asistencia = await asistenciaQRService.updateObservaciones(id, observaciones);
+  res.status(200).json({ status: 'success', data: asistencia });
+});
+
+exports.getResumenSemanalTodos = catchAsync(async (req, res) => {
+  const resumen = await asistenciaQRService.getResumenSemanalTodos();
+  res.status(200).json({ status: 'success', data: resumen });
+});

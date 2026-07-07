@@ -38,7 +38,7 @@ const calcularHoras = (inicio, fin) => {
 };
 
 exports.registrarAsistencia = async (data) => {
-  const { cedulaTrabajador, qr_uuid, tipoMovimiento } = data;
+  const { cedulaTrabajador, qr_uuid, tipoMovimiento, observaciones } = data;
 
   const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
   if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
@@ -46,11 +46,7 @@ exports.registrarAsistencia = async (data) => {
   const trabajador = await Trabajador.findOne({ where: whereClause });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
-  // Usar hora del servidor
   const dateObj = new Date();
-
-  // Ajuste para la zona horaria local de Venezuela (-04:00)
-  // o simplemente usar toLocaleDateString('en-CA') que da YYYY-MM-DD
   const offset = dateObj.getTimezoneOffset() * 60000;
   const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
 
@@ -73,6 +69,7 @@ exports.registrarAsistencia = async (data) => {
       break;
     case 'Salida':
       asistencia.salida_manana = dateObj;
+      if (observaciones) asistencia.observaciones = observaciones;
       break;
     default:
       throw new AppError('Tipo de movimiento inválido', 400);
@@ -84,6 +81,43 @@ exports.registrarAsistencia = async (data) => {
 
   await asistencia.save();
   return asistencia;
+};
+
+exports.getSemanaAsistencia = async (cedulaTrabajador) => {
+  const cleanCedula = cedulaTrabajador.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
+  const trabajador = await Trabajador.findOne({ where: { cedula: cleanCedula } });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const ahora = new Date();
+  const diaSemana = ahora.getDay();
+  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(ahora);
+  lunes.setDate(ahora.getDate() - diffLunes);
+  const lunesStr = lunes.toISOString().split('T')[0];
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() + 6);
+  const domingoStr = domingo.toISOString().split('T')[0];
+
+  const registros = await AsistenciaQR.findAll({
+    where: {
+      id_trabajador: trabajador.id_trabajador,
+      fecha: { [require('sequelize').Op.between]: [lunesStr, domingoStr] },
+    },
+  });
+
+  const horasAcumuladas = registros.reduce(
+    (sum, r) => sum + (parseFloat(r.horas_cumplidas_dia) || 0),
+    0
+  );
+  const horasSemanales = parseFloat(trabajador.horas_semanales) || 0;
+  const horasRestantes = Math.max(0, horasSemanales - horasAcumuladas);
+
+  return {
+    horasSemanales,
+    horasAcumuladas: Math.round(horasAcumuladas * 100) / 100,
+    horasRestantes: Math.round(horasRestantes * 100) / 100,
+    diasRegistrados: registros.length,
+  };
 };
 
 exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
@@ -135,6 +169,74 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
     horasTranscurridas,
     asistencia: asistencia || null,
   };
+};
+
+exports.updateObservaciones = async (id, observaciones) => {
+  const asistencia = await AsistenciaQR.findByPk(id);
+  if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
+  asistencia.observaciones = observaciones || null;
+  await asistencia.save();
+  return asistencia;
+};
+
+exports.getResumenSemanalTodos = async () => {
+  const ahora = new Date();
+  const diaSemana = ahora.getDay();
+  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(ahora);
+  lunes.setDate(ahora.getDate() - diffLunes);
+  const lunesStr = lunes.toISOString().split('T')[0];
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() + 6);
+  const domingoStr = domingo.toISOString().split('T')[0];
+
+  const { Op } = require('sequelize');
+
+  const trabajadores = await Trabajador.findAll({
+    where: { estado: true },
+    include: [{ model: CargoTrabajador }],
+  });
+
+  const registros = await AsistenciaQR.findAll({
+    where: {
+      fecha: { [Op.between]: [lunesStr, domingoStr] },
+    },
+    include: [{ model: Trabajador }],
+  });
+
+  const resumen = trabajadores.map((t) => {
+    const tRegistros = registros.filter((r) => r.id_trabajador === t.id_trabajador);
+    const horasAcumuladas = tRegistros.reduce(
+      (sum, r) => sum + (parseFloat(r.horas_cumplidas_dia) || 0),
+      0
+    );
+    const horasSemanales = parseFloat(t.horas_semanales) || 0;
+    const horasRestantes = Math.max(0, horasSemanales - horasAcumuladas);
+    const tieneObs = tRegistros.some((r) => r.observaciones);
+    return {
+      id_trabajador: t.id_trabajador,
+      cedula: t.cedula,
+      nombres: t.nombres,
+      apellidos: t.apellidos,
+      cargo: t.CargoTrabajador?.nombre_cargo || null,
+      horas_semanales: horasSemanales,
+      horas_acumuladas: Math.round(horasAcumuladas * 100) / 100,
+      horas_restantes: horasRestantes <= 0 || tieneObs ? 0 : Math.round(horasRestantes * 100) / 100,
+      cumplio: horasRestantes <= 0,
+      justificado: !(horasRestantes <= 0) && tieneObs,
+      observaciones: tRegistros.find((r) => r.observaciones)?.observaciones || null,
+      dias: tRegistros.map((r) => ({
+        id: r.id_asistencia,
+        fecha: r.fecha,
+        entrada: r.entrada_manana,
+        salida: r.salida_manana,
+        horas: r.horas_cumplidas_dia,
+        observaciones: r.observaciones,
+      })),
+    };
+  });
+
+  return resumen;
 };
 
 exports.getAllAsistencias = async (page, limit) => {

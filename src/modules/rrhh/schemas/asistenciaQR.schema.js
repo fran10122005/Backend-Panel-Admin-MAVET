@@ -6,8 +6,9 @@ const dateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/; // Si
 const registrarAsistenciaSchema = z
   .object({
     cedulaTrabajador: z.string().optional(),
-    qr_uuid: z.string().min(1).optional(), // puede ser UUID o cédula (carnets sin qr_uuid)
+    qr_uuid: z.string().min(1).optional(),
     tipoMovimiento: z.enum(['Entrada', 'Salida']),
+    observaciones: z.string().optional(),
   })
   .refine((data) => data.cedulaTrabajador || data.qr_uuid, {
     message: 'Debe proveer cédula o QR UUID',
