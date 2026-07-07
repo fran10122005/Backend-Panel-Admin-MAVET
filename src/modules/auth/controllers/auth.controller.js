@@ -127,3 +127,11 @@ exports.updateUsuario = catchAsync(async (req, res) => {
     data: usuario,
   });
 });
+
+exports.deleteUsuario = catchAsync(async (req, res) => {
+  await authService.deleteUsuario(req.params.id, req.user.id_usuario);
+  res.status(200).json({
+    status: 'success',
+    message: 'Usuario eliminado exitosamente',
+  });
+});

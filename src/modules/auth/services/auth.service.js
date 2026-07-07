@@ -257,3 +257,17 @@ exports.updateUsuario = async (id_usuario, data) => {
 
   return usuario;
 };
+
+exports.deleteUsuario = async (id_usuario, solicitante_id) => {
+  if (id_usuario === solicitante_id) {
+    throw new AppError('No puedes eliminar tu propio usuario', 400);
+  }
+
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  await Trabajador.update({ id_usuario: null }, { where: { id_usuario } });
+
+  await usuario.destroy();
+  return true;
+};

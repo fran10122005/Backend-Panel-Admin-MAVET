@@ -1,4 +1,15 @@
-const { Obra, Libro, Trabajador, Taller, Artista, InscripcionTaller } = require('../../models');
+const {
+  Obra,
+  Libro,
+  Trabajador,
+  Taller,
+  Artista,
+  InscripcionTaller,
+  InventarioTaller,
+  EspacioMuseo,
+  SolicitudEspacio,
+  Usuario,
+} = require('../../models');
 const { Op } = require('sequelize');
 
 const getModelByName = (modelName) => {
@@ -15,6 +26,14 @@ const getModelByName = (modelName) => {
       return Artista;
     case 'InscripcionTaller':
       return InscripcionTaller;
+    case 'InventarioTaller':
+      return InventarioTaller;
+    case 'EspacioMuseo':
+      return EspacioMuseo;
+    case 'SolicitudEspacio':
+      return SolicitudEspacio;
+    case 'Usuario':
+      return Usuario;
     default:
       throw new Error('Modelo no soportado en papelera');
   }
@@ -34,6 +53,14 @@ const getIdField = (modelName) => {
       return 'id_artista';
     case 'InscripcionTaller':
       return 'id_inscripcion';
+    case 'InventarioTaller':
+      return 'id';
+    case 'EspacioMuseo':
+      return 'id_espacio';
+    case 'SolicitudEspacio':
+      return 'id_solicitud';
+    case 'Usuario':
+      return 'id_usuario';
     default:
       return 'id';
   }
@@ -53,6 +80,18 @@ const formatTitle = (modelName, item) => {
       return `${item.nombres || ''} ${item.apellidos || ''}`.trim();
     case 'InscripcionTaller':
       return `Inscripción #${item.id_inscripcion || ''}`;
+    case 'InventarioTaller':
+      return item.nombre || 'Taller de inventario sin nombre';
+    case 'EspacioMuseo':
+      return item.nombre || 'Espacio sin nombre';
+    case 'SolicitudEspacio':
+      return item.codigo_reserva
+        ? `Reserva ${item.codigo_reserva}`
+        : item.motivo
+          ? item.motivo.substring(0, 40)
+          : 'Reserva sin nombre';
+    case 'Usuario':
+      return item.correo || 'Usuario sin correo';
     default:
       return 'Item eliminado';
   }
@@ -126,6 +165,50 @@ exports.getPapeleraGlobal = async () => {
         titulo: formatTitle('InscripcionTaller', ins),
         fecha_eliminacion: ins.deleted_at,
         detalle: ins.estado_inscripcion,
+      })
+    );
+
+    const invTalleres = await InventarioTaller.findAll(query);
+    invTalleres.forEach((it) =>
+      items.push({
+        id: it.id,
+        tipo: 'InventarioTaller',
+        titulo: formatTitle('InventarioTaller', it),
+        fecha_eliminacion: it.deleted_at,
+        detalle: it.descripcion ? it.descripcion.substring(0, 50) : '',
+      })
+    );
+
+    const espacios = await EspacioMuseo.findAll(query);
+    espacios.forEach((e) =>
+      items.push({
+        id: e.id_espacio,
+        tipo: 'EspacioMuseo',
+        titulo: formatTitle('EspacioMuseo', e),
+        fecha_eliminacion: e.deleted_at,
+        detalle: e.codigo_espacio || `Capacidad: ${e.capacidad || 'N/A'}`,
+      })
+    );
+
+    const solicitudes = await SolicitudEspacio.findAll(query);
+    solicitudes.forEach((s) =>
+      items.push({
+        id: s.id_solicitud,
+        tipo: 'SolicitudEspacio',
+        titulo: formatTitle('SolicitudEspacio', s),
+        fecha_eliminacion: s.deleted_at,
+        detalle: s.estado,
+      })
+    );
+
+    const usuarios = await Usuario.findAll(query);
+    usuarios.forEach((u) =>
+      items.push({
+        id: u.id_usuario,
+        tipo: 'Usuario',
+        titulo: formatTitle('Usuario', u),
+        fecha_eliminacion: u.deleted_at,
+        detalle: u.id_rol,
       })
     );
   } catch (error) {
