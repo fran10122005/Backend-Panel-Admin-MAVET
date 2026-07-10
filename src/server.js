@@ -190,29 +190,38 @@ async function seedInventarioTalleres() {
     },
   ];
   for (const t of talleresBase) {
-    const existe = await InventarioTaller.findOne({ where: { nombre: t.nombre } });
-    if (!existe) {
-      const creado = await InventarioTaller.create(t);
-      console.log(`  🌱 Inventario: "${t.nombre}" creado.`);
-
-      // También crear un taller planificado de ejemplo para el primero
-      if (t.nombre === 'Taller de Pintura y Dibujo') {
-        const planificado = await Taller.create({
-          nombre_curso: t.nombre,
-          inventario_id: creado.id,
-          sesiones: 8,
-          fecha: new Date(),
-          hora_inicio: '10:00',
-          hora_fin: '12:00',
-          horas_totales: 16,
-          cupo_minimo: 5,
-          cupo_maximo: 20,
-          estado: 'Activo',
-        });
-        console.log(
-          `  🌱 Taller planificado: "${planificado.nombre_curso}" creado desde inventario.`
-        );
-      }
+    try {
+      await InventarioTaller.findOrCreate({
+        where: { nombre: t.nombre },
+        defaults: t,
+        paranoid: false,
+      });
+    } catch {
+      // Si ya existe (unique), ignoramos silenciosamente
+    }
+  }
+  // Crear taller planificado de ejemplo si no existe
+  const inventarioPintura = await InventarioTaller.findOne({
+    where: { nombre: 'Taller de Pintura y Dibujo' },
+    paranoid: false,
+  });
+  if (inventarioPintura) {
+    const yaExiste = await Taller.findOne({
+      where: { inventario_id: inventarioPintura.id },
+    });
+    if (!yaExiste) {
+      await Taller.create({
+        nombre_curso: inventarioPintura.nombre,
+        inventario_id: inventarioPintura.id,
+        sesiones: 8,
+        fecha: new Date(),
+        hora_inicio: '10:00',
+        hora_fin: '12:00',
+        horas_totales: 16,
+        cupo_minimo: 5,
+        cupo_maximo: 20,
+        estado: 'Activo',
+      });
     }
   }
 }
