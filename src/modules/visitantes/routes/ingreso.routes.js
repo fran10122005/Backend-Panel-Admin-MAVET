@@ -13,7 +13,10 @@ router.get('/top', verifyToken, ingresoController.getTopVisitantes);
 router.get('/check/:cedula', ingresoController.checkVisitante);
 
 // Registrar ingreso (crea el visitante si no existe)
-router.post('/', ingresoController.registrarIngreso);
+const validateZod = require('../../../middleware/validateSchema');
+const { registrarIngresoSchema } = require('../schemas/ingreso.schema');
+
+router.post('/', validateZod(registrarIngresoSchema), ingresoController.registrarIngreso);
 
 // Obtener todos los registros de ingreso
 router.get('/', verifyToken, ingresoController.getAllIngresos);

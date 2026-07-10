@@ -224,8 +224,22 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
   const { Op } = require('sequelize');
   const where = {};
   if (fecha) {
-    const start = new Date(`${fecha}T00:00:00.000Z`);
-    const end = new Date(`${fecha}T23:59:59.999Z`);
+    let start, end;
+    if (fecha.length === 4) {
+      // YYYY
+      start = new Date(`${fecha}-01-01T00:00:00.000Z`);
+      end = new Date(`${fecha}-12-31T23:59:59.999Z`);
+    } else if (fecha.length === 7) {
+      // YYYY-MM
+      const [year, month] = fecha.split('-');
+      start = new Date(`${year}-${month}-01T00:00:00.000Z`);
+      const lastDay = new Date(year, month, 0).getDate();
+      end = new Date(`${year}-${month}-${lastDay}T23:59:59.999Z`);
+    } else {
+      // YYYY-MM-DD
+      start = new Date(`${fecha}T00:00:00.000Z`);
+      end = new Date(`${fecha}T23:59:59.999Z`);
+    }
     where.fecha_hora_entrada = { [Op.between]: [start, end] };
   }
   if (id_solicitud) {

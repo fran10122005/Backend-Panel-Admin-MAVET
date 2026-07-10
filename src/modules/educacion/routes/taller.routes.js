@@ -10,11 +10,18 @@ router.put('/inventario/:id', inventarioController.updateInventario);
 router.delete('/inventario/:id', inventarioController.deleteInventario);
 
 // ── Talleres planificados ──
-router.post('/', tallerController.createTaller);
+const validateZod = require('../../../middleware/validateSchema');
+const {
+  createTallerSchema,
+  updateTallerSchema,
+  planificarTallerSchema,
+} = require('../schemas/taller.schema');
+
+router.post('/', validateZod(createTallerSchema), tallerController.createTaller);
 router.get('/', tallerController.getAllTalleres);
 router.get('/:id', tallerController.getTallerById);
-router.put('/:id', tallerController.updateTaller);
+router.put('/:id', validateZod(updateTallerSchema), tallerController.updateTaller);
 router.delete('/:id', tallerController.deleteTaller);
-router.post('/planificar', tallerController.planificarTaller);
+router.post('/planificar', validateZod(planificarTallerSchema), tallerController.planificarTaller);
 
 module.exports = router;

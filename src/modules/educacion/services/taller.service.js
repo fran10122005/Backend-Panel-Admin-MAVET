@@ -1,7 +1,26 @@
 const { Taller, Instructor, EspacioMuseo, InventarioTaller, Persona } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
+const calcularHorasTotales = (horaInicio, horaFin, numSesiones) => {
+  if (!horaInicio || !horaFin || !numSesiones) return null;
+  const [hI, mI] = horaInicio.split(':').map(Number);
+  const [hF, mF] = horaFin.split(':').map(Number);
+
+  const inicioMinutos = hI * 60 + mI;
+  const finMinutos = hF * 60 + mF;
+
+  if (finMinutos > inicioMinutos) {
+    const diffHours = (finMinutos - inicioMinutos) / 60;
+    return diffHours * parseInt(numSesiones, 10);
+  }
+  return null;
+};
+
 exports.createTaller = async (data) => {
+  if (data.hora_inicio && data.hora_fin && data.sesiones) {
+    const calc = calcularHorasTotales(data.hora_inicio, data.hora_fin, data.sesiones);
+    if (calc !== null) data.horas_totales = String(calc);
+  }
   return await Taller.create(data);
 };
 
@@ -15,6 +34,12 @@ exports.planificarTaller = async (data) => {
   if (!inventario) {
     throw new AppError('Inventario de taller no encontrado', 404);
   }
+
+  if (rest.hora_inicio && rest.hora_fin && rest.sesiones) {
+    const calc = calcularHorasTotales(rest.hora_inicio, rest.hora_fin, rest.sesiones);
+    if (calc !== null) rest.horas_totales = String(calc);
+  }
+
   // Map inventory name to taller's nombre_curso field.
   const tallerData = {
     nombre_curso: inventario.nombre,

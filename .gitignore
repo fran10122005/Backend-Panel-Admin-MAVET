@@ -26,3 +26,5 @@ node_modules/
 *.sln
 *.sw?
 Thumbs.db
+# Local Netlify folder
+.netlify

@@ -200,9 +200,12 @@ const inscribirAlumno = async (data) => {
       throw new Error('Los menores de edad requieren un representante con nombre y cédula.');
     }
 
-    // Calcular fecha de nacimiento aproximada desde la edad
+    // Calcular fecha de nacimiento aproximada desde la edad o usar la proporcionada
     const hoy = new Date();
-    const fechaNac = new Date(hoy.getFullYear() - edad, hoy.getMonth(), hoy.getDate());
+    let fechaNac = new Date(hoy.getFullYear() - edad, hoy.getMonth(), hoy.getDate());
+    if (alumnoData.fecha_nacimiento) {
+      fechaNac = new Date(alumnoData.fecha_nacimiento);
+    }
 
     // 1. Encontrar o Crear Persona del alumno
     let alumnoPersona = null;

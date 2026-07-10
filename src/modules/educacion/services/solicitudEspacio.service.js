@@ -3,11 +3,15 @@ const { SolicitudEspacio, Persona, EspacioMuseo } = require('../../../models');
 const createSolicitud = async (solicitudData) => {
   try {
     let finalIdPersona = solicitudData.id_persona;
-    
+
     if (!finalIdPersona && solicitudData.cedula) {
       const persona = await Persona.findOne({ where: { cedula: solicitudData.cedula } });
       if (!persona) {
-        throw new Error('La persona con cédula ' + solicitudData.cedula + ' no está registrada en el sistema. Debe registrar su ingreso como visitante primero.');
+        throw new Error(
+          'La persona con cédula ' +
+            solicitudData.cedula +
+            ' no está registrada en el sistema. Debe registrar su ingreso como visitante primero.'
+        );
       }
       finalIdPersona = persona.id_persona;
     }
@@ -24,7 +28,7 @@ const createSolicitud = async (solicitudData) => {
       hora_inicio: solicitudData.hora_inicio,
       hora_fin: solicitudData.hora_fin,
       motivo: solicitudData.motivo || solicitudData.motivo_uso,
-      estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente'
+      estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente',
     });
   } catch (error) {
     throw new Error('Error al crear la solicitud de espacio: ' + error.message);
@@ -34,7 +38,7 @@ const createSolicitud = async (solicitudData) => {
 const getAllSolicitudes = async () => {
   try {
     return await SolicitudEspacio.findAll({
-      include: [Persona, EspacioMuseo]
+      include: [Persona, EspacioMuseo],
     });
   } catch (error) {
     throw new Error('Error al obtener las solicitudes de espacio: ' + error.message);
@@ -49,12 +53,29 @@ const getSolicitudById = async (id) => {
   }
 };
 
+const getToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
 const updateSolicitud = async (id, solicitudData) => {
   try {
     const solicitud = await SolicitudEspacio.findByPk(id);
     if (!solicitud) {
       throw new Error('Solicitud no encontrada');
     }
+
+    // Validar si la solicitud ya pasó
+    const fecha = solicitud.fecha_uso || solicitud.fecha_solicitada;
+    if (fecha) {
+      const parts = fecha.split('-');
+      const parsedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (parsedDate < getToday()) {
+        throw new Error('No se pueden editar solicitudes de eventos pasados');
+      }
+    }
+
     return await solicitud.update(solicitudData);
   } catch (error) {
     throw new Error('Error al actualizar la solicitud de espacio: ' + error.message);
@@ -67,6 +88,17 @@ const deleteSolicitud = async (id) => {
     if (!solicitud) {
       throw new Error('Solicitud no encontrada');
     }
+
+    // Validar si la solicitud ya pasó
+    const fecha = solicitud.fecha_uso || solicitud.fecha_solicitada;
+    if (fecha) {
+      const parts = fecha.split('-');
+      const parsedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (parsedDate < getToday()) {
+        throw new Error('No se pueden eliminar solicitudes de eventos pasados');
+      }
+    }
+
     return await solicitud.destroy();
   } catch (error) {
     throw new Error('Error al eliminar la solicitud de espacio: ' + error.message);
@@ -78,5 +110,5 @@ module.exports = {
   getAllSolicitudes,
   getSolicitudById,
   updateSolicitud,
-  deleteSolicitud
+  deleteSolicitud,
 };

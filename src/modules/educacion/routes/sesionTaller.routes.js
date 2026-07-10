@@ -3,8 +3,11 @@ const router = express.Router();
 const sesionController = require('../controllers/sesionTaller.controller');
 
 // Obtener sesiones de un taller y crear nueva sesión
+const validateZod = require('../../../middleware/validateSchema');
+const { createSesionSchema } = require('../schemas/sesionTaller.schema');
+
 router.get('/taller/:id_taller', sesionController.getSesionesByTaller);
-router.post('/taller/:id_taller', sesionController.createSesion);
+router.post('/taller/:id_taller', validateZod(createSesionSchema), sesionController.createSesion);
 
 // Obtener métricas de asistencia de un taller
 router.get('/taller/:id_taller/metricas', sesionController.getMetricasTaller);
