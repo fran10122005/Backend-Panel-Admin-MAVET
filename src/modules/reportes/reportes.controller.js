@@ -16,6 +16,9 @@ const {
   EspacioMuseo,
   RegistroIngreso,
   Persona,
+  Taller,
+  InventarioTaller,
+  Instructor,
 } = require('../../models');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
@@ -404,6 +407,74 @@ exports.reporteQR = catchAsync(async (req, res) => {
 
   const filename = `MAVET_QR_AutoIngreso_${new Date().toISOString().split('T')[0]}.pdf`;
   const pdfBuffer = await generateQRPdf(publicUrl, qrBuffer);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Inventario de Talleres ────────────────────────────────────────
+exports.reporteInventarioTalleres = catchAsync(async (req, res) => {
+  const inventario = await InventarioTaller.findAll({
+    order: [['nombre', 'ASC']],
+  });
+
+  const headers = [
+    { label: 'Código', width: 80, align: 'center' },
+    { label: 'Nombre del Taller', width: 200 },
+    { label: 'Descripción', width: 350 },
+  ];
+  const rows = inventario.map((i) => [i.id || '—', i.nombre || '—', i.descripcion || '—']);
+
+  const filename = `MAVET_Inventario_Talleres_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf('INVENTARIO DE TALLERES DISPONIBLES', headers, rows);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Planificación de Talleres ─────────────────────────────────────
+exports.reporteTalleres = catchAsync(async (req, res) => {
+  const talleres = await Taller.findAll({
+    include: [
+      { model: InventarioTaller, as: 'inventarioTaller' },
+      { model: Instructor, include: [Persona] },
+      { model: EspacioMuseo },
+    ],
+    order: [['fecha', 'DESC']],
+  });
+
+  const headers = [
+    { label: 'Código', width: 55, align: 'center' },
+    { label: 'Curso', width: 120 },
+    { label: 'Instructor', width: 120 },
+    { label: 'Espacio', width: 90 },
+    { label: 'Sesiones', width: 50, align: 'center' },
+    { label: 'Fecha Ini', width: 65, align: 'center' },
+    { label: 'Fecha Fin', width: 65, align: 'center' },
+    { label: 'Horario', width: 75, align: 'center' },
+    { label: 'Cupo', width: 50, align: 'center' },
+    { label: 'Estado', width: 65, align: 'center' },
+  ];
+  const fmtTime = (t) => (t ? t.substring(0, 5) : '—');
+  const rows = talleres.map((t) => [
+    t.id_taller || '—',
+    t.nombre_curso || '—',
+    t.Instructor?.Persona
+      ? `${t.Instructor.Persona.nombres || ''} ${t.Instructor.Persona.apellidos || ''}`.trim()
+      : '—',
+    t.EspacioMuseo?.nombre || '—',
+    t.sesiones || '—',
+    t.fecha || '—',
+    t.fecha_fin || '—',
+    `${fmtTime(t.hora_inicio)} - ${fmtTime(t.hora_fin)}`,
+    t.cupo_minimo && t.cupo_maximo ? `${t.cupo_minimo}-${t.cupo_maximo}` : '—',
+    t.estado || '—',
+  ]);
+
+  const filename = `MAVET_Planificacion_Talleres_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf('PLANIFICACIÓN DE TALLERES', headers, rows);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
