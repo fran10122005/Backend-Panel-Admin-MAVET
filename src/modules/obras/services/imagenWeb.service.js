@@ -1,5 +1,6 @@
 const { ImagenWeb, Obra } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const cacheService = require('../../../services/cache.service');
 
 exports.getAll = async () => {
   return await ImagenWeb.findAll({
@@ -24,7 +25,9 @@ exports.create = async (data) => {
   if (!obra) throw new AppError('La obra especificada no existe', 404);
   const existente = await ImagenWeb.findOne({ where: { id_obra: data.id_obra } });
   if (existente) throw new AppError('Esta obra ya tiene una imagen asignada', 409);
-  return await ImagenWeb.create(data);
+  const result = await ImagenWeb.create(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/imagenes-web*');
+  return result;
 };
 
 exports.update = async (id, data) => {
@@ -37,6 +40,7 @@ exports.update = async (id, data) => {
     if (existente) throw new AppError('La obra destino ya tiene una imagen asignada', 409);
   }
   await img.update(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/imagenes-web*');
   return img;
 };
 
@@ -57,4 +61,5 @@ exports.remove = async (id) => {
   const img = await ImagenWeb.findByPk(id);
   if (!img) throw new AppError('Imagen no encontrada', 404);
   await img.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/imagenes-web*');
 };

@@ -1,6 +1,7 @@
 const { SolicitudEspacio, Persona, EspacioMuseo, sequelize } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const validatorService = require('../../../services/validator.service');
+const cacheService = require('../../../services/cache.service');
 
 const createSolicitud = async (solicitudData) => {
   let finalIdPersona = solicitudData.id_persona;
@@ -44,7 +45,7 @@ const createSolicitud = async (solicitudData) => {
     solicitudData.hora_fin
   );
 
-  return await SolicitudEspacio.create({
+  const result = await SolicitudEspacio.create({
     codigo_reserva: solicitudData.codigo_reserva,
     id_espacio: solicitudData.id_espacio,
     id_persona: finalIdPersona,
@@ -55,6 +56,8 @@ const createSolicitud = async (solicitudData) => {
     motivo: solicitudData.motivo || solicitudData.motivo_uso,
     estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente',
   });
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };
 
 const mapEstadoDinamico = (solicitud) => {
@@ -124,7 +127,9 @@ const updateSolicitud = async (id, solicitudData) => {
     id // idExcluido para que no marque conflicto consigo mismo
   );
 
-  return await solicitud.update(solicitudData);
+  const result = await solicitud.update(solicitudData);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };
 
 const deleteSolicitud = async (id) => {
@@ -137,7 +142,8 @@ const deleteSolicitud = async (id) => {
   const fecha = solicitud.fecha_uso || solicitud.fecha_solicitada;
   await validatorService.validarFechaPasada(fecha, sequelize, 'eliminar', solicitud.hora_inicio);
 
-  return await solicitud.destroy();
+  await solicitud.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
 };
 
 module.exports = {

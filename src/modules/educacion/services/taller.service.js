@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { Taller, Instructor, EspacioMuseo, InventarioTaller, Persona } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const cacheService = require('../../../services/cache.service');
 
 const normalizeNombre = (nombre) => nombre.toLowerCase().replace(/\s+/g, '');
 
@@ -45,7 +46,9 @@ exports.createTaller = async (data) => {
   if (data.fecha && !data.fecha_fin) {
     data.fecha_fin = data.fecha;
   }
-  return await Taller.create(data);
+  const result = await Taller.create(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };
 
 /**
@@ -74,7 +77,9 @@ exports.planificarTaller = async (data) => {
   if (tallerData.fecha && !tallerData.fecha_fin) {
     tallerData.fecha_fin = tallerData.fecha;
   }
-  return await Taller.create(tallerData);
+  const result = await Taller.create(tallerData);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };
 
 exports.getAllTalleres = async (page, limit) => {
@@ -123,11 +128,15 @@ exports.updateTaller = async (id, data) => {
   if (data.nombre_curso) {
     await checkNombreCursoUnico(data.nombre_curso, id);
   }
-  return await taller.update(data);
+  const result = await taller.update(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };
 
 exports.deleteTaller = async (id) => {
   const taller = await Taller.findByPk(id);
   if (!taller) throw new AppError('Taller no encontrado', 404);
-  return await taller.destroy();
+  const result = await taller.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return result;
 };

@@ -9,6 +9,7 @@ const {
 } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const sequelize = require('../../../config/db');
+const cacheService = require('../../../services/cache.service');
 
 const processForeignKeys = async (data, transaction) => {
   let id_artista = data.id_artista;
@@ -82,6 +83,7 @@ exports.createObra = async (data) => {
     );
 
     await t.commit();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
     return newObra;
   } catch (error) {
     await t.rollback();
@@ -174,6 +176,7 @@ exports.updateObra = async (id, data) => {
     );
 
     await t.commit();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
     return obra;
   } catch (error) {
     await t.rollback();
@@ -184,5 +187,7 @@ exports.updateObra = async (id, data) => {
 exports.deleteObra = async (id) => {
   const obra = await Obra.findByPk(id);
   if (!obra) throw new AppError('Obra no encontrada', 404);
-  return await obra.destroy();
+  const result = await obra.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
