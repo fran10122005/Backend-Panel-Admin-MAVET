@@ -11,6 +11,7 @@ const Taller = sequelize.define(
     id_espacio: { type: DataTypes.STRING(15) },
     sesiones: { type: DataTypes.STRING(15) },
     fecha: { type: DataTypes.DATEONLY },
+    fecha_fin: { type: DataTypes.DATEONLY },
     hora_inicio: { type: DataTypes.TIME },
     hora_fin: { type: DataTypes.TIME },
     horas_totales: { type: DataTypes.STRING(15) },
@@ -22,6 +23,16 @@ const Taller = sequelize.define(
   {
     tableName: 'talleres',
     hooks: {
+      beforeSave: (instance) => {
+        if (instance.fecha_fin) {
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+          const fechaFin = new Date(instance.fecha_fin + 'T00:00:00');
+          if (fechaFin < hoy) {
+            instance.estado = 'Inactivo';
+          }
+        }
+      },
       beforeCreate: async (instance, options) => {
         // Obtenemos el nombre de la clave primaria
         const pkField = instance.constructor.primaryKeyAttribute;

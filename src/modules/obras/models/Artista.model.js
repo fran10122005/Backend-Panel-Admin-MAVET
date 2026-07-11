@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../../config/db');
+const AppError = require('../../../utils/AppError');
+const { normalizeCedula } = require('../../../utils/cedula');
 
 const Artista = sequelize.define(
   'Artista',
@@ -18,6 +20,19 @@ const Artista = sequelize.define(
     tableName: 'artistas',
     hooks: {
       beforeCreate: async (instance, options) => {
+        if (instance.ci) {
+          instance.ci = normalizeCedula(instance.ci);
+
+          const existing = await Artista.findOne({
+            where: { ci: instance.ci },
+            transaction: options.transaction,
+            paranoid: false,
+          });
+          if (existing) {
+            throw new AppError('La cédula del artista ya se encuentra registrada', 400);
+          }
+        }
+
         // Obtenemos el nombre de la clave primaria
         const pkField = instance.constructor.primaryKeyAttribute;
         if (!pkField || (pkField === 'id' && instance.rawAttributes.id.type.key !== 'STRING'))
@@ -39,6 +54,24 @@ const Artista = sequelize.define(
         }
 
         instance[pkField] = `ART-${String(newNumber).padStart(5, '0')}`;
+      },
+      beforeUpdate: async (instance, options) => {
+        if (instance.changed('ci') && instance.ci) {
+          instance.ci = normalizeCedula(instance.ci);
+
+          const { Op } = require('sequelize');
+          const existing = await Artista.findOne({
+            where: {
+              ci: instance.ci,
+              id_artista: { [Op.ne]: instance.id_artista },
+            },
+            transaction: options.transaction,
+            paranoid: false,
+          });
+          if (existing) {
+            throw new AppError('La cédula del artista ya se encuentra registrada', 400);
+          }
+        }
       },
     },
     timestamps: true,

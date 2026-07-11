@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../../config/db');
+const AppError = require('../../../utils/AppError');
+const { normalizeCedula } = require('../../../utils/cedula');
 
 const Trabajador = sequelize.define(
   'Trabajador',
@@ -26,6 +28,19 @@ const Trabajador = sequelize.define(
     deletedAt: 'deleted_at',
     hooks: {
       beforeCreate: async (instance, options) => {
+        if (instance.cedula) {
+          instance.cedula = normalizeCedula(instance.cedula);
+
+          const existing = await Trabajador.findOne({
+            where: { cedula: instance.cedula },
+            transaction: options.transaction,
+            paranoid: false,
+          });
+          if (existing) {
+            throw new AppError('La cédula del trabajador ya se encuentra registrada', 400);
+          }
+        }
+
         // Generar UUID para QR si no existe
         if (!instance.qr_uuid) {
           const crypto = require('crypto');
@@ -53,6 +68,24 @@ const Trabajador = sequelize.define(
         }
 
         instance[pkField] = `TRB-${String(newNumber).padStart(5, '0')}`;
+      },
+      beforeUpdate: async (instance, options) => {
+        if (instance.changed('cedula') && instance.cedula) {
+          instance.cedula = normalizeCedula(instance.cedula);
+
+          const { Op } = require('sequelize');
+          const existing = await Trabajador.findOne({
+            where: {
+              cedula: instance.cedula,
+              id_trabajador: { [Op.ne]: instance.id_trabajador },
+            },
+            transaction: options.transaction,
+            paranoid: false,
+          });
+          if (existing) {
+            throw new AppError('La cédula del trabajador ya se encuentra registrada', 400);
+          }
+        }
       },
     },
   }

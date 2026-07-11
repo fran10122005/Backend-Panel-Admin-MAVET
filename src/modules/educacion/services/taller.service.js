@@ -1,5 +1,23 @@
+const { Op } = require('sequelize');
 const { Taller, Instructor, EspacioMuseo, InventarioTaller, Persona } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+
+const normalizeNombre = (nombre) => nombre.toLowerCase().replace(/\s+/g, '');
+
+const checkNombreCursoUnico = async (nombre_curso, excludeId = null) => {
+  const normalized = normalizeNombre(nombre_curso);
+  const where = excludeId ? { id_taller: { [Op.ne]: excludeId } } : {};
+  const talleres = await Taller.findAll({ attributes: ['id_taller', 'nombre_curso'], where });
+
+  for (const t of talleres) {
+    if (normalizeNombre(t.nombre_curso) === normalized) {
+      throw new AppError(
+        `El nombre del taller "${t.nombre_curso}" ya está registrado. Por favor, utiliza un nombre diferente.`,
+        400
+      );
+    }
+  }
+};
 
 const calcularHorasTotales = (horaInicio, horaFin, numSesiones) => {
   if (!horaInicio || !horaFin || !numSesiones) return null;
@@ -17,9 +35,15 @@ const calcularHorasTotales = (horaInicio, horaFin, numSesiones) => {
 };
 
 exports.createTaller = async (data) => {
+  if (data.nombre_curso) {
+    await checkNombreCursoUnico(data.nombre_curso);
+  }
   if (data.hora_inicio && data.hora_fin && data.sesiones) {
     const calc = calcularHorasTotales(data.hora_inicio, data.hora_fin, data.sesiones);
     if (calc !== null) data.horas_totales = String(calc);
+  }
+  if (data.fecha && !data.fecha_fin) {
+    data.fecha_fin = data.fecha;
   }
   return await Taller.create(data);
 };
@@ -45,6 +69,11 @@ exports.planificarTaller = async (data) => {
     nombre_curso: inventario.nombre,
     ...rest,
   };
+
+  await checkNombreCursoUnico(tallerData.nombre_curso);
+  if (tallerData.fecha && !tallerData.fecha_fin) {
+    tallerData.fecha_fin = tallerData.fecha;
+  }
   return await Taller.create(tallerData);
 };
 
@@ -91,6 +120,9 @@ exports.getTallerById = async (id) => {
 exports.updateTaller = async (id, data) => {
   const taller = await Taller.findByPk(id);
   if (!taller) throw new AppError('Taller no encontrado', 404);
+  if (data.nombre_curso) {
+    await checkNombreCursoUnico(data.nombre_curso, id);
+  }
   return await taller.update(data);
 };
 

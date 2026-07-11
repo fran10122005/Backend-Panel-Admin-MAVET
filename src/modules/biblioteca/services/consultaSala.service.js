@@ -1,5 +1,6 @@
 const { ConsultaSala, Persona, Libro, Trabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const { normalizeCedula } = require('../../../utils/cedula');
 
 exports.createConsulta = async (data) => {
   const { id_libro, id_persona, id_trabajador, mesa, estado, cedula, nombre } = data;
@@ -10,7 +11,8 @@ exports.createConsulta = async (data) => {
 
   if (!finalIdPersona && cedula) {
     try {
-      let persona = await Persona.findOne({ where: { cedula } });
+      const normalizedCed = normalizeCedula(cedula);
+      let persona = await Persona.findOne({ where: { cedula: normalizedCed } });
       if (!persona) {
         if (!nombre)
           throw new AppError(
@@ -24,7 +26,7 @@ exports.createConsulta = async (data) => {
           nombres = parts[0];
           apellidos = parts.slice(1).join(' ');
         }
-        persona = await Persona.create({ cedula, nombres, apellidos });
+        persona = await Persona.create({ cedula: normalizedCed, nombres, apellidos });
       }
       finalIdPersona = persona.id_persona;
     } catch (error) {

@@ -25,6 +25,7 @@ const baseTallerSchema = {
       { message: 'La fecha no puede ser en el pasado' }
     )
     .optional(),
+  fecha_fin: z.string().optional(),
   hora_inicio: z
     .string()
     .regex(/^([01]\d|2[0-3]):?([0-5]\d)(:[0-5]\d)?$/, 'Hora de inicio inválida')

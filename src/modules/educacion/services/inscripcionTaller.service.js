@@ -156,6 +156,7 @@ const {
   AlumnoRepresentante,
   Representante,
 } = require('../../../models');
+const { normalizeCedula } = require('../../../utils/cedula');
 
 const getInscripcionesConDetalles = async () => {
   const inscripciones = await InscripcionTaller.findAll();
@@ -211,8 +212,9 @@ const inscribirAlumno = async (data) => {
     let alumnoPersona = null;
 
     if (alumnoData.cedula) {
+      const normalizedCed = normalizeCedula(alumnoData.cedula);
       alumnoPersona = await Persona.findOne({
-        where: { cedula: alumnoData.cedula },
+        where: { cedula: normalizedCed },
         transaction: t,
       });
     }
@@ -257,8 +259,9 @@ const inscribirAlumno = async (data) => {
 
     // 3. Si es menor, crear/traer Representante y vincular
     if (esMenor && repData) {
+      const normalizedRepCed = normalizeCedula(repData.cedula);
       let repPersona = await Persona.findOne({
-        where: { cedula: repData.cedula },
+        where: { cedula: normalizedRepCed },
         transaction: t,
       });
 
