@@ -254,6 +254,7 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
       fecha_uso: {
         [Op.gte]: now,
       },
+      estado: 'Pendiente',
     },
     order: [['fecha_uso', 'ASC']],
     limit: 3,
