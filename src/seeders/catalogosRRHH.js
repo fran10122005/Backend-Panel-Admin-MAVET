@@ -4,7 +4,7 @@ const cargos = [
   { nombre_cargo: 'Director(a)', descripcion: 'Director o Directora del museo' },
   { nombre_cargo: 'Subdirector(a)', descripcion: 'Subdirector o Subdirectora del museo' },
   { nombre_cargo: 'Administrador(a)', descripcion: 'Encargado de la administración general' },
-  { nombre_cargo: 'Curador(a)', descripcion: 'Responsable de la colección y exposiciones' },
+  { nombre_cargo: 'Curador(a)', descripcion: 'Responsable de la colección del museo' },
   { nombre_cargo: 'Restaurador(a)', descripcion: 'Especialista en restauración de obras' },
   {
     nombre_cargo: 'Educador(a) de Museos',
@@ -18,7 +18,7 @@ const cargos = [
   },
   { nombre_cargo: 'Archivista', descripcion: 'Gestión y conservación de archivos y documentos' },
   { nombre_cargo: 'Bibliotecario(a)', descripcion: 'Gestión de la biblioteca del museo' },
-  { nombre_cargo: 'Técnico de Montaje', descripcion: 'Instalación y desmontaje de exposiciones' },
+  { nombre_cargo: 'Técnico de Montaje', descripcion: 'Instalación y desmontaje de obras' },
   { nombre_cargo: 'Museógrafo(a)', descripcion: 'Diseño de espacios y narrativa expositiva' },
   { nombre_cargo: 'Fotógrafo(a)', descripcion: 'Registro fotográfico de obras y eventos' },
   { nombre_cargo: 'Diseñador(a) Gráfico(a)', descripcion: 'Material de comunicación y difusión' },

@@ -2,11 +2,11 @@ const { EspacioMuseo } = require('../models');
 
 const espaciosAGregar = [
   { nombre: 'Auditorio', capacidad: '100', descripcion: 'Auditorio principal del museo' },
-  { nombre: 'Sala 1', capacidad: '50', descripcion: 'Sala de exposiciones 1' },
-  { nombre: 'Sala 2', capacidad: '50', descripcion: 'Sala de exposiciones 2' },
-  { nombre: 'Sala 3', capacidad: '50', descripcion: 'Sala de exposiciones 3' },
-  { nombre: 'Sala 4', capacidad: '50', descripcion: 'Sala de exposiciones 4' },
-  { nombre: 'Sala 5', capacidad: '50', descripcion: 'Sala de exposiciones 5' },
+  { nombre: 'Sala 1', capacidad: '50', descripcion: 'Sala de exhibición 1' },
+  { nombre: 'Sala 2', capacidad: '50', descripcion: 'Sala de exhibición 2' },
+  { nombre: 'Sala 3', capacidad: '50', descripcion: 'Sala de exhibición 3' },
+  { nombre: 'Sala 4', capacidad: '50', descripcion: 'Sala de exhibición 4' },
+  { nombre: 'Sala 5', capacidad: '50', descripcion: 'Sala de exhibición 5' },
   { nombre: 'Otro', capacidad: '0', descripcion: 'Otro espacio no contemplado' },
 ];
 

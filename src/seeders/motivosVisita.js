@@ -2,9 +2,7 @@ const { MotivoVisita, RegistroIngreso } = require('../models');
 
 const motivos = [
   { nombre: 'Visita Guiada', descripcion: 'Recorrido guiado por el museo' },
-  { nombre: 'Exposición', descripcion: 'Visita a exposiciones del museo' },
   { nombre: 'Biblioteca', descripcion: 'Consulta e investigación en biblioteca' },
-  { nombre: 'Exposición Permanente', descripcion: 'Visita a la colección permanente del museo' },
   { nombre: 'Trámites', descripcion: 'Trámites administrativos y documentación' },
   { nombre: 'Visita Escolar', descripcion: 'Visita educativa de instituciones' },
   { nombre: 'Mantenimiento', descripcion: 'Trabajos de mantenimiento o instalación' },
