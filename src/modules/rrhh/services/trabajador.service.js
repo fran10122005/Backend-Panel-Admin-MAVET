@@ -8,6 +8,10 @@ const camposPermitidosTrabajador = [
   'telefono',
   'correo_personal',
   'id_cargo',
+  'horas_semanales',
+  'fecha_nacimiento',
+  'direccion',
+  'fecha_ingreso',
   'qr_uuid',
   'estado',
 ];
@@ -17,7 +21,6 @@ exports.createTrabajador = async (data) => {
   camposPermitidosTrabajador.forEach((c) => {
     if (data[c] !== undefined) payload[c] = data[c];
   });
-  if (data.horas_semanales !== undefined) payload.horas_semanales = data.horas_semanales;
   return await Trabajador.create(payload);
 };
 
@@ -90,12 +93,6 @@ exports.subirFotoTrabajador = async (id_trabajador, filePath) => {
 
   trabajador.foto_url = url;
   await trabajador.save();
-
-  // Si tiene usuario vinculado, actualizar su foto_url también
-  if (trabajador.id_usuario) {
-    const { Usuario } = require('../../../models');
-    await Usuario.update({ foto_url: url }, { where: { id_usuario: trabajador.id_usuario } });
-  }
 
   return url;
 };

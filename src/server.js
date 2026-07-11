@@ -236,7 +236,12 @@ async function migrateTablas() {
   const cambios = [
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS id_solicitud VARCHAR(15);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE asistencias_qr ADD COLUMN IF NOT EXISTS horas_justificadas DECIMAL;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS horas_semanales DECIMAL;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS direccion TEXT;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_ingreso DATE;`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE libros ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
