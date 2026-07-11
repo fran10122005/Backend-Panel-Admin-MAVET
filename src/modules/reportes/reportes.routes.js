@@ -13,5 +13,7 @@ router.get('/dashboard', reportesController.getDashboardStats);
 router.get('/carnet/:id', reportesController.reporteCarnet);
 router.get('/credenciales-masivas', reportesController.reporteCredencialesMasivas);
 router.get('/qr', reportesController.reporteQR);
+router.get('/inventario-talleres', reportesController.reporteInventarioTalleres);
+router.get('/talleres', reportesController.reporteTalleres);
 
 module.exports = router;

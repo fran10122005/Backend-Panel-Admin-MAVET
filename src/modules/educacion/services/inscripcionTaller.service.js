@@ -1,12 +1,6 @@
 const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit');
-const path = require('path');
-const fs = require('fs');
-const { PassThrough } = require('stream');
 const AppError = require('../../../utils/AppError');
-
-const LOGO_PATH = path.join(__dirname, '../../../../public/images/logo/mavet2.png');
-const LOGO_IMG = fs.readFileSync(LOGO_PATH);
+const { generateTablePdf } = require('../../../utils/pdfGenerator');
 
 // Export inscripciones for a specific taller in PDF or Excel
 const exportInscripciones = async (tallerId, format) => {
@@ -41,105 +35,19 @@ const exportInscripciones = async (tallerId, format) => {
     const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     return { buffer, filename, mimeType };
   } else if (format === 'pdf') {
-    const doc = new PDFDocument({ margin: 30, size: 'A4' });
-    const stream = new PassThrough();
-    doc.pipe(stream);
-
-    const MAVET_HEX = '#800000';
-    const GRAY_MED = '#666666';
-    const GRAY_LIGHT = '#999999';
-    const HEADER_BG = '#7C0F0F';
-    const PAGE_W = doc.page.width;
-
-    // ── Encabezado institucional ──
-    doc.rect(0, 0, PAGE_W, 70).fill(HEADER_BG);
-    doc.rect(0, 68, PAGE_W, 3).fill(MAVET_HEX);
-    try {
-      doc.image(LOGO_IMG, 15, 8, { width: 50 });
-    } catch (_e) {
-      /* Logo no disponible */
-    }
-    doc
-      .fillColor('#FFFFFF')
-      .fontSize(16)
-      .font('Helvetica-Bold')
-      .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', 75, 15);
-    doc.fontSize(10).font('Helvetica').text('MAVET – Sistema de Gestión Interna', 75, 35);
-    doc.fontSize(13).font('Helvetica-Bold').text(`Inscripciones — Taller #${tallerId}`, 75, 52);
-
-    // ── Fecha ──
-    doc.fillColor(GRAY_MED).fontSize(9).font('Helvetica');
-    const fechaGen = new Date().toLocaleDateString('es-VE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    doc.text(`Generado el: ${fechaGen}`, 30, 85);
-
-    // ── Tabla ──
-    const tableHeaders = ['Alumno', 'Representante', 'Fecha Inscripción'];
-    const colW = (PAGE_W - 60) / 3;
-    let y = 110;
-
-    doc.rect(30, y, PAGE_W - 60, 22).fill(MAVET_HEX);
-    doc.fillColor('#FFFFFF').fontSize(9).font('Helvetica-Bold');
-    tableHeaders.forEach((h, i) => doc.text(h, 35 + i * colW, y + 6, { width: colW - 10 }));
-    y += 22;
-
-    filtered.forEach((ins, idx) => {
-      if (y > 720) {
-        doc.addPage();
-        y = 50;
-      }
-      const alumnoName = ins.Alumno
-        ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim()
-        : '-';
-      const repName = ins.Representante
+    const headers = [
+      { label: 'Alumno', width: 200 },
+      { label: 'Representante', width: 200 },
+      { label: 'Fecha Inscripción', width: 140, align: 'center' },
+    ];
+    const rows = filtered.map((ins) => [
+      ins.Alumno ? `${ins.Alumno.nombres || ''} ${ins.Alumno.apellidos || ''}`.trim() : '-',
+      ins.Representante
         ? `${ins.Representante.nombres || ''} ${ins.Representante.apellidos || ''}`.trim()
-        : '-';
-      const fecha = ins.fecha_inscripcion
-        ? new Date(ins.fecha_inscripcion).toLocaleDateString()
-        : '-';
-      if (idx % 2 !== 0) doc.rect(30, y, PAGE_W - 60, 18).fill('#F9F5F5');
-      doc.fillColor('#333333').fontSize(8).font('Helvetica');
-      [alumnoName, repName, fecha].forEach((text, i) =>
-        doc.text(String(text).substring(0, 50), 35 + i * colW, y + 5, { width: colW - 10 })
-      );
-      doc
-        .moveTo(30, y + 17.5)
-        .lineTo(PAGE_W - 30, y + 17.5)
-        .lineWidth(0.3)
-        .strokeColor('#E8E8E8')
-        .stroke();
-      y += 18;
-    });
-
-    // ── Pie ──
-    const pages = doc.bufferedPageRange();
-    for (let i = 0; i < pages.count; i++) {
-      doc.switchToPage(i);
-      const w = doc.page.width;
-      const h = doc.page.height;
-      doc
-        .lineWidth(0.4)
-        .strokeColor(MAVET_HEX)
-        .moveTo(30, h - 35)
-        .lineTo(w - 30, h - 35)
-        .stroke();
-      doc
-        .fontSize(7)
-        .fillColor(GRAY_LIGHT)
-        .font('Helvetica')
-        .text(`Página ${i + 1} de ${pages.count}`, w / 2, h - 28, { align: 'center' })
-        .text('MAVET – Documento de uso interno', w - 30, h - 28, { align: 'right' });
-    }
-
-    doc.end();
-    const chunks = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
+        : '-',
+      ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString('es-VE') : '-',
+    ]);
+    const buffer = await generateTablePdf(`Inscripciones — Taller #${tallerId}`, headers, rows);
     const filename = `Inscripciones_Taller_${tallerId}_${new Date().toISOString().split('T')[0]}.pdf`;
     const mimeType = 'application/pdf';
     return { buffer, filename, mimeType };

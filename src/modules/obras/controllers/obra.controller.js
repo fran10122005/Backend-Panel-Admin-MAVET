@@ -17,7 +17,11 @@ exports.createObra = catchAsync(async (req, res) => {
       console.error('Error uploading image to Cloudinary', err);
       throw new AppError('Error al procesar la imagen.', 500);
     } finally {
-      try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (_) {
+        /* ignore */
+      }
     }
   }
   const obra = await obraService.createObra(data);
@@ -58,7 +62,11 @@ exports.updateObra = catchAsync(async (req, res) => {
       console.error('Error uploading image to Cloudinary', err);
       throw new AppError('Error al procesar la imagen.', 500);
     } finally {
-      try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (_) {
+        /* ignore */
+      }
     }
   }
   const obra = await obraService.updateObra(req.params.id, data);
