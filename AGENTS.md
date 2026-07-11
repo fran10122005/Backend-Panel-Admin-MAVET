@@ -76,6 +76,45 @@ npm run test:win
 $env:NODE_ENV="test"; npx jest --detectOpenHandles --forceExit
 ```
 
+## Redis Cache
+
+El sistema incluye un caché Redis para endpoints públicos de lectura (`GET`).
+
+**Archivos:**
+- `src/config/redis.js` — Conexión a Redis. Usa `REDIS_URL` (default `redis://localhost:6379`). En test se deshabilita automáticamente.
+- `src/services/cache.service.js` — Servicio de caché con métodos `obtener`, `guardar`, `eliminar`, `eliminarPatron` y `wrap`. Todas las operaciones fallan silenciosamente si Redis no está disponible.
+- `src/middleware/cacheMiddleware.js` — Middleware `cache(ttl)` para rutas Express. Intercepta respuestas GET exitosas y las cachea.
+
+**Endpoints cacheados actualmente:**
+
+| Ruta | TTL |
+|---|---|
+| `/api/public/obras` | 300s |
+| `/api/public/imagenes-web` | 600s |
+| `/api/public/agenda` | 300s |
+| `/api/public/libros` | 300s |
+| `/api/obras/artistas` | 600s |
+| `/api/obras/tecnicas` | 600s |
+| `/api/obras/estados` | 600s |
+| `/api/obras/categorias` | 600s |
+
+**Uso programático:**
+```js
+const cacheService = require('./services/cache.service');
+
+// Cache manual en services:
+const datos = await cacheService.wrap(
+  cacheService.generarClave('libros', 'destacados'),
+  300,
+  () => Libro.findAll({ where: { destacado: true } })
+);
+
+// Invalidar caché tras mutación:
+await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
+```
+
+**Claves:** Todas las claves usan prefijo `mavet:` para evitar colisiones. Las claves de respuestas HTTP usan `mavet:resp:<url>`.
+
 ## Sibling Frontend
 
 Located at `../Fronted-Panel-Admin-Mavet/` — React + TypeScript + Vite, axios instance configured with `VITE_API_URL` env var, token injected via interceptor. The photo upload endpoint sends FormData with field `"foto"` without explicit Content-Type.

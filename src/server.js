@@ -90,6 +90,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 // Aplicar rate limiter solo a la API
 app.use('/api', limiter);
 
+// Cache
+const cacheService = require('./services/cache.service');
+const { cache } = require('./middleware/cacheMiddleware');
+
 // Rutas de la API
 const rrhhRoutes = require('./modules/rrhh/routes');
 const obrasRoutes = require('./modules/obras/routes');
@@ -106,12 +110,13 @@ app.use('/api/visitantes', visitantesRoutes);
 
 // Ruta Pública de Obras
 const obraController = require('./modules/obras/controllers/obra.controller');
-app.get('/api/public/obras', obraController.getObrasPublicas);
+app.get('/api/public/obras', cache(300), obraController.getObrasPublicas);
 
 // Ruta Pública de Imágenes Web (banners, galería, destacados)
 const imagenWebService = require('./modules/obras/services/imagenWeb.service');
 app.get(
   '/api/public/imagenes-web',
+  cache(600),
   catchAsync(async (req, res) => {
     const imagenes = await imagenWebService.getPublicas(req.query.seccion);
     res.json({ data: imagenes });
@@ -120,21 +125,21 @@ app.get(
 
 // Ruta Pública de Agenda (Talleres y Eventos)
 const agendaController = require('./modules/educacion/controllers/agenda.controller');
-app.get('/api/public/agenda', agendaController.getAgenda);
+app.get('/api/public/agenda', cache(300), agendaController.getAgenda);
 
 // Ruta Pública de Biblioteca (Libros)
 const libroController = require('./modules/biblioteca/controllers/libro.controller');
-app.get('/api/public/libros', libroController.getLibrosPublicos);
+app.get('/api/public/libros', cache(300), libroController.getLibrosPublicos);
 
 // ── Catálogos de solo-lectura: PÚBLICOS (para poblar selects del frontend) ──
 const artistaController = require('./modules/obras/controllers/artista.controller');
 const tecnicaController = require('./modules/obras/controllers/tecnicaObra.controller');
 const estadoController = require('./modules/obras/controllers/estadoObra.controller');
 const categoriaController = require('./modules/obras/controllers/categoriaObra.controller');
-app.get('/api/obras/artistas', artistaController.getAllArtistas);
-app.get('/api/obras/tecnicas', tecnicaController.getAllTecnicas);
-app.get('/api/obras/estados', estadoController.getAllEstados);
-app.get('/api/obras/categorias', categoriaController.getAllCategorias);
+app.get('/api/obras/artistas', cache(600), artistaController.getAllArtistas);
+app.get('/api/obras/tecnicas', cache(600), tecnicaController.getAllTecnicas);
+app.get('/api/obras/estados', cache(600), estadoController.getAllEstados);
+app.get('/api/obras/categorias', cache(600), categoriaController.getAllCategorias);
 
 // Rutas de Auto-Ingreso Públicas (Código QR)
 const publicoVisitantesRoutes = require('./modules/visitantes/routes/publico.routes');
@@ -278,6 +283,9 @@ async function migrateTablas() {
 
 async function startServer() {
   try {
+    // Inicializar Redis (no bloqueante si no está disponible)
+    await cacheService.inicializar();
+
     // Limpiar referencias FK inválidas antes de sync
     await sequelize.query(
       'UPDATE talleres SET id_instructor = NULL WHERE id_instructor IS NOT NULL AND id_instructor NOT IN (SELECT id_instructor FROM instructores)'

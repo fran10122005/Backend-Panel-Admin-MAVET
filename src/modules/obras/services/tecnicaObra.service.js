@@ -1,8 +1,12 @@
 const { TecnicaObra } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const cacheService = require('../../../services/cache.service');
 
 exports.createTecnica = async (data) => {
-  return await TecnicaObra.create(data);
+  const result = await TecnicaObra.create(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/tecnicas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.getAllTecnicas = async () => {
@@ -18,11 +22,17 @@ exports.getTecnicaById = async (id) => {
 exports.updateTecnica = async (id, data) => {
   const tecnica = await TecnicaObra.findByPk(id);
   if (!tecnica) throw new AppError('Tecnica no encontrada', 404);
-  return await tecnica.update(data);
+  const result = await tecnica.update(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/tecnicas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.deleteTecnica = async (id) => {
   const tecnica = await TecnicaObra.findByPk(id);
   if (!tecnica) throw new AppError('Tecnica no encontrada', 404);
-  return await tecnica.destroy();
+  const result = await tecnica.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/tecnicas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };

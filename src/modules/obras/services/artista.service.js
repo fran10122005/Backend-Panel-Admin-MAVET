@@ -1,9 +1,13 @@
 const { Op } = require('sequelize');
 const { Artista, sequelize } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const cacheService = require('../../../services/cache.service');
 
 exports.createArtista = async (data) => {
-  return await Artista.create(data);
+  const result = await Artista.create(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/artistas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.getAllArtistas = async () => {
@@ -37,11 +41,17 @@ exports.buscarArtista = async (query) => {
 exports.updateArtista = async (id, data) => {
   const artista = await Artista.findByPk(id);
   if (!artista) throw new AppError('Artista no encontrado', 404);
-  return await artista.update(data);
+  const result = await artista.update(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/artistas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.deleteArtista = async (id) => {
   const artista = await Artista.findByPk(id);
   if (!artista) throw new AppError('Artista no encontrado', 404);
-  return await artista.destroy();
+  const result = await artista.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/artistas*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };

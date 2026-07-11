@@ -1,8 +1,12 @@
 const { EstadoObra } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const cacheService = require('../../../services/cache.service');
 
 exports.createEstado = async (data) => {
-  return await EstadoObra.create(data);
+  const result = await EstadoObra.create(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/estados*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.getAllEstados = async () => {
@@ -18,11 +22,17 @@ exports.getEstadoById = async (id) => {
 exports.updateEstado = async (id, data) => {
   const estado = await EstadoObra.findByPk(id);
   if (!estado) throw new AppError('Estado no encontrado', 404);
-  return await estado.update(data);
+  const result = await estado.update(data);
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/estados*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };
 
 exports.deleteEstado = async (id) => {
   const estado = await EstadoObra.findByPk(id);
   if (!estado) throw new AppError('Estado no encontrado', 404);
-  return await estado.destroy();
+  const result = await estado.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/obras/estados*');
+  await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+  return result;
 };

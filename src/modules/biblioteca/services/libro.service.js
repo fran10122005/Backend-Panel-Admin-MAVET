@@ -1,6 +1,7 @@
 const { Libro, CategoriaLibro, AutorLibro } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const sequelize = require('../../../config/db');
+const cacheService = require('../../../services/cache.service');
 
 exports.createLibro = async (data) => {
   const t = await sequelize.transaction();
@@ -51,6 +52,7 @@ exports.createLibro = async (data) => {
     }
 
     await t.commit();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
     return newLibro;
   } catch (error) {
     await t.rollback();
@@ -186,6 +188,7 @@ exports.updateLibro = async (id, data) => {
     }
 
     await t.commit();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
     return libro;
   } catch (error) {
     await t.rollback();
@@ -199,7 +202,9 @@ exports.deleteLibro = async (id) => {
   await sequelize.query('DELETE FROM libro_autores WHERE id_libro = :id_libro', {
     replacements: { id_libro: id },
   });
-  return await libro.destroy();
+  const result = await libro.destroy();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
+  return result;
 };
 
 exports.devolverLibro = async (id_libro) => {
@@ -221,6 +226,7 @@ exports.devolverLibro = async (id_libro) => {
       if (libro && parseInt(libro.cantidad_disponible, 10) < parseInt(libro.cantidad_total, 10)) {
         const nueva = String(parseInt(libro.cantidad_disponible, 10) + 1);
         await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
+        await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
         return true;
       }
       throw new AppError('No se encontró un préstamo activo para este libro', 404);
@@ -235,6 +241,7 @@ exports.devolverLibro = async (id_libro) => {
       const nueva = String(parseInt(libroAlt.cantidad_disponible, 10) + 1);
       await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
     }
+    await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
     return true;
   }
 
@@ -244,5 +251,6 @@ exports.devolverLibro = async (id_libro) => {
     const nueva = String(parseInt(libro.cantidad_disponible, 10) + 1);
     await Libro.update({ cantidad_disponible: nueva }, { where: { id_libro } });
   }
+  await cacheService.eliminarPatron('mavet:resp:/api/public/libros*');
   return true;
 };
