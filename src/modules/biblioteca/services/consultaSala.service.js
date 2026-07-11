@@ -187,22 +187,66 @@ exports.getEstadisticas = async (top) => {
     devueltas: await ConsultaSala.count({ where: { estado: 'Devuelto' } }),
   };
 
+  const totalLectores = await ConsultaSala.count({
+    distinct: true,
+    col: 'id_persona',
+    where: { id_persona: { [Op.ne]: null } },
+  });
+
+  const topLectoresRaw = await ConsultaSala.findAll({
+    attributes: [
+      [sequelize.col('ConsultaSala.id_persona'), 'id_persona'],
+      [sequelize.fn('COUNT', sequelize.col('ConsultaSala.id_consulta')), 'total_consultas'],
+    ],
+    where: { id_persona: { [Op.ne]: null } },
+    group: [
+      sequelize.col('ConsultaSala.id_persona'),
+      sequelize.col('Persona.id_persona'),
+      sequelize.col('Persona.nombres'),
+      sequelize.col('Persona.apellidos'),
+      sequelize.col('Persona.cedula'),
+    ],
+    include: [
+      {
+        model: Persona,
+        attributes: ['id_persona', 'nombres', 'apellidos', 'cedula'],
+        required: true,
+      },
+    ],
+    order: [[sequelize.literal('total_consultas'), 'DESC']],
+    limit: top,
+    subQuery: false,
+  });
+
+  const topLectores = topLectoresRaw.map((c) => ({
+    id_persona: c.id_persona,
+    nombres: c.Persona?.nombres || '',
+    apellidos: c.Persona?.apellidos || '',
+    cedula: c.Persona?.cedula || '',
+    total_consultas: parseInt(c.get('total_consultas'), 10),
+  }));
+
   const topLibrosRaw = await ConsultaSala.findAll({
     attributes: [
-      'id_libro',
-      [sequelize.fn('COUNT', sequelize.col('id_consulta')), 'total_consultas'],
+      [sequelize.col('ConsultaSala.id_libro'), 'id_libro'],
+      [sequelize.fn('COUNT', sequelize.col('ConsultaSala.id_consulta')), 'total_consultas'],
     ],
-    group: ['id_libro', 'Libro.id_libro', 'Libro.titulo'],
+    group: [
+      sequelize.col('ConsultaSala.id_libro'),
+      sequelize.col('Libro.id_libro'),
+      sequelize.col('Libro.titulo'),
+    ],
     include: [{ model: Libro, attributes: ['id_libro', 'titulo'], required: true }],
     order: [[sequelize.literal('total_consultas'), 'DESC']],
     limit: top,
+    subQuery: false,
   });
 
   const topLibros = topLibrosRaw.map((c) => ({
-    id_libro: c.id_libro,
+    id_libro: c.get('id_libro'),
     titulo: c.Libro?.titulo || 'Desconocido',
     total_consultas: parseInt(c.get('total_consultas'), 10),
   }));
 
-  return { topLibros, totales };
+  return { topLibros, topLectores, totalLectores, totales };
 };
