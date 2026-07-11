@@ -33,12 +33,12 @@ const validarFechaPasada = async (fecha, sequelize, action = 'editar', hora_inic
 
   // Si la fecha es exactamente hoy, validar que la hora de inicio no haya pasado
   if (parsedDate.getTime() === dbDate.getTime() && hora_inicio) {
-    const [resultsTime] = await sequelize.query('SELECT CURRENT_TIME AS db_time');
-    const dbTimeStr = resultsTime[0].db_time; // formato HH:mm:ss...
-    const [dbHour, dbMinute] = dbTimeStr.split(':').map(Number);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     const [startHour, startMinute] = hora_inicio.split(':').map(Number);
 
-    if (startHour < dbHour || (startHour === dbHour && startMinute < dbMinute)) {
+    if (startHour < currentHour || (startHour === currentHour && startMinute < currentMinute)) {
       throw new AppError(
         `Error 403 Forbidden: No se pueden crear reservas en horas que ya han pasado el día de hoy`,
         403
