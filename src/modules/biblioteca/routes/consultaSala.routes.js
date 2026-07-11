@@ -6,6 +6,8 @@ const {
   createConsultaSalaSchema,
   updateConsultaSalaSchema,
   consultaSalaIdParamSchema,
+  consultaFiltrosSchema,
+  estadisticasSchema,
 } = require('../schemas/consultaSala.schema');
 
 router.post(
@@ -13,7 +15,21 @@ router.post(
   validateZod({ body: createConsultaSalaSchema }),
   consultaController.createConsulta
 );
+
+router.get(
+  '/filtradas',
+  validateZod({ query: consultaFiltrosSchema }),
+  consultaController.getConsultasFiltradas
+);
+
+router.get(
+  '/estadisticas',
+  validateZod({ query: estadisticasSchema }),
+  consultaController.getEstadisticas
+);
+
 router.get('/', consultaController.getAllConsultas);
+
 router.put(
   '/:id',
   validateZod({ params: consultaSalaIdParamSchema, body: updateConsultaSalaSchema }),

@@ -253,6 +253,19 @@ async function migrateTablas() {
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_disponible TYPE INTEGER USING COALESCE(NULLIF(cantidad_disponible, ''), '0')::INTEGER;`,
     `ALTER TABLE obras ALTER COLUMN imagen_url TYPE VARCHAR(500);`,
+    `CREATE TABLE IF NOT EXISTS consultas_sala (
+      id_consulta VARCHAR(15) PRIMARY KEY,
+      id_libro VARCHAR(15) NOT NULL,
+      id_persona VARCHAR(15),
+      id_trabajador VARCHAR(15),
+      estado VARCHAR(255),
+      hora_entrega TIMESTAMP WITH TIME ZONE,
+      hora_devolucion TIMESTAMP WITH TIME ZONE,
+      observaciones TEXT,
+      FOREIGN KEY (id_libro) REFERENCES libros(id_libro) ON DELETE CASCADE,
+      FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE SET NULL,
+      FOREIGN KEY (id_trabajador) REFERENCES trabajadores(id_trabajador) ON DELETE SET NULL
+    );`,
   ];
   for (const sql of cambios) {
     try {
