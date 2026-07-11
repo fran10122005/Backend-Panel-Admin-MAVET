@@ -2,6 +2,7 @@ const Redis = require('ioredis');
 require('dotenv').config();
 
 let redis = null;
+let warningEmitido = false;
 
 if (process.env.NODE_ENV === 'test') {
   redis = null;
@@ -9,13 +10,16 @@ if (process.env.NODE_ENV === 'test') {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
   redis = new Redis(redisUrl, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null,
     retryStrategy(times) {
       if (times > 3) {
-        console.warn('⚠️ Redis no disponible, el caché se desactivará.');
+        if (!warningEmitido) {
+          warningEmitido = true;
+          console.warn('⚠️ Redis no disponible, el caché se desactivará.');
+        }
         return null;
       }
-      return Math.min(times * 200, 2000);
+      return Math.min(times * 500, 3000);
     },
     lazyConnect: true,
   });
@@ -24,13 +28,8 @@ if (process.env.NODE_ENV === 'test') {
     console.log('✅ Conexión a Redis establecida.');
   });
 
-  redis.on('error', (err) => {
-    console.error('❌ Error de Redis:', err.message);
-  });
-
-  redis.on('close', () => {
-    console.warn('⚠️ Conexión Redis cerrada.');
-  });
+  // Necesario para evitar que ioredis lance "Unhandled error event"
+  redis.on('error', () => {});
 }
 
 module.exports = redis;
