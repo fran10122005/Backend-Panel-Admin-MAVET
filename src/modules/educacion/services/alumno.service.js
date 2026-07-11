@@ -7,13 +7,13 @@ exports.createAlumno = async (data) => {
 
 exports.getAllAlumnos = async () => {
   return await Alumno.findAll({
-    include: [Representante]
+    include: [Representante],
   });
 };
 
 exports.getAlumnoById = async (id) => {
   const alumno = await Alumno.findByPk(id, {
-    include: [Representante]
+    include: [Representante],
   });
   if (!alumno) throw new AppError('Alumno no encontrado', 404);
   return alumno;

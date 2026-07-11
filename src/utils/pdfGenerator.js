@@ -3,20 +3,16 @@ const PDFDocument = require('pdfkit'); // Native PDFKit
 const path = require('path');
 const fs = require('fs');
 
-// ─── Paleta de colores premium ──────────────────────────────────────────────
+// ─── Paleta de colores profesional ──────────────────────────────────────────
 const C = {
   brand: '#800000',
-  brandDark: '#5C0000',
-  brandLight: '#A33D3D',
-  gold: '#C4985A',
-  goldLight: '#E8D5B0',
-  white: '#FFFFFF',
   text: '#2D2D2D',
   textSoft: '#6B6B6B',
-  textMuted: '#9B9B9B',
-  line: '#E4E4E4',
+  textMuted: '#999999',
+  line: '#E0E0E0',
+  lineAccent: '#800000',
   rowEven: '#FFFFFF',
-  rowOdd: '#FDF8F6',
+  rowOdd: '#F7F7F9',
   headerBg: '#800000',
   headerBgDark: '#6B0000',
   bodyBg: '#FFFFFF',
@@ -26,27 +22,73 @@ const C = {
 const FONT_BOLD = 'Helvetica-Bold';
 const FONT_NORMAL = 'Helvetica';
 const MARGIN = 30;
+const MARGIN_BOTTOM = 15;
+
+function createDocument(overrides = {}) {
+  return new PDFDocument({
+    margins: { top: MARGIN, left: MARGIN, right: MARGIN, bottom: MARGIN_BOTTOM },
+    size: 'A4',
+    layout: 'portrait',
+    bufferPages: true,
+    autoPageBreak: false,
+    ...overrides,
+  });
+}
+
+function collectBuffer(doc) {
+  return new Promise((resolve, reject) => {
+    const bufs = [];
+    doc.on('data', (d) => bufs.push(d));
+    doc.on('end', () => resolve(Buffer.concat(bufs)));
+  });
+}
 
 const LOGO_PATH = path.join(__dirname, '../../public/images/logo/mavet2.png');
 const LOGO_IMG = fs.readFileSync(LOGO_PATH);
 
 // ─── Encabezado institucional ───────────────────────────────────────────────
 function drawHeader(doc, title, pw) {
-  doc.rect(0, 0, pw, 78).fill(C.brandDark);
-  doc.rect(0, 76, pw, 4).fill(C.gold);
+  const margin = MARGIN;
+  let logoWidth = 0;
+
   try {
-    doc.image(LOGO_IMG, 18, 10, { width: 48 });
+    doc.image(LOGO_IMG, margin, 12, { width: 36 });
+    logoWidth = 42;
   } catch (e) {
-    // ignorar error de logo
+    // ignorar
   }
-  const tx = 78;
+
+  const tx = margin + logoWidth;
+  const textW = pw - tx - margin;
+
   doc
-    .fillColor(C.white)
-    .fontSize(15)
+    .fillColor(C.text)
     .font(FONT_BOLD)
-    .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', tx, 16);
-  doc.fontSize(9).font(FONT_NORMAL).text('MAVET – Sistema de Gestión Interna', tx, 34);
-  doc.fontSize(13).font(FONT_BOLD).text(title, tx, 54);
+    .fontSize(11)
+    .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', tx, 14, {
+      width: textW,
+      lineBreak: false,
+    });
+
+  doc
+    .fillColor(C.brand)
+    .font(FONT_BOLD)
+    .fontSize(10)
+    .text(title, tx, 34, { width: textW, lineBreak: false });
+
+  const barY = 56;
+  doc
+    .lineWidth(2)
+    .strokeColor(C.brand)
+    .moveTo(margin, barY)
+    .lineTo(pw - margin, barY)
+    .stroke();
+  doc
+    .lineWidth(0.5)
+    .strokeColor(C.lineAccent)
+    .moveTo(margin, barY + 2.5)
+    .lineTo(pw - margin, barY + 2.5)
+    .stroke();
 }
 
 // ─── Encabezados y Pies de página para todas las páginas ───────────────────
@@ -57,10 +99,10 @@ function drawHeadersAndFooters(doc, title, pw, margin = MARGIN) {
     drawHeader(doc, title, pw);
     const h = doc.page.height;
     doc
-      .lineWidth(0.4)
-      .strokeColor(C.gold)
-      .moveTo(margin, h - 38)
-      .lineTo(pw - margin, h - 38)
+      .lineWidth(0.3)
+      .strokeColor(C.line)
+      .moveTo(margin, h - 34)
+      .lineTo(pw - margin, h - 34)
       .stroke();
     const today = new Date().toLocaleDateString('es-VE', {
       day: '2-digit',
@@ -71,13 +113,8 @@ function drawHeadersAndFooters(doc, title, pw, margin = MARGIN) {
       .fontSize(7)
       .fillColor(C.textMuted)
       .font(FONT_NORMAL)
-      .text(today, margin, h - 30, { lineBreak: false })
-      .text(`Pág. ${i + 1} de ${range.count}`, margin, h - 30, {
-        width: pw - 2 * margin,
-        align: 'center',
-        lineBreak: false,
-      })
-      .text('Documento de uso interno', margin, h - 30, {
+      .text(today, margin, h - 26, { lineBreak: false })
+      .text(`Pág. ${i + 1} de ${range.count}`, margin, h - 26, {
         width: pw - 2 * margin,
         align: 'right',
         lineBreak: false,
@@ -90,41 +127,10 @@ const generateTablePdf = async (title, headers, rows) => {
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const doc = new PDFDocument({
-          margins: { top: MARGIN, left: MARGIN, right: MARGIN, bottom: 15 },
-          size: 'A4',
-          layout: 'landscape',
-          bufferPages: true,
-          autoPageBreak: false,
-        });
-        const bufs = [];
-        doc.on('data', bufs.push.bind(bufs));
-        doc.on('end', () => resolve(Buffer.concat(bufs)));
-
-        const pw = doc.page.width;
-        const ph = doc.page.height;
-        const fecha = new Date().toLocaleDateString('es-VE', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-
-        // ── Barra de metadatos ──
-        doc.rect(MARGIN, 90, pw - 2 * MARGIN, 20).fill(C.accent);
-        doc.rect(MARGIN, 90, 4, 20).fill(C.gold);
-        doc.fillColor(C.textSoft).fontSize(8).font(FONT_NORMAL);
-        const infoY = 97;
-        doc.text(`Generado: ${fecha}`, MARGIN + 14, infoY, { lineBreak: false });
-        doc.text(`${rows.length} registro${rows.length !== 1 ? 's' : ''}`, MARGIN, infoY, {
-          width: pw - 2 * MARGIN,
-          align: 'center',
-          lineBreak: false,
-        });
-        doc.text('MAVET — Reporte oficial', MARGIN, infoY, {
-          width: pw - 2 * MARGIN - 14,
-          align: 'right',
-          lineBreak: false,
-        });
+        const doc = createDocument({ layout: 'landscape' });
+        const [pw, ph] = [doc.page.width, doc.page.height];
+        const promise = collectBuffer(doc);
+        promise.then(resolve, reject);
 
         // ── Preparar Cabeceras ──
         const tableHeaders = headers.map((h, i) => {
@@ -132,14 +138,21 @@ const generateTablePdf = async (title, headers, rows) => {
           return { label: h.label || `col_${i}`, width: h.width || 100, align: h.align || 'left' };
         });
 
-        let y = 120;
-        const rowH = 18; // Altura de cada fila
+        let y = 80; // El header se dibuja después via bufferPages
+        const rowH = 20;
 
         const drawTableHead = (currentY) => {
-          doc.rect(MARGIN, currentY, pw - 2 * MARGIN, rowH).fill(C.headerBg);
+          const lineY = currentY + rowH;
+          doc
+            .lineWidth(1)
+            .strokeColor(C.brand)
+            .moveTo(MARGIN, lineY)
+            .lineTo(pw - MARGIN, lineY)
+            .stroke();
+
           let cx = MARGIN;
           tableHeaders.forEach((h) => {
-            doc.fillColor(C.white).font(FONT_BOLD).fontSize(9);
+            doc.fillColor(C.text).font(FONT_BOLD).fontSize(8.5);
             doc.text(h.label, cx + 5, currentY + 5, {
               width: h.width - 10,
               align: h.align,
@@ -147,27 +160,28 @@ const generateTablePdf = async (title, headers, rows) => {
             });
             cx += h.width;
           });
-          return currentY + rowH;
+          return currentY + rowH + 2;
         };
 
         y = drawTableHead(y);
 
         // ── Filas ──
         for (let r = 0; r < rows.length; r++) {
-          if (y + rowH > ph - MARGIN - 25) {
+          if (y + rowH > ph - MARGIN - 20) {
             doc.addPage();
-            y = MARGIN + 60; // Dejar espacio para el header global
+            y = MARGIN + 60;
             y = drawTableHead(y);
           }
 
           const rowArr = rows[r];
-          doc.rect(MARGIN, y, pw - 2 * MARGIN, rowH).fill(r % 2 === 0 ? C.rowEven : C.rowOdd);
+          if (r % 2 === 1) {
+            doc.rect(MARGIN, y, pw - 2 * MARGIN, rowH).fill(C.rowOdd);
+          }
 
           let cx = MARGIN;
           tableHeaders.forEach((h, i) => {
             const val = rowArr[i] != null ? String(rowArr[i]) : '';
-            doc.fillColor(C.text).font(FONT_NORMAL).fontSize(8);
-            // lineBreak: false corta el texto si excede el ancho
+            doc.fillColor(C.text).font(FONT_NORMAL).fontSize(7.5);
             doc.text(val, cx + 5, y + 5, {
               width: h.width - 10,
               align: h.align,
@@ -177,43 +191,10 @@ const generateTablePdf = async (title, headers, rows) => {
             cx += h.width;
           });
 
-          doc
-            .lineWidth(0.5)
-            .strokeColor(C.line)
-            .moveTo(MARGIN, y + rowH)
-            .lineTo(pw - MARGIN, y + rowH)
-            .stroke();
           y += rowH;
         }
 
-        // ── Encabezados y Pies Globales ──
-        const range = doc.bufferedPageRange();
-        for (let i = 0; i < range.count; i++) {
-          doc.switchToPage(i);
-          drawHeader(doc, title, pw);
-          const h = doc.page.height;
-          doc
-            .lineWidth(0.4)
-            .strokeColor(C.gold)
-            .moveTo(MARGIN, h - 38)
-            .lineTo(pw - MARGIN, h - 38)
-            .stroke();
-          doc
-            .fontSize(7)
-            .fillColor(C.textMuted)
-            .font(FONT_NORMAL)
-            .text(fecha, MARGIN, h - 30, { lineBreak: false })
-            .text(`Pág. ${i + 1} de ${range.count}`, MARGIN, h - 30, {
-              width: pw - 2 * MARGIN,
-              align: 'center',
-              lineBreak: false,
-            })
-            .text('Documento de uso interno', MARGIN, h - 30, {
-              width: pw - 2 * MARGIN,
-              align: 'right',
-              lineBreak: false,
-            });
-        }
+        drawHeadersAndFooters(doc, title, pw, MARGIN);
 
         doc.end();
       } catch (err) {
@@ -229,19 +210,13 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const doc = new PDFDocument({
-          margins: { top: 40, left: 40, right: 40, bottom: 15 },
-          size: 'A4',
-          layout: 'portrait',
-          bufferPages: true,
-          autoPageBreak: false,
+        const doc = createDocument({
+          margins: { top: 40, left: 40, right: 40, bottom: MARGIN_BOTTOM },
         });
-        const bufs = [];
-        doc.on('data', bufs.push.bind(bufs));
-        doc.on('end', () => resolve(Buffer.concat(bufs)));
-
         const pw = doc.page.width;
         const ph = doc.page.height;
+        const promise = collectBuffer(doc);
+        promise.then(resolve, reject);
         const fechaHoy = new Date().toLocaleDateString('es-VE', {
           year: 'numeric',
           month: 'long',
@@ -255,7 +230,7 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
           .text(`Emitida el: ${fechaHoy}`, 78, 82);
         doc
           .lineWidth(0.4)
-          .strokeColor(C.gold)
+          .strokeColor(C.line)
           .moveTo(40, 97)
           .lineTo(pw - 40, 97)
           .stroke();
@@ -272,9 +247,8 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
         // ── Recuadro del trabajador ──
         const cy = doc.y;
         const boxH = 80;
-        doc.rect(42, cy + 1, pw - 80, boxH).fill(C.line);
         doc.rect(40, cy, pw - 80, boxH).fill(C.accent);
-        doc.rect(40, cy, 4, boxH).fill(C.gold);
+        doc.rect(40, cy, 4, boxH).fill(C.brand);
 
         const cargo = trabajador.CargoTrabajador?.nombre_cargo || trabajador.cargo || '—';
         const nombre = `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`
@@ -417,7 +391,7 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
           .text('ARTES VISUALES', sx, sy + 9, { align: 'center' })
           .text('DEL TÁCHIRA', sx, sy + 14, { align: 'center' });
 
-        drawHeadersAndFooters(doc, 'CARTA DE AVAL', pw, 40);
+        drawHeadersAndFooters(doc, 'CARTA DE AVAL', pw, MARGIN);
         doc.end();
       } catch (err) {
         console.error('Error en Carta de Aval:', err);
@@ -945,18 +919,10 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const doc = new PDFDocument({
-          margins: { top: MARGIN, left: MARGIN, right: MARGIN, bottom: 15 },
-          size: 'A4',
-          layout: 'portrait',
-          bufferPages: true,
-          autoPageBreak: false,
-        });
-        const bufs = [];
-        doc.on('data', bufs.push.bind(bufs));
-        doc.on('end', () => resolve(Buffer.concat(bufs)));
-
+        const doc = createDocument();
         const pw = doc.page.width;
+        const promise = collectBuffer(doc);
+        promise.then(resolve, reject);
         const ph = doc.page.height;
         const mmToPt = (mm) => mm * 2.83465;
 

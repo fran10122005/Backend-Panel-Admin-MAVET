@@ -6,6 +6,6 @@ exports.buscarPersona = catchAsync(async (req, res) => {
   const resultados = await personaService.buscarPersona(query);
   res.status(200).json({
     message: 'Búsqueda completada',
-    data: resultados
+    data: resultados,
   });
 });

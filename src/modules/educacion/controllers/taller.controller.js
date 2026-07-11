@@ -1,5 +1,4 @@
 const tallerService = require('../services/taller.service');
-const { body, validationResult } = require('express-validator');
 const catchAsync = require('../../../utils/catchAsync');
 
 // Crear un taller programado con datos completos

@@ -3,7 +3,6 @@ const sequelize = require('../config/db');
 // Importar modelos Auth
 const Role = require('../modules/auth/models/Role.model');
 const Usuario = require('../modules/auth/models/Usuario.model');
-const BitacoraAuditoria = require('../modules/auth/models/BitacoraAuditoria.model');
 
 // Importar modelo Maestro Persona
 const Persona = require('../modules/personas/models/Persona.model');
@@ -22,7 +21,6 @@ const EstadoObra = require('../modules/obras/models/EstadoObra.model');
 const CategoriaObra = require('../modules/obras/models/CategoriaObra.model');
 const Entrega = require('../modules/obras/models/Entrega.model');
 const Obra = require('../modules/obras/models/Obra.model');
-const HistorialUbicacionObra = require('../modules/obras/models/HistorialUbicacionObra.model');
 const ImagenWeb = require('../modules/obras/models/ImagenWeb.model');
 
 // Importar modelos Biblioteca
@@ -69,9 +67,6 @@ Usuario.belongsTo(Role, { foreignKey: 'id_rol' });
 Usuario.hasOne(Trabajador, { foreignKey: 'id_usuario' });
 Trabajador.belongsTo(Usuario, { foreignKey: 'id_usuario' });
 
-Usuario.hasMany(BitacoraAuditoria, { foreignKey: 'id_usuario' });
-BitacoraAuditoria.belongsTo(Usuario, { foreignKey: 'id_usuario' });
-
 // --- RRHH ---
 CargoTrabajador.hasMany(Trabajador, { foreignKey: 'id_cargo' });
 Trabajador.belongsTo(CargoTrabajador, { foreignKey: 'id_cargo' });
@@ -115,26 +110,8 @@ Obra.belongsTo(EstadoObra, { foreignKey: 'id_estado_actual' });
 CategoriaObra.hasMany(Obra, { foreignKey: 'id_categoria_obra' });
 Obra.belongsTo(CategoriaObra, { foreignKey: 'id_categoria_obra' });
 
-Obra.hasMany(HistorialUbicacionObra, { foreignKey: 'id_obra' });
-HistorialUbicacionObra.belongsTo(Obra, { foreignKey: 'id_obra' });
-
 Obra.hasOne(ImagenWeb, { foreignKey: 'id_obra', onDelete: 'CASCADE' });
 ImagenWeb.belongsTo(Obra, { foreignKey: 'id_obra' });
-
-Usuario.hasMany(HistorialUbicacionObra, { foreignKey: 'id_usuario' });
-HistorialUbicacionObra.belongsTo(Usuario, { foreignKey: 'id_usuario' });
-
-EstadoObra.hasMany(HistorialUbicacionObra, {
-  foreignKey: 'id_estado_anterior',
-  as: 'EstadoAnterior',
-});
-HistorialUbicacionObra.belongsTo(EstadoObra, {
-  foreignKey: 'id_estado_anterior',
-  as: 'EstadoAnterior',
-});
-
-EstadoObra.hasMany(HistorialUbicacionObra, { foreignKey: 'id_estado_nuevo', as: 'EstadoNuevo' });
-HistorialUbicacionObra.belongsTo(EstadoObra, { foreignKey: 'id_estado_nuevo', as: 'EstadoNuevo' });
 
 // --- Biblioteca ---
 CategoriaLibro.hasMany(Libro, { foreignKey: 'id_categoria' });
@@ -230,7 +207,6 @@ module.exports = {
   Persona,
   Role,
   Usuario,
-  BitacoraAuditoria,
   CargoTrabajador,
   Turno,
   Trabajador,
@@ -242,7 +218,6 @@ module.exports = {
   CategoriaObra,
   Entrega,
   Obra,
-  HistorialUbicacionObra,
   ImagenWeb,
   CategoriaLibro,
   AutorLibro,
