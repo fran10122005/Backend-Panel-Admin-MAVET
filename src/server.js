@@ -11,6 +11,7 @@ const { sequelize } = require('./models');
 // Middlewares de error y autenticación
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { verifyToken } = require('./middleware/authMiddleware');
+const startCronJobs = require('./cronJobs');
 
 const app = express();
 
@@ -275,6 +276,7 @@ async function startServer() {
     if (require.main === module) {
       app.listen(PORT, () => {
         console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+        startCronJobs();
       });
     }
   } catch (error) {

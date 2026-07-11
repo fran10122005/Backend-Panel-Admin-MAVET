@@ -42,6 +42,8 @@ const SolicitudEspacio = sequelize.define(
         }
 
         instance[pkField] = `SES-${String(newNumber).padStart(5, '0')}`;
+        // Forzar que el codigo_reserva coincida en numeración pero con prefijo RES
+        instance.codigo_reserva = `RES-${String(newNumber).padStart(5, '0')}`;
       },
     },
     timestamps: true,
