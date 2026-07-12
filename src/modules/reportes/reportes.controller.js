@@ -270,6 +270,13 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
     limit: 3,
   });
 
+  // Últimos libros registrados (3 más recientes)
+  const ultimosLibros = await Libro.findAll({
+    include: [CategoriaLibro],
+    order: [['created_at', 'DESC']],
+    limit: 3,
+  });
+
   res.status(200).json({
     message: 'Estadísticas del Dashboard obtenidas',
     data: {
@@ -282,6 +289,7 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
       }),
       proximosEventos,
       ultimasObras,
+      ultimosLibros,
     },
   });
 });

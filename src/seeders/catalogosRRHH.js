@@ -46,9 +46,11 @@ const cargos = [
 const roles = [
   { nombre_rol: 'Administrador', permisos: 'all' },
   { nombre_rol: 'Recepcionista', permisos: 'visitantes,asistencia' },
-  { nombre_rol: 'Curador', permisos: 'obras,biblioteca' },
+  { nombre_rol: 'Curador', permisos: 'obras' },
+  { nombre_rol: 'Restaurador', permisos: 'obras' },
+  { nombre_rol: 'Bibliotecario', permisos: 'biblioteca' },
   { nombre_rol: 'Educador', permisos: 'talleres,auditorio' },
-  { nombre_rol: 'Consultor', permisos: 'read' },
+  { nombre_rol: 'Gerente', permisos: 'read' },
 ];
 
 async function seedRRHH() {
