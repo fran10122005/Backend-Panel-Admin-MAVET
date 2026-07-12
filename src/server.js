@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -53,6 +54,7 @@ const catchAsync = require('./utils/catchAsync');
 app.post(
   '/api/auth/me/foto',
   upload.single('foto'),
+  upload.compress,
   verifyToken,
   catchAsync(async (req, res) => {
     if (!req.file) {
@@ -92,7 +94,14 @@ app.use('/api', limiter);
 
 // Cache
 const cacheService = require('./services/cache.service');
-const { cache } = require('./middleware/cacheMiddleware');
+const { cache, limpiarCache } = require('./middleware/cacheMiddleware');
+
+function cacheGet(ttl) {
+  return (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    cache(ttl)(req, res, next);
+  };
+}
 
 // Rutas de la API
 const rrhhRoutes = require('./modules/rrhh/routes');
@@ -146,15 +155,33 @@ const publicoVisitantesRoutes = require('./modules/visitantes/routes/publico.rou
 app.use('/api/publico/visitantes', publicoVisitantesRoutes);
 
 // Rutas Totalmente Privadas
-app.use('/api/obras', verifyToken, obrasRoutes);
-app.use('/api/biblioteca', verifyToken, bibliotecaRoutes);
-app.use('/api/educacion', verifyToken, educacionRoutes);
+app.use(
+  '/api/obras',
+  verifyToken,
+  cacheGet(15),
+  limpiarCache('mavet:resp:/api/obras*', 'mavet:resp:/api/public/obras*'),
+  obrasRoutes
+);
+app.use(
+  '/api/biblioteca',
+  verifyToken,
+  cacheGet(15),
+  limpiarCache('mavet:resp:/api/biblioteca*', 'mavet:resp:/api/public/libros*'),
+  bibliotecaRoutes
+);
+app.use(
+  '/api/educacion',
+  verifyToken,
+  cacheGet(15),
+  limpiarCache('mavet:resp:/api/educacion*', 'mavet:resp:/api/public/agenda*'),
+  educacionRoutes
+);
 
 const reportesRoutes = require('./modules/reportes/reportes.routes');
 app.use('/api/reportes', verifyToken, reportesRoutes);
 
 const papeleraRoutes = require('./modules/papelera/papelera.routes');
-app.use('/api/papelera', verifyToken, papeleraRoutes);
+app.use('/api/papelera', verifyToken, cacheGet(30), papeleraRoutes);
 
 const personaRoutes = require('./modules/personas/routes/persona.routes');
 app.use('/api/personas', verifyToken, personaRoutes);
@@ -236,7 +263,12 @@ async function migrateTablas() {
   const cambios = [
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS id_solicitud VARCHAR(15);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE asistencias_qr ADD COLUMN IF NOT EXISTS horas_justificadas DECIMAL;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS horas_semanales DECIMAL;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS direccion TEXT;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_ingreso DATE;`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE libros ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,

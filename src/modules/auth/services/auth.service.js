@@ -16,25 +16,38 @@ exports.register = async (data) => {
   if (!data.password) throw new AppError('La contraseña es obligatoria', 400);
   if (!data.id_rol) throw new AppError('El rol del sistema es obligatorio', 400);
 
-  // Verificar si ya existe un usuario con ese correo
-  const existingUser = await Usuario.findOne({ where: { correo: data.correo } });
-  if (existingUser) {
-    throw new AppError('El correo ya está registrado', 400);
-  }
-
-  // Hashear contraseña
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(data.password, salt);
 
-  // Crear usuario
-  const nuevoUsuario = await Usuario.create({
-    correo: data.correo,
-    password_hash: passwordHash,
-    id_rol: data.id_rol,
-    estado: true,
+  const usuarioExistente = await Usuario.findOne({
+    where: { correo: data.correo },
+    paranoid: false,
   });
 
-  // Si se indicó un trabajador, vincularlo actualizando su id_usuario
+  let nuevoUsuario;
+
+  if (usuarioExistente) {
+    if (usuarioExistente.deleted_at === null) {
+      throw new AppError('El correo ya está registrado', 400);
+    }
+
+    usuarioExistente.set({
+      password_hash: passwordHash,
+      id_rol: data.id_rol,
+      estado: true,
+      deleted_at: null,
+    });
+    await usuarioExistente.save({ paranoid: false });
+    nuevoUsuario = usuarioExistente;
+  } else {
+    nuevoUsuario = await Usuario.create({
+      correo: data.correo,
+      password_hash: passwordHash,
+      id_rol: data.id_rol,
+      estado: true,
+    });
+  }
+
   if (data.id_trabajador) {
     await Trabajador.update(
       { id_usuario: nuevoUsuario.id_usuario },
@@ -42,10 +55,8 @@ exports.register = async (data) => {
     );
   }
 
-  // Generar token
   const token = signToken(nuevoUsuario.id_usuario);
 
-  // Limpiar contraseña para no retornarla
   const userResponse = nuevoUsuario.toJSON();
   delete userResponse.password_hash;
 
@@ -222,11 +233,6 @@ exports.subirFotoPerfil = async (id_usuario, filePath) => {
   usuario.foto_url = url;
   await usuario.save();
 
-  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
-  if (trabajador) {
-    await trabajador.update({ foto_url: url });
-  }
-
   return url;
 };
 
@@ -237,17 +243,28 @@ exports.eliminarFotoPerfil = async (id_usuario) => {
   usuario.foto_url = null;
   await usuario.save();
 
-  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
-  if (trabajador) {
-    await trabajador.update({ foto_url: null });
-  }
-
   return true;
 };
 
 exports.updateUsuario = async (id_usuario, data) => {
   const usuario = await Usuario.findByPk(id_usuario);
   if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  if (data.correo && data.correo !== usuario.correo) {
+    const existente = await Usuario.findOne({
+      where: { correo: data.correo },
+      paranoid: false,
+    });
+    if (existente) {
+      if (existente.deleted_at === null) {
+        throw new AppError('El correo ya está registrado por otro usuario', 400);
+      }
+      await Usuario.update(
+        { correo: `deleted_${Date.now()}_${existente.correo}` },
+        { where: { id_usuario: existente.id_usuario }, paranoid: false }
+      );
+    }
+  }
 
   if (data.password) {
     const salt = await bcrypt.genSalt(10);

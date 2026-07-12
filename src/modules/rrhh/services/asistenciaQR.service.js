@@ -1,5 +1,6 @@
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
+const { normalizeCedula } = require('../../../utils/cedula');
 
 const ORDEN_MOVIMIENTOS = ['Entrada', 'Salida'];
 const CAMPO_MOVIMIENTO = {
@@ -16,15 +17,13 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  */
 const resolverWhereTrabajador = (qr_uuid, cedulaTrabajador) => {
   if (cedulaTrabajador) {
-    const cleanCedula = cedulaTrabajador.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
-    return { cedula: cleanCedula };
+    return { cedula: normalizeCedula(cedulaTrabajador) };
   }
   if (qr_uuid) {
     if (UUID_REGEX.test(qr_uuid)) {
       return { qr_uuid };
     } else {
-      const cleanCedula = qr_uuid.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
-      return { cedula: cleanCedula };
+      return { cedula: normalizeCedula(qr_uuid) };
     }
   }
   return null;
@@ -84,8 +83,8 @@ exports.registrarAsistencia = async (data) => {
 };
 
 exports.getSemanaAsistencia = async (cedulaTrabajador) => {
-  const cleanCedula = cedulaTrabajador.replace(/^[VEve]-?/g, '').replace(/\D/g, '');
-  const trabajador = await Trabajador.findOne({ where: { cedula: cleanCedula } });
+  const cedula = normalizeCedula(cedulaTrabajador);
+  const trabajador = await Trabajador.findOne({ where: { cedula } });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const ahora = new Date();
@@ -171,10 +170,11 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
   };
 };
 
-exports.updateObservaciones = async (id, observaciones) => {
+exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
   const asistencia = await AsistenciaQR.findByPk(id);
   if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
   asistencia.observaciones = observaciones || null;
+  asistencia.horas_justificadas = horas_justificadas || null;
   await asistencia.save();
   return asistencia;
 };
@@ -232,6 +232,7 @@ exports.getResumenSemanalTodos = async () => {
         salida: r.salida_manana,
         horas: r.horas_cumplidas_dia,
         observaciones: r.observaciones,
+        horas_justificadas: r.horas_justificadas,
       })),
     };
   });

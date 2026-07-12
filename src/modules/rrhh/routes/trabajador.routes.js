@@ -17,7 +17,13 @@ router.post(
   validateZod({ body: createTrabajadorSchema }),
   trabajadorController.createTrabajador
 );
-router.post('/:id/foto', upload.single('foto'), verifyToken, trabajadorController.subirFoto);
+router.post(
+  '/:id/foto',
+  upload.single('foto'),
+  upload.compress,
+  verifyToken,
+  trabajadorController.subirFoto
+);
 router.get('/', verifyToken, trabajadorController.getAllTrabajadores);
 router.get(
   '/:id',

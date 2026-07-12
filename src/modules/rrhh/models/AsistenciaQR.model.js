@@ -12,6 +12,7 @@ const AsistenciaQR = sequelize.define(
     entrada_tarde: { type: DataTypes.DATE },
     salida_tarde: { type: DataTypes.DATE },
     horas_cumplidas_dia: { type: DataTypes.DECIMAL },
+    horas_justificadas: { type: DataTypes.DECIMAL },
     observaciones: { type: DataTypes.TEXT },
   },
   {
