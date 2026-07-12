@@ -17,11 +17,15 @@ const {
   planificarTallerSchema,
 } = require('../schemas/taller.schema');
 
-router.post('/', validateZod(createTallerSchema), tallerController.createTaller);
+router.post('/', validateZod({ body: createTallerSchema }), tallerController.createTaller);
 router.get('/', tallerController.getAllTalleres);
 router.get('/:id', tallerController.getTallerById);
-router.put('/:id', validateZod(updateTallerSchema), tallerController.updateTaller);
+router.put('/:id', validateZod({ body: updateTallerSchema }), tallerController.updateTaller);
 router.delete('/:id', tallerController.deleteTaller);
-router.post('/planificar', validateZod(planificarTallerSchema), tallerController.planificarTaller);
+router.post(
+  '/planificar',
+  validateZod({ body: planificarTallerSchema }),
+  tallerController.planificarTaller
+);
 
 module.exports = router;

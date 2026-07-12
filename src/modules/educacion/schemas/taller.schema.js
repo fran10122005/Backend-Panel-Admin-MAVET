@@ -6,14 +6,24 @@ const getToday = () => {
   return today;
 };
 
+const toStr = (val) => (val === null || val === undefined ? undefined : String(val));
+
 const baseTallerSchema = {
-  nombre_curso: z.string().min(1, 'El nombre del curso es requerido').optional(),
-  inventario_id: z.string().optional(),
-  id_instructor: z.string().optional(),
-  id_espacio: z.string().optional(),
-  sesiones: z.string().regex(/^\d+$/, 'Las sesiones deben ser un número positivo').optional(),
+  nombre_curso: z
+    .preprocess(toStr, z.string().min(1, 'El nombre del curso es requerido'))
+    .optional()
+    .nullable()
+    .default(undefined),
+  inventario_id: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
+  id_instructor: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
+  id_espacio: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
+  sesiones: z
+    .preprocess(toStr, z.string().regex(/^\d+$/, 'Las sesiones deben ser un número positivo'))
+    .optional()
+    .nullable()
+    .default(undefined),
   fecha: z
-    .string()
+    .preprocess(toStr, z.string())
     .refine(
       (val) => {
         if (!val) return true;
@@ -24,26 +34,44 @@ const baseTallerSchema = {
       },
       { message: 'La fecha no puede ser en el pasado' }
     )
-    .optional(),
-  fecha_fin: z.string().optional(),
+    .optional()
+    .nullable()
+    .default(undefined),
+  fecha_fin: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
   hora_inicio: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):?([0-5]\d)(:[0-5]\d)?$/, 'Hora de inicio inválida')
-    .optional(),
+    .preprocess(
+      toStr,
+      z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)(:[0-5]\d)?$/, 'Hora de inicio inválida')
+    )
+    .optional()
+    .nullable()
+    .default(undefined),
   hora_fin: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):?([0-5]\d)(:[0-5]\d)?$/, 'Hora de fin inválida')
-    .optional(),
-  horas_totales: z.string().optional(),
+    .preprocess(
+      toStr,
+      z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)(:[0-5]\d)?$/, 'Hora de fin inválida')
+    )
+    .optional()
+    .nullable()
+    .default(undefined),
+  horas_totales: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
   cupo_minimo: z
-    .string()
-    .regex(/^[1-9]\d*$/, 'El cupo mínimo debe ser un número positivo mayor a 0')
-    .optional(),
+    .preprocess(
+      toStr,
+      z.string().regex(/^[1-9]\d*$/, 'El cupo mínimo debe ser un número positivo mayor a 0')
+    )
+    .optional()
+    .nullable()
+    .default(undefined),
   cupo_maximo: z
-    .string()
-    .regex(/^[1-9]\d*$/, 'El cupo máximo debe ser un número positivo mayor a 0')
-    .optional(),
-  estado: z.string().optional(),
+    .preprocess(
+      toStr,
+      z.string().regex(/^[1-9]\d*$/, 'El cupo máximo debe ser un número positivo mayor a 0')
+    )
+    .optional()
+    .nullable()
+    .default(undefined),
+  estado: z.preprocess(toStr, z.string()).optional().nullable().default(undefined),
 };
 
 const tallerRefinements = (schema) =>
@@ -82,24 +110,18 @@ const tallerRefinements = (schema) =>
       }
     );
 
-const createTallerSchema = z.object({
-  body: tallerRefinements(z.object(baseTallerSchema)),
-});
+const createTallerSchema = tallerRefinements(z.object(baseTallerSchema));
 
-const updateTallerSchema = z.object({
-  body: tallerRefinements(z.object(baseTallerSchema)),
-});
+const updateTallerSchema = tallerRefinements(z.object(baseTallerSchema));
 
-const planificarTallerSchema = z.object({
-  body: tallerRefinements(
-    z.object({
-      inventarioId: z
-        .union([z.string(), z.number()])
-        .refine((val) => !!val, { message: 'ID de inventario es requerido' }),
-      ...baseTallerSchema,
-    })
-  ),
-});
+const planificarTallerSchema = tallerRefinements(
+  z.object({
+    inventarioId: z
+      .union([z.string(), z.number()])
+      .refine((val) => !!val, { message: 'ID de inventario es requerido' }),
+    ...baseTallerSchema,
+  })
+);
 
 module.exports = {
   createTallerSchema,
