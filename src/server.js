@@ -53,6 +53,7 @@ const catchAsync = require('./utils/catchAsync');
 app.post(
   '/api/auth/me/foto',
   upload.single('foto'),
+  upload.compress,
   verifyToken,
   catchAsync(async (req, res) => {
     if (!req.file) {

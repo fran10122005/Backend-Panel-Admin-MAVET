@@ -13,6 +13,7 @@ const {
 router.post(
   '/',
   upload.single('imagen'),
+  upload.compress,
   validateZod({ body: createObraSchema }),
   obraController.createObra
 );
@@ -21,6 +22,7 @@ router.get('/:id', validateZod({ params: obraIdParamSchema }), obraController.ge
 router.put(
   '/:id',
   upload.single('imagen'),
+  upload.compress,
   validateZod({ params: obraIdParamSchema, body: updateObraSchema }),
   obraController.updateObra
 );
