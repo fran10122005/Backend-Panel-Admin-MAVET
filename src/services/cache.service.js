@@ -4,6 +4,46 @@ const DEFAULT_TTL = 300;
 
 let habilitado = false;
 
+// ---- Fallback en memoria cuando Redis no está disponible ----
+const memCache = new Map();
+
+function memGet(key) {
+  const entry = memCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    memCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function memSet(key, value, ttlSeconds) {
+  memCache.set(key, { value, expiry: Date.now() + ttlSeconds * 1000 });
+}
+
+function memDel(key) {
+  memCache.delete(key);
+}
+
+function memClear(pattern) {
+  const prefix = pattern.replace(/\*/g, '');
+  for (const key of memCache.keys()) {
+    if (key.startsWith(prefix)) {
+      memCache.delete(key);
+    }
+  }
+}
+
+// Limpieza periódica de entradas expiradas en memoria
+/* global setInterval */
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of memCache) {
+    if (now > entry.expiry) memCache.delete(key);
+  }
+}, 60_000);
+// ---- Fin fallback en memoria ----
+
 async function inicializar() {
   if (!redis) {
     habilitado = false;
@@ -22,7 +62,7 @@ function deshabilitar() {
 }
 
 function estaHabilitado() {
-  return habilitado;
+  return habilitado || true; // Siempre habilitado (Redis o memoria)
 }
 
 function generarClave(...partes) {
@@ -30,40 +70,46 @@ function generarClave(...partes) {
 }
 
 async function obtener(key) {
-  if (!habilitado) return null;
-  try {
-    const valor = await redis.get(key);
-    if (!valor) return null;
-    return JSON.parse(valor);
-  } catch {
-    return null;
+  if (habilitado) {
+    try {
+      const valor = await redis.get(key);
+      if (valor) return JSON.parse(valor);
+    } catch {
+      // fallback a memoria
+    }
   }
+  return memGet(key);
 }
 
 async function guardar(key, value, ttlSeconds = DEFAULT_TTL) {
-  if (!habilitado) return;
-  try {
-    const serializado = JSON.stringify(value);
-    if (ttlSeconds > 0) {
-      await redis.setex(key, ttlSeconds, serializado);
-    } else {
-      await redis.set(key, serializado);
+  if (habilitado) {
+    try {
+      const serializado = JSON.stringify(value);
+      if (ttlSeconds > 0) {
+        await redis.setex(key, ttlSeconds, serializado);
+      } else {
+        await redis.set(key, serializado);
+      }
+      return;
+    } catch {
+      // fallback a memoria
     }
-  } catch {
-    // Redis caído, ignorar
   }
+  memSet(key, value, ttlSeconds);
 }
 
 async function eliminar(key) {
+  memDel(key);
   if (!habilitado) return;
   try {
     await redis.del(key);
   } catch {
-    // Redis caído, ignorar
+    // ignorar
   }
 }
 
 async function eliminarPatron(pattern) {
+  memClear(pattern);
   if (!habilitado) return;
   try {
     const stream = redis.scanStream({ match: pattern, count: 100 });
@@ -91,13 +137,11 @@ async function eliminarPatron(pattern) {
       stream.on('error', reject);
     });
   } catch {
-    // Redis caído, ignorar
+    // ignorar
   }
 }
 
 async function wrap(key, ttlSeconds, fn) {
-  if (!habilitado) return fn();
-
   const cached = await obtener(key);
   if (cached !== null) return cached;
 

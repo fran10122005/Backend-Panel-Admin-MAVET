@@ -3,7 +3,6 @@ const cacheService = require('../services/cache.service');
 function cache(ttlSeconds) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
-    if (!cacheService.estaHabilitado()) return next();
 
     const key = cacheService.generarClave('resp', req.originalUrl);
 
@@ -30,6 +29,7 @@ function cache(ttlSeconds) {
 
 function limpiarCache(...patrones) {
   return (req, res, next) => {
+    if (req.method === 'GET') return next();
     const originalJson = res.json.bind(res);
     res.json = (body) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
