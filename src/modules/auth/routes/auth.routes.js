@@ -1,9 +1,27 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../../../middleware/authMiddleware');
 const validateZod = require('../../../middleware/validateSchema');
 const { z } = require('zod');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Demasiados intentos de inicio de sesión. Intente de nuevo en 15 minutos.',
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const sensitiveLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Demasiadas solicitudes. Intente de nuevo en 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // --- Esquemas de validación Zod ---
 const forgotPasswordSchema = z.object({
@@ -23,10 +41,20 @@ const registerSchema = z.object({
 });
 
 // Rutas públicas
-router.post('/register', validateZod(registerSchema), authController.register);
-router.post('/login', authController.login);
-router.post('/forgot-password', validateZod(forgotPasswordSchema), authController.forgotPassword);
-router.post('/reset-password', validateZod(resetPasswordSchema), authController.resetPassword);
+router.post('/register', sensitiveLimiter, validateZod(registerSchema), authController.register);
+router.post('/login', loginLimiter, authController.login);
+router.post(
+  '/forgot-password',
+  sensitiveLimiter,
+  validateZod(forgotPasswordSchema),
+  authController.forgotPassword
+);
+router.post(
+  '/reset-password',
+  sensitiveLimiter,
+  validateZod(resetPasswordSchema),
+  authController.resetPassword
+);
 
 // Rutas protegidas
 router.get('/', verifyToken, authController.getAllUsuarios);

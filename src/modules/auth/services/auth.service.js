@@ -233,11 +233,6 @@ exports.subirFotoPerfil = async (id_usuario, filePath) => {
   usuario.foto_url = url;
   await usuario.save();
 
-  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
-  if (trabajador) {
-    await trabajador.update({ foto_url: url });
-  }
-
   return url;
 };
 
@@ -247,11 +242,6 @@ exports.eliminarFotoPerfil = async (id_usuario) => {
 
   usuario.foto_url = null;
   await usuario.save();
-
-  const trabajador = await Trabajador.findOne({ where: { id_usuario } });
-  if (trabajador) {
-    await trabajador.update({ foto_url: null });
-  }
 
   return true;
 };

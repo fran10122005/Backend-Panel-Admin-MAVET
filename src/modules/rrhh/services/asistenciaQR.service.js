@@ -171,10 +171,11 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
   };
 };
 
-exports.updateObservaciones = async (id, observaciones) => {
+exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
   const asistencia = await AsistenciaQR.findByPk(id);
   if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
   asistencia.observaciones = observaciones || null;
+  asistencia.horas_justificadas = horas_justificadas || null;
   await asistencia.save();
   return asistencia;
 };
@@ -232,6 +233,7 @@ exports.getResumenSemanalTodos = async () => {
         salida: r.salida_manana,
         horas: r.horas_cumplidas_dia,
         observaciones: r.observaciones,
+        horas_justificadas: r.horas_justificadas,
       })),
     };
   });
