@@ -29,6 +29,7 @@ app.use(helmet());
 // CORS Configurado
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
   'http://localhost:5173',
   'http://localhost:3000',
 ].filter(Boolean);
