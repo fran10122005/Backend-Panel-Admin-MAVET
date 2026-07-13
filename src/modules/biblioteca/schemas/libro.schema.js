@@ -7,7 +7,12 @@ const createLibroSchema = z.object({
   estante: z.string().max(255).optional().nullable(),
   ano_libro: z.preprocess(
     (val) => (val ? Number(val) : null),
-    z.number().min(1000, 'Año inválido').max(2099, 'Año inválido').nullable().optional()
+    z
+      .number()
+      .min(1000, 'Año inválido')
+      .max(new Date().getFullYear(), 'El año del libro no puede ser futuro')
+      .nullable()
+      .optional()
   ),
   id_categoria: z
     .union([z.string(), z.number()])
@@ -19,7 +24,13 @@ const createLibroSchema = z.object({
     z.number().int().min(1, 'La cantidad total debe ser al menos 1')
   ),
   estado: z.string().max(255).optional().nullable(),
-  fecha_ingreso: z.string().optional().nullable(),
+  fecha_ingreso: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((val) => !val || val <= new Date().toISOString().split('T')[0], {
+      message: 'La fecha de ingreso no puede ser posterior al día de hoy',
+    }),
   autor: z.string().max(255).optional().nullable(),
   id_autor: z.string().optional().nullable(),
   cantidad_disponible: z.preprocess(
