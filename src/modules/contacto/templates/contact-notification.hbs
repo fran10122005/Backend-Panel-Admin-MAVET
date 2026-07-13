@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Georgia', serif; color: #1a1a1a; background: #f9f7f2; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 24px; }
+    .header { border-bottom: 2px solid #800020; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 20px; color: #800020; margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+    .field { margin-bottom: 20px; }
+    .field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #737373; margin-bottom: 4px; }
+    .field-value { font-size: 15px; line-height: 1.5; color: #1a1a1a; }
+    .message-box { background: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px; margin-top: 8px; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 12px; color: #737373; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📬 Nuevo mensaje de contacto</h1>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Nombre</div>
+      <div class="field-value">{{name}}</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Correo electrónico</div>
+      <div class="field-value">{{email}}</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Asunto</div>
+      <div class="field-value">{{subject}}</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Mensaje</div>
+      <div class="message-box">{{message}}</div>
+    </div>
+
+    <div class="footer">
+      Enviado desde el formulario de contacto — MAVET Museo<br>
+      {{currentYear}}
+    </div>
+  </div>
+</body>
+</html>

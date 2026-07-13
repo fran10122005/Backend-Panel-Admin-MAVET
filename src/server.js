@@ -137,6 +137,10 @@ app.get(
 const agendaController = require('./modules/educacion/controllers/agenda.controller');
 app.get('/api/public/agenda', cache(300), agendaController.getAgenda);
 
+// Ruta Pública de Contacto
+const contactoController = require('./modules/contacto/controllers/contacto.controller');
+app.post('/api/public/contacto', catchAsync(contactoController.enviarContacto));
+
 // Ruta Pública de Biblioteca (Libros)
 const libroController = require('./modules/biblioteca/controllers/libro.controller');
 app.get('/api/public/libros', cache(300), libroController.getLibrosPublicos);
