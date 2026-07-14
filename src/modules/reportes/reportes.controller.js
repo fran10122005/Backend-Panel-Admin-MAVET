@@ -119,7 +119,11 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
     // Si por alguna razón es un Date válido
     const d = new Date(dt);
     if (!isNaN(d.getTime()))
-      return d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Caracas',
+      });
     return '—';
   };
   const rows = asistencias.map((a) => {
