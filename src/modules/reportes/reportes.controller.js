@@ -96,7 +96,20 @@ exports.reporteLibros = catchAsync(async (req, res) => {
 
 // ─── Reporte: Consolidado de Asistencia ───────────────────────────────────
 exports.reporteAsistencia = catchAsync(async (req, res) => {
+  const { rango, fechaInicio, fechaFin } = req.query;
+
+  const whereClause = {};
+  if (rango === 'custom' && fechaInicio && fechaFin) {
+    whereClause.fecha = { [Op.between]: [fechaInicio, fechaFin] };
+  } else if (rango === 'mes') {
+    const date = new Date();
+    const start = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+    whereClause.fecha = { [Op.between]: [start, end] };
+  }
+
   const asistencias = await AsistenciaQR.findAll({
+    where: whereClause,
     include: [{ model: Trabajador, include: [CargoTrabajador] }],
     order: [['fecha', 'DESC']],
   });
@@ -126,16 +139,35 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
       });
     return '—';
   };
-  const rows = asistencias.map((a) => {
+  const rows = [];
+  let currentWeek = null;
+
+  const getWeekStartEnd = (fechaStr) => {
+    const d = new Date(fechaStr + 'T12:00:00Z');
+    const day = d.getUTCDay();
+    const diffToMonday = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setUTCDate(diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    return `[SEMANA] ${monday.toISOString().split('T')[0]} a ${sunday.toISOString().split('T')[0]}`;
+  };
+
+  asistencias.forEach((a) => {
+    const weekLabel = getWeekStartEnd(a.fecha);
+    if (currentWeek !== weekLabel) {
+      rows.push([weekLabel, '---', '---', '---', '---', '---']);
+      currentWeek = weekLabel;
+    }
     const t = a.Trabajador || {};
-    return [
+    rows.push([
       a.fecha || '—',
       t.cedula || '—',
       t.nombres && t.apellidos ? `${t.nombres} ${t.apellidos}` : '—',
       t.CargoTrabajador?.nombre_cargo || '—',
       fmt(a.entrada_manana),
       fmt(a.salida_manana),
-    ];
+    ]);
   });
 
   const filename = `MAVET_Asistencia_${new Date().toISOString().split('T')[0]}.pdf`;

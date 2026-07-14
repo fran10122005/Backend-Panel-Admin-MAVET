@@ -18,7 +18,8 @@ exports.getEstadoAsistencia = catchAsync(async (req, res) => {
 exports.getAllAsistencias = catchAsync(async (req, res) => {
   const page = req.query.page ? parseInt(req.query.page, 10) : null;
   const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-  const result = await asistenciaQRService.getAllAsistencias(page, limit);
+  const fecha = req.query.fecha || null;
+  const result = await asistenciaQRService.getAllAsistencias(page, limit, fecha);
   res.status(200).json({
     data: result.data || result,
     meta: result.meta,

@@ -47,8 +47,13 @@ exports.registrarAsistencia = async (data) => {
   const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
   if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
 
-  const trabajador = await Trabajador.findOne({ where: whereClause });
+  const trabajador = await Trabajador.findOne({
+    where: whereClause,
+    include: [{ model: CargoTrabajador }],
+  });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const isSecurity = trabajador.CargoTrabajador?.nombre_cargo === 'Seguridad / Vigilante';
 
   const dateObj = new Date();
   const fecha = getVenezuelaDateString(dateObj);
@@ -61,7 +66,9 @@ exports.registrarAsistencia = async (data) => {
   switch (tipoMovimiento) {
     case 'Entrada':
       if (asistencia && !asistencia.salida_manana) {
-        throw new AppError('Ya tiene una entrada abierta. Debe registrar salida primero.', 400);
+        if (asistencia.fecha === fecha || isSecurity) {
+          throw new AppError('Ya tiene una entrada abierta. Debe registrar salida primero.', 400);
+        }
       }
       if (asistencia && asistencia.fecha === fecha) {
         throw new AppError('La jornada de hoy ya fue completada.', 400);
@@ -137,8 +144,13 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
   const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
   if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
 
-  const trabajador = await Trabajador.findOne({ where: whereClause });
+  const trabajador = await Trabajador.findOne({
+    where: whereClause,
+    include: [{ model: CargoTrabajador }],
+  });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const isSecurity = trabajador.CargoTrabajador?.nombre_cargo === 'Seguridad / Vigilante';
 
   const dateObj = new Date();
   const fecha = getVenezuelaDateString(dateObj);
@@ -153,8 +165,13 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
 
   if (asistencia) {
     if (!asistencia.salida_manana) {
-      siguienteMovimiento = 'Salida';
-      recordToUse = asistencia;
+      if (asistencia.fecha === fecha || isSecurity) {
+        siguienteMovimiento = 'Salida';
+        recordToUse = asistencia;
+      } else {
+        siguienteMovimiento = 'Entrada';
+        recordToUse = null;
+      }
     } else {
       if (asistencia.fecha === fecha) {
         siguienteMovimiento = null;
@@ -295,8 +312,9 @@ exports.getResumenSemanalTodos = async () => {
   return resumen;
 };
 
-exports.getAllAsistencias = async (page, limit) => {
+exports.getAllAsistencias = async (page, limit, fecha) => {
   const query = {
+    where: {},
     include: [
       {
         model: Trabajador,
@@ -305,6 +323,11 @@ exports.getAllAsistencias = async (page, limit) => {
     ],
     order: [['fecha', 'DESC']],
   };
+
+  if (fecha) {
+    query.where.fecha = fecha;
+  }
+
   if (page && limit) {
     const offset = (page - 1) * limit;
     query.limit = limit;
