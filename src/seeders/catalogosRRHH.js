@@ -1,46 +1,20 @@
 const { CargoTrabajador, Role, sequelize } = require('../models');
 
+const { Op } = require('sequelize');
+
 const cargos = [
-  { nombre_cargo: 'Director(a)', descripcion: 'Director o Directora del museo' },
-  { nombre_cargo: 'Subdirector(a)', descripcion: 'Subdirector o Subdirectora del museo' },
-  { nombre_cargo: 'Administrador(a)', descripcion: 'Encargado de la administración general' },
-  { nombre_cargo: 'Curador(a)', descripcion: 'Responsable de la colección del museo' },
-  { nombre_cargo: 'Restaurador(a)', descripcion: 'Especialista en restauración de obras' },
-  {
-    nombre_cargo: 'Educador(a) de Museos',
-    descripcion: 'Facilita talleres y actividades educativas',
-  },
-  { nombre_cargo: 'Guía de Sala', descripcion: 'Guía a los visitantes por las salas del museo' },
-  { nombre_cargo: 'Recepcionista', descripcion: 'Atención al público en recepción' },
-  {
-    nombre_cargo: 'Asistente Administrativo(a)',
-    descripcion: 'Apoyo a las labores administrativas',
-  },
-  { nombre_cargo: 'Archivista', descripcion: 'Gestión y conservación de archivos y documentos' },
+  { nombre_cargo: 'Educador', descripcion: 'Facilita talleres y actividades educativas' },
   { nombre_cargo: 'Bibliotecario(a)', descripcion: 'Gestión de la biblioteca del museo' },
-  { nombre_cargo: 'Técnico de Montaje', descripcion: 'Instalación y desmontaje de obras' },
-  { nombre_cargo: 'Museógrafo(a)', descripcion: 'Diseño de espacios y narrativa expositiva' },
-  { nombre_cargo: 'Fotógrafo(a)', descripcion: 'Registro fotográfico de obras y eventos' },
-  { nombre_cargo: 'Diseñador(a) Gráfico(a)', descripcion: 'Material de comunicación y difusión' },
-  {
-    nombre_cargo: 'Community Manager',
-    descripcion: 'Gestión de redes sociales y comunicación digital',
-  },
+  { nombre_cargo: 'Curador(a)', descripcion: 'Responsable de la colección del museo' },
+  { nombre_cargo: 'Recepcionista', descripcion: 'Atención al público en recepción' },
+  { nombre_cargo: 'Coordinador', descripcion: 'Coordinación general' },
+  { nombre_cargo: 'Guía de Sala', descripcion: 'Guía a los visitantes por las salas del museo' },
+  { nombre_cargo: 'Mantenimiento', descripcion: 'Mantenimiento general de las instalaciones' },
+  { nombre_cargo: 'Pasante', descripcion: 'Personal en período de pasantía' },
   {
     nombre_cargo: 'Seguridad / Vigilante',
     descripcion: 'Seguridad y vigilancia de las instalaciones',
   },
-  { nombre_cargo: 'Mantenimiento', descripcion: 'Mantenimiento general de las instalaciones' },
-  { nombre_cargo: 'Personal de Limpieza', descripcion: 'Limpieza y aseo de las instalaciones' },
-  {
-    nombre_cargo: 'Coordinador(a) de Talleres',
-    descripcion: 'Coordinación del programa de talleres y educación',
-  },
-  { nombre_cargo: 'Instructor(a) de Talleres', descripcion: 'Impartición de talleres artísticos' },
-  { nombre_cargo: 'Investigador(a)', descripcion: 'Investigación artística y patrimonial' },
-  { nombre_cargo: 'Asistente de Curaduría', descripcion: 'Apoyo al área de curaduría' },
-  { nombre_cargo: 'Contador(a)', descripcion: 'Gestión contable y financiera' },
-  { nombre_cargo: 'Pasante', descripcion: 'Personal en período de pasantía' },
 ];
 
 const roles = [
@@ -57,6 +31,16 @@ async function seedRRHH() {
   try {
     await sequelize.authenticate();
     console.log('✅ Conectado a la base de datos\n');
+
+    // Cleanup unused cargos
+    console.log('--- Limpiando Cargos Antiguos ---');
+    const namesToKeep = cargos.map((c) => c.nombre_cargo);
+    const deleted = await CargoTrabajador.destroy({
+      where: {
+        nombre_cargo: { [Op.notIn]: namesToKeep },
+      },
+    });
+    console.log(`🗑️  Se eliminaron ${deleted} cargos que ya no se usan.\n`);
 
     // Cargos de Trabajador
     console.log('--- Cargos de Trabajador ---');

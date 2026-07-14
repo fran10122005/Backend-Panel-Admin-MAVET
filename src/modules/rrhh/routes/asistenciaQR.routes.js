@@ -16,6 +16,7 @@ router.post(
 router.get('/', verifyToken, asistenciaQRController.getAllAsistencias);
 router.get('/semana/resumen', verifyToken, asistenciaQRController.getResumenSemanalTodos);
 router.get('/semana', asistenciaQRController.getSemanaAsistencia);
+router.post('/justificar', verifyToken, asistenciaQRController.justificarSemana);
 router.patch('/:id', verifyToken, asistenciaQRController.updateAsistenciaObservaciones);
 
 module.exports = router;

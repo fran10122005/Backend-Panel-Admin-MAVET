@@ -88,24 +88,29 @@ exports.getSemanaAsistencia = async (cedulaTrabajador) => {
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const ahora = new Date();
-  const diaSemana = ahora.getDay();
-  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
-  const lunes = new Date(ahora);
-  lunes.setDate(ahora.getDate() - diffLunes);
-  const lunesStr = lunes.toISOString().split('T')[0];
-  const domingo = new Date(lunes);
-  domingo.setDate(lunes.getDate() + 6);
-  const domingoStr = domingo.toISOString().split('T')[0];
+  const offset = ahora.getTimezoneOffset() * 60000;
+  const fechaActual = new Date(ahora.getTime() - offset);
+
+  const diaSemana = fechaActual.getDay();
+  const diffMiercoles = (diaSemana + 4) % 7;
+  const miercoles = new Date(fechaActual);
+  miercoles.setDate(fechaActual.getDate() - diffMiercoles);
+  const inicioStr = miercoles.toISOString().split('T')[0];
+
+  const martes = new Date(miercoles);
+  martes.setDate(miercoles.getDate() + 6);
+  const finStr = martes.toISOString().split('T')[0];
 
   const registros = await AsistenciaQR.findAll({
     where: {
       id_trabajador: trabajador.id_trabajador,
-      fecha: { [require('sequelize').Op.between]: [lunesStr, domingoStr] },
+      fecha: { [require('sequelize').Op.between]: [inicioStr, finStr] },
     },
   });
 
   const horasAcumuladas = registros.reduce(
-    (sum, r) => sum + (parseFloat(r.horas_cumplidas_dia) || 0),
+    (sum, r) =>
+      sum + (parseFloat(r.horas_cumplidas_dia) || 0) + (parseFloat(r.horas_justificadas) || 0),
     0
   );
   const horasSemanales = parseFloat(trabajador.horas_semanales) || 0;
@@ -174,21 +179,57 @@ exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
   const asistencia = await AsistenciaQR.findByPk(id);
   if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
   asistencia.observaciones = observaciones || null;
-  asistencia.horas_justificadas = horas_justificadas || null;
+  if (horas_justificadas !== undefined) {
+    asistencia.horas_justificadas = horas_justificadas || null;
+  }
   await asistencia.save();
+  return asistencia;
+};
+
+exports.justificarSemana = async ({ cedula, observaciones, horas_justificadas }) => {
+  const trabajador = await Trabajador.findOne({ where: { cedula, estado: true } });
+  if (!trabajador) throw new AppError('Trabajador no encontrado o inactivo', 404);
+
+  const dateObj = new Date();
+  const offset = dateObj.getTimezoneOffset() * 60000;
+  const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
+
+  let asistencia = await AsistenciaQR.findOne({
+    where: { id_trabajador: trabajador.id_trabajador, fecha },
+  });
+
+  if (!asistencia) {
+    asistencia = await AsistenciaQR.create({
+      id_trabajador: trabajador.id_trabajador,
+      fecha,
+      horas_cumplidas_dia: 0,
+      horas_justificadas,
+      observaciones: observaciones || null,
+    });
+  } else {
+    asistencia.horas_justificadas =
+      (parseFloat(asistencia.horas_justificadas) || 0) + parseFloat(horas_justificadas);
+    if (observaciones) asistencia.observaciones = observaciones;
+    await asistencia.save();
+  }
+
   return asistencia;
 };
 
 exports.getResumenSemanalTodos = async () => {
   const ahora = new Date();
-  const diaSemana = ahora.getDay();
-  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
-  const lunes = new Date(ahora);
-  lunes.setDate(ahora.getDate() - diffLunes);
-  const lunesStr = lunes.toISOString().split('T')[0];
-  const domingo = new Date(lunes);
-  domingo.setDate(lunes.getDate() + 6);
-  const domingoStr = domingo.toISOString().split('T')[0];
+  const offset = ahora.getTimezoneOffset() * 60000;
+  const fechaActual = new Date(ahora.getTime() - offset);
+
+  const diaSemana = fechaActual.getDay();
+  const diffMiercoles = (diaSemana + 4) % 7;
+  const miercoles = new Date(fechaActual);
+  miercoles.setDate(fechaActual.getDate() - diffMiercoles);
+  const inicioStr = miercoles.toISOString().split('T')[0];
+
+  const martes = new Date(miercoles);
+  martes.setDate(miercoles.getDate() + 6);
+  const finStr = martes.toISOString().split('T')[0];
 
   const { Op } = require('sequelize');
 
@@ -199,7 +240,7 @@ exports.getResumenSemanalTodos = async () => {
 
   const registros = await AsistenciaQR.findAll({
     where: {
-      fecha: { [Op.between]: [lunesStr, domingoStr] },
+      fecha: { [Op.between]: [inicioStr, finStr] },
     },
     include: [{ model: Trabajador }],
   });
@@ -207,7 +248,8 @@ exports.getResumenSemanalTodos = async () => {
   const resumen = trabajadores.map((t) => {
     const tRegistros = registros.filter((r) => r.id_trabajador === t.id_trabajador);
     const horasAcumuladas = tRegistros.reduce(
-      (sum, r) => sum + (parseFloat(r.horas_cumplidas_dia) || 0),
+      (sum, r) =>
+        sum + (parseFloat(r.horas_cumplidas_dia) || 0) + (parseFloat(r.horas_justificadas) || 0),
       0
     );
     const horasSemanales = parseFloat(t.horas_semanales) || 0;
@@ -221,9 +263,9 @@ exports.getResumenSemanalTodos = async () => {
       cargo: t.CargoTrabajador?.nombre_cargo || null,
       horas_semanales: horasSemanales,
       horas_acumuladas: Math.round(horasAcumuladas * 100) / 100,
-      horas_restantes: horasRestantes <= 0 || tieneObs ? 0 : Math.round(horasRestantes * 100) / 100,
+      horas_restantes: Math.round(horasRestantes * 100) / 100,
       cumplio: horasRestantes <= 0,
-      justificado: !(horasRestantes <= 0) && tieneObs,
+      justificado: tieneObs,
       observaciones: tRegistros.find((r) => r.observaciones)?.observaciones || null,
       dias: tRegistros.map((r) => ({
         id: r.id_asistencia,

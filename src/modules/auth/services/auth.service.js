@@ -79,7 +79,10 @@ exports.login = async (correo, password) => {
   }
 
   if (!usuario.estado) {
-    throw new AppError('Esta cuenta se encuentra inactiva', 403);
+    throw new AppError(
+      'Esta cuenta se encuentra suspendida. Para mas información comunicate con el coordinador(a) o administrador(a)',
+      403
+    );
   }
 
   // Verificar contraseña
@@ -271,6 +274,24 @@ exports.updateUsuario = async (id_usuario, data) => {
     usuario.password_hash = await bcrypt.hash(data.password, salt);
   }
 
+  // Validar si se está intentando inactivar o cambiar el rol de un administrador
+  if (
+    data.estado === false ||
+    data.estado === 'false' ||
+    (data.id_rol && data.id_rol !== usuario.id_rol)
+  ) {
+    const adminRol = await Role.findOne({ where: { nombre_rol: 'Administrador' } });
+    if (adminRol && usuario.id_rol === adminRol.id_rol) {
+      const adminCount = await Usuario.count({ where: { id_rol: adminRol.id_rol, estado: true } });
+      if (adminCount <= 1) {
+        throw new AppError(
+          'No puedes suspender o cambiar el rol del único administrador del sistema',
+          400
+        );
+      }
+    }
+  }
+
   if (data.correo) usuario.correo = data.correo;
   if (data.id_rol !== undefined) usuario.id_rol = data.id_rol;
   if (data.estado !== undefined) usuario.estado = data.estado;
@@ -297,6 +318,14 @@ exports.deleteUsuario = async (id_usuario, solicitante_id) => {
 
   const usuario = await Usuario.findByPk(id_usuario);
   if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  const adminRol = await Role.findOne({ where: { nombre_rol: 'Administrador' } });
+  if (adminRol && usuario.id_rol === adminRol.id_rol) {
+    const adminCount = await Usuario.count({ where: { id_rol: adminRol.id_rol, estado: true } });
+    if (adminCount <= 1) {
+      throw new AppError('No puedes eliminar al único administrador del sistema', 400);
+    }
+  }
 
   await Trabajador.update({ id_usuario: null }, { where: { id_usuario } });
 
