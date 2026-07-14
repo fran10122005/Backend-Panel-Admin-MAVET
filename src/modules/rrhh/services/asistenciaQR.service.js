@@ -2,6 +2,11 @@ const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../../models')
 const AppError = require('../../../utils/AppError');
 const { normalizeCedula } = require('../../../utils/cedula');
 
+const getVenezuelaDateString = (dateObj) => {
+  const vTime = new Date(dateObj.getTime() - 4 * 60 * 60 * 1000);
+  return vTime.toISOString().split('T')[0];
+};
+
 const ORDEN_MOVIMIENTOS = ['Entrada', 'Salida'];
 const CAMPO_MOVIMIENTO = {
   Entrada: 'entrada_manana',
@@ -46,27 +51,31 @@ exports.registrarAsistencia = async (data) => {
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const dateObj = new Date();
-  const offset = dateObj.getTimezoneOffset() * 60000;
-  const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
+  const fecha = getVenezuelaDateString(dateObj);
 
   let asistencia = await AsistenciaQR.findOne({
-    where: {
-      id_trabajador: trabajador.id_trabajador,
-      fecha,
-    },
+    where: { id_trabajador: trabajador.id_trabajador },
+    order: [['fecha', 'DESC']],
   });
 
-  if (!asistencia) {
-    asistencia = await AsistenciaQR.create({
-      id_trabajador: trabajador.id_trabajador,
-      fecha,
-    });
-  }
   switch (tipoMovimiento) {
     case 'Entrada':
+      if (asistencia && !asistencia.salida_manana) {
+        throw new AppError('Ya tiene una entrada abierta. Debe registrar salida primero.', 400);
+      }
+      if (asistencia && asistencia.fecha === fecha) {
+        throw new AppError('La jornada de hoy ya fue completada.', 400);
+      }
+      asistencia = await AsistenciaQR.create({
+        id_trabajador: trabajador.id_trabajador,
+        fecha,
+      });
       asistencia.entrada_manana = dateObj;
       break;
     case 'Salida':
+      if (!asistencia || asistencia.salida_manana) {
+        throw new AppError('No hay una entrada abierta para registrar salida.', 400);
+      }
       asistencia.salida_manana = dateObj;
       if (observaciones) asistencia.observaciones = observaciones;
       break;
@@ -88,8 +97,8 @@ exports.getSemanaAsistencia = async (cedulaTrabajador) => {
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const ahora = new Date();
-  const offset = ahora.getTimezoneOffset() * 60000;
-  const fechaActual = new Date(ahora.getTime() - offset);
+  const fechaActualStr = getVenezuelaDateString(ahora);
+  const fechaActual = new Date(fechaActualStr + 'T00:00:00');
 
   const diaSemana = fechaActual.getDay();
   const diffMiercoles = (diaSemana + 4) % 7;
@@ -132,34 +141,39 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
 
   const dateObj = new Date();
-  const offset = dateObj.getTimezoneOffset() * 60000;
-  const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
+  const fecha = getVenezuelaDateString(dateObj);
 
   const asistencia = await AsistenciaQR.findOne({
-    where: { id_trabajador: trabajador.id_trabajador, fecha },
+    where: { id_trabajador: trabajador.id_trabajador },
+    order: [['fecha', 'DESC']],
   });
 
-  // Determinar el próximo movimiento a registrar
-  let siguienteMovimiento = 'Entrada'; // sin registro hoy → primer movimiento
+  let siguienteMovimiento = 'Entrada';
+  let recordToUse = null;
+
   if (asistencia) {
-    siguienteMovimiento = null; // asume jornada completa; se sobreescribe si hay hueco
-    for (const mov of ORDEN_MOVIMIENTOS) {
-      if (!asistencia[CAMPO_MOVIMIENTO[mov]]) {
-        siguienteMovimiento = mov;
-        break;
+    if (!asistencia.salida_manana) {
+      siguienteMovimiento = 'Salida';
+      recordToUse = asistencia;
+    } else {
+      if (asistencia.fecha === fecha) {
+        siguienteMovimiento = null;
+        recordToUse = asistencia;
+      } else {
+        siguienteMovimiento = 'Entrada';
+        recordToUse = null;
       }
     }
   }
 
   let horasTranscurridas = null;
   let entradaActual = null;
-  if (asistencia) {
-    if (siguienteMovimiento === 'Salida' && asistencia.entrada_manana) {
-      entradaActual = asistencia.entrada_manana;
-      const diffMs = dateObj - new Date(asistencia.entrada_manana);
-      const diffMinutos = Math.floor(diffMs / (1000 * 60));
-      horasTranscurridas = diffMinutos / 60; // enviar fracción exacta de minutos
-    }
+
+  if (recordToUse && siguienteMovimiento === 'Salida' && recordToUse.entrada_manana) {
+    entradaActual = recordToUse.entrada_manana;
+    const diffMs = dateObj - new Date(recordToUse.entrada_manana);
+    const diffMinutos = Math.floor(diffMs / (1000 * 60));
+    horasTranscurridas = diffMinutos / 60;
   }
 
   return {
@@ -171,7 +185,7 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
     siguienteMovimiento,
     entradaActual,
     horasTranscurridas,
-    asistencia: asistencia || null,
+    asistencia: recordToUse || null,
   };
 };
 
@@ -191,8 +205,7 @@ exports.justificarSemana = async ({ cedula, observaciones, horas_justificadas })
   if (!trabajador) throw new AppError('Trabajador no encontrado o inactivo', 404);
 
   const dateObj = new Date();
-  const offset = dateObj.getTimezoneOffset() * 60000;
-  const fecha = new Date(dateObj - offset).toISOString().split('T')[0];
+  const fecha = getVenezuelaDateString(dateObj);
 
   let asistencia = await AsistenciaQR.findOne({
     where: { id_trabajador: trabajador.id_trabajador, fecha },
@@ -218,8 +231,8 @@ exports.justificarSemana = async ({ cedula, observaciones, horas_justificadas })
 
 exports.getResumenSemanalTodos = async () => {
   const ahora = new Date();
-  const offset = ahora.getTimezoneOffset() * 60000;
-  const fechaActual = new Date(ahora.getTime() - offset);
+  const fechaActualStr = getVenezuelaDateString(ahora);
+  const fechaActual = new Date(fechaActualStr + 'T00:00:00');
 
   const diaSemana = fechaActual.getDay();
   const diffMiercoles = (diaSemana + 4) % 7;
