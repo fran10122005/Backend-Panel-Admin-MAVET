@@ -9,7 +9,7 @@ const startCronJobs = () => {
       const now = new Date();
 
       const reservas = await SolicitudEspacio.findAll({
-        where: { estado: 'Pendiente' },
+        where: { estado: 'Pendiente', estatus_aprobacion: 'aprobado' },
       });
 
       let actualizadas = 0;

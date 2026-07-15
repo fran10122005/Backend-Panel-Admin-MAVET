@@ -13,4 +13,8 @@ router.get('/:id', solicitudController.getSolicitudById);
 router.put('/:id', validateZod(updateSolicitudSchema), solicitudController.updateSolicitud);
 router.delete('/:id', solicitudController.deleteSolicitud);
 
+// Aprobación / rechazo (protegido por authMiddleware desde server.js)
+router.put('/:id/aprobar', solicitudController.aprobarSolicitud);
+router.put('/:id/rechazar', solicitudController.rechazarSolicitud);
+
 module.exports = router;

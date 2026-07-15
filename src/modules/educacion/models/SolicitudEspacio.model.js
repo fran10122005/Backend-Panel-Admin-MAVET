@@ -5,6 +5,7 @@ const SolicitudEspacio = sequelize.define(
   'SolicitudEspacio',
   {
     id_solicitud: { type: DataTypes.STRING(15), primaryKey: true },
+    numero_expediente: { type: DataTypes.STRING(30), unique: true },
     codigo_reserva: { type: DataTypes.STRING(255) },
     id_espacio: { type: DataTypes.STRING(15), allowNull: false },
     id_persona: { type: DataTypes.STRING(15), allowNull: false },
@@ -14,6 +15,16 @@ const SolicitudEspacio = sequelize.define(
     hora_fin: { type: DataTypes.TIME },
     motivo: { type: DataTypes.TEXT },
     estado: { type: DataTypes.STRING(255) },
+    estatus_aprobacion: {
+      type: DataTypes.STRING(20),
+      defaultValue: 'pendiente',
+      validate: {
+        isIn: [['pendiente', 'aprobado', 'rechazado']],
+      },
+    },
+    id_usuario_aprobador: { type: DataTypes.STRING(15) },
+    fecha_aprobacion: { type: DataTypes.DATE },
+    motivo_rechazo: { type: DataTypes.TEXT },
     fecha_creacion: { type: DataTypes.DATE },
     fecha_modificacion: { type: DataTypes.DATE },
   },
@@ -41,9 +52,12 @@ const SolicitudEspacio = sequelize.define(
           }
         }
 
-        instance[pkField] = `SES-${String(newNumber).padStart(5, '0')}`;
-        // Forzar que el codigo_reserva coincida en numeración pero con prefijo RES
-        instance.codigo_reserva = `RES-${String(newNumber).padStart(5, '0')}`;
+        const padded = String(newNumber).padStart(5, '0');
+        instance[pkField] = `SES-${padded}`;
+        instance.codigo_reserva = `RES-${padded}`;
+        // Generar número de expediente: EXP-AUD-XXXXX
+        const year = new Date().getFullYear();
+        instance.numero_expediente = `EXP-AUD-${year}-${padded}`;
       },
     },
     timestamps: true,

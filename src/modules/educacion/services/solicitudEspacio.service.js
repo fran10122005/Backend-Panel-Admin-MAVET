@@ -3,6 +3,36 @@ const AppError = require('../../../utils/AppError');
 const validatorService = require('../../../services/validator.service');
 const cacheService = require('../../../services/cache.service');
 
+const aprobarSolicitud = async (id, usuarioId) => {
+  const solicitud = await SolicitudEspacio.findByPk(id);
+  if (!solicitud) throw new AppError('Solicitud no encontrada', 404);
+  if (solicitud.estatus_aprobacion !== 'pendiente') {
+    throw new AppError(`La solicitud ya ha sido ${solicitud.estatus_aprobacion}`, 400);
+  }
+  solicitud.estatus_aprobacion = 'aprobado';
+  solicitud.id_usuario_aprobador = usuarioId;
+  solicitud.fecha_aprobacion = new Date();
+  await solicitud.save();
+  return solicitud;
+};
+
+const rechazarSolicitud = async (id, usuarioId, motivo) => {
+  if (!motivo || !motivo.trim()) {
+    throw new AppError('Debe proporcionar un motivo de rechazo', 400);
+  }
+  const solicitud = await SolicitudEspacio.findByPk(id);
+  if (!solicitud) throw new AppError('Solicitud no encontrada', 404);
+  if (solicitud.estatus_aprobacion !== 'pendiente') {
+    throw new AppError(`La solicitud ya ha sido ${solicitud.estatus_aprobacion}`, 400);
+  }
+  solicitud.estatus_aprobacion = 'rechazado';
+  solicitud.id_usuario_aprobador = usuarioId;
+  solicitud.fecha_aprobacion = new Date();
+  solicitud.motivo_rechazo = motivo.trim();
+  await solicitud.save();
+  return solicitud;
+};
+
 const createSolicitud = async (solicitudData) => {
   let finalIdPersona = solicitudData.id_persona;
 
@@ -64,7 +94,6 @@ const mapEstadoDinamico = (solicitud) => {
   const data = solicitud.toJSON ? solicitud.toJSON() : solicitud;
   let fecha = data.fecha_uso || data.fecha_solicitada;
 
-  // Format to YYYY-MM-DD if it's an ISO string or Date object
   if (fecha instanceof Date) {
     fecha = fecha.toISOString().split('T')[0];
   } else if (typeof fecha === 'string' && fecha.includes('T')) {
@@ -74,11 +103,16 @@ const mapEstadoDinamico = (solicitud) => {
   if (data.fecha_uso) data.fecha_uso = fecha;
   if (data.fecha_solicitada) data.fecha_solicitada = fecha;
 
-  const horaFin = data.hora_fin;
-  if (fecha && horaFin) {
-    const eventEnd = new Date(`${fecha}T${horaFin}`);
-    const now = new Date();
-    data.estado = eventEnd < now ? 'Realizada' : 'Pendiente';
+  // Solo marcar como Realizada si la solicitud fue aprobada y la hora ya pasó
+  if (data.estatus_aprobacion === 'aprobado') {
+    const horaFin = data.hora_fin;
+    if (fecha && horaFin) {
+      const eventEnd = new Date(`${fecha}T${horaFin}`);
+      const now = new Date();
+      data.estado = eventEnd < now ? 'Realizada' : 'Pendiente';
+    } else {
+      data.estado = 'Pendiente';
+    }
   } else {
     data.estado = 'Pendiente';
   }
@@ -86,8 +120,9 @@ const mapEstadoDinamico = (solicitud) => {
 };
 
 const getAllSolicitudes = async () => {
+  const { Usuario } = require('../../../models');
   const solicitudes = await SolicitudEspacio.findAll({
-    include: [Persona, EspacioMuseo],
+    include: [Persona, EspacioMuseo, Usuario],
   });
   return solicitudes.map(mapEstadoDinamico);
 };
@@ -152,4 +187,6 @@ module.exports = {
   getSolicitudById,
   updateSolicitud,
   deleteSolicitud,
+  aprobarSolicitud,
+  rechazarSolicitud,
 };

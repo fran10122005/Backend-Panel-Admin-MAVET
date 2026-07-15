@@ -25,3 +25,18 @@ exports.deleteSolicitud = catchAsync(async (req, res) => {
   await solicitudService.deleteSolicitud(req.params.id);
   res.status(200).json({ message: 'Reserva eliminada' });
 });
+
+exports.aprobarSolicitud = catchAsync(async (req, res) => {
+  const solicitud = await solicitudService.aprobarSolicitud(req.params.id, req.user.id_usuario);
+  res.status(200).json({ message: 'Solicitud aprobada exitosamente', data: solicitud });
+});
+
+exports.rechazarSolicitud = catchAsync(async (req, res) => {
+  const { motivo_rechazo } = req.body;
+  const solicitud = await solicitudService.rechazarSolicitud(
+    req.params.id,
+    req.user.id_usuario,
+    motivo_rechazo
+  );
+  res.status(200).json({ message: 'Solicitud rechazada', data: solicitud });
+});

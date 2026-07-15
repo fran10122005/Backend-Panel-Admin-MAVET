@@ -9,8 +9,9 @@ exports.getAgenda = catchAsync(async (req, res) => {
     attributes: ['id_taller', 'nombre_curso', 'fecha', 'hora_inicio', 'hora_fin', 'estado'],
   });
 
-  // Traer eventos del auditorio (todos)
+  // Traer solo eventos del auditorio aprobados
   const eventos = await SolicitudEspacio.findAll({
+    where: { estatus_aprobacion: 'aprobado' },
     attributes: [
       'id_solicitud',
       'institucion',
@@ -19,6 +20,7 @@ exports.getAgenda = catchAsync(async (req, res) => {
       'hora_inicio',
       'hora_fin',
       'estado',
+      'estatus_aprobacion',
     ],
   });
 
