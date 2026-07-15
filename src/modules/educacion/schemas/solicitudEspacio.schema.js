@@ -7,9 +7,9 @@ const getToday = () => {
   return today;
 };
 
-const getSixMonthsFromNow = () => {
+const getTwoMonthsFromNow = () => {
   const future = new Date();
-  future.setMonth(future.getMonth() + 6);
+  future.setMonth(future.getMonth() + 2);
   future.setHours(23, 59, 59, 999);
   return future;
 };
@@ -54,12 +54,12 @@ const createSolicitudSchema = z
 
       const dateToCheck = new Date(parts[0], parts[1] - 1, parts[2]);
       const today = getToday();
-      const maxDate = getSixMonthsFromNow();
+      const maxDate = getTwoMonthsFromNow();
 
       return dateToCheck >= today && dateToCheck <= maxDate;
     },
     {
-      message: 'La fecha de reserva debe ser hoy o en el futuro (máximo 6 meses)',
+      message: 'La fecha de reserva debe ser hoy o en el futuro (máximo 2 meses)',
       path: ['fecha_uso'],
     }
   );
@@ -96,12 +96,12 @@ const updateSolicitudSchema = z
 
       const dateToCheck = new Date(parts[0], parts[1] - 1, parts[2]);
       const today = getToday();
-      const maxDate = getSixMonthsFromNow();
+      const maxDate = getTwoMonthsFromNow();
 
       return dateToCheck >= today && dateToCheck <= maxDate;
     },
     {
-      message: 'La fecha de reserva debe ser hoy o en el futuro (máximo 6 meses)',
+      message: 'La fecha de reserva debe ser hoy o en el futuro (máximo 2 meses)',
       path: ['fecha_uso'],
     }
   );

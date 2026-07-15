@@ -3,6 +3,13 @@ const AppError = require('../../../utils/AppError');
 const { Op, Sequelize } = require('sequelize');
 
 exports.createEspacio = async (data) => {
+  if (data.capacidad !== undefined && data.capacidad !== null) {
+    const cap = Number(data.capacidad);
+    if (isNaN(cap) || cap < 1 || cap > 80) {
+      throw new AppError('La capacidad debe estar entre 1 y 80 personas', 400);
+    }
+  }
+
   if (data.nombre) {
     const existing = await EspacioMuseo.findOne({
       where: Sequelize.where(
@@ -28,6 +35,13 @@ exports.getEspacioById = async (id) => {
 exports.updateEspacio = async (id, data) => {
   const espacio = await EspacioMuseo.findByPk(id);
   if (!espacio) throw new AppError('Espacio no encontrado', 404);
+
+  if (data.capacidad !== undefined && data.capacidad !== null) {
+    const cap = Number(data.capacidad);
+    if (isNaN(cap) || cap < 1 || cap > 80) {
+      throw new AppError('La capacidad debe estar entre 1 y 80 personas', 400);
+    }
+  }
 
   if (data.nombre && data.nombre !== espacio.nombre) {
     const existing = await EspacioMuseo.findOne({
