@@ -1,8 +1,8 @@
 const AppError = require('../utils/AppError');
 
 const handleSequelizeUniqueConstraintError = (err) => {
-  const detail = err.errors && err.errors[0] ? err.errors[0].message : 'valor duplicado';
-  const message = `Valor duplicado: ${detail}. Por favor use otro valor.`;
+  const field = err.errors && err.errors[0] && err.errors[0].path ? err.errors[0].path : 'campo';
+  const message = `El valor ingresado para '${field}' ya se encuentra registrado. Por favor, intente con uno diferente.`;
   return new AppError(message, 400);
 };
 
