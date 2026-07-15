@@ -3,6 +3,7 @@ const sequelize = require('../config/db');
 // Importar modelos Auth
 const Role = require('../modules/auth/models/Role.model');
 const Usuario = require('../modules/auth/models/Usuario.model');
+const BitacoraAuditoria = require('../modules/auth/models/BitacoraAuditoria.model');
 
 // Importar modelo Maestro Persona
 const Persona = require('../modules/personas/models/Persona.model');
@@ -22,6 +23,7 @@ const CategoriaObra = require('../modules/obras/models/CategoriaObra.model');
 const Entrega = require('../modules/obras/models/Entrega.model');
 const Obra = require('../modules/obras/models/Obra.model');
 const ImagenWeb = require('../modules/obras/models/ImagenWeb.model');
+const MovimientoObra = require('../modules/obras/models/MovimientoObra.model');
 
 // Importar modelos Biblioteca
 const CategoriaLibro = require('../modules/biblioteca/models/CategoriaLibro.model');
@@ -112,6 +114,9 @@ Obra.belongsTo(CategoriaObra, { foreignKey: 'id_categoria_obra' });
 
 Obra.hasOne(ImagenWeb, { foreignKey: 'id_obra', onDelete: 'CASCADE' });
 ImagenWeb.belongsTo(Obra, { foreignKey: 'id_obra' });
+
+Obra.hasMany(MovimientoObra, { foreignKey: 'id_obra' });
+MovimientoObra.belongsTo(Obra, { foreignKey: 'id_obra' });
 
 // --- Biblioteca ---
 CategoriaLibro.hasMany(Libro, { foreignKey: 'id_categoria' });
@@ -204,6 +209,7 @@ SolicitudEspacio.belongsTo(Persona, { foreignKey: 'id_persona' });
 
 module.exports = {
   sequelize,
+  BitacoraAuditoria,
   Persona,
   Role,
   Usuario,
@@ -219,6 +225,7 @@ module.exports = {
   Entrega,
   Obra,
   ImagenWeb,
+  MovimientoObra,
   CategoriaLibro,
   AutorLibro,
   Libro,

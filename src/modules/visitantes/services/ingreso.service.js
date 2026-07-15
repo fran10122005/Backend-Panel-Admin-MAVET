@@ -198,6 +198,8 @@ exports.registrarIngreso = async (data) => {
         id_solicitud: id_solicitud || null,
         cantidad_acompanantes: cantidad_acompanantes || 0,
         fecha_hora_entrada: new Date(),
+        consentimiento_datos: data.consentimiento_datos || false,
+        consentimiento_fecha: data.consentimiento_datos ? new Date() : null,
       },
       { transaction: t }
     );

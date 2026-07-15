@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Base de datos y Modelos centralizados
@@ -25,6 +26,7 @@ const limiter = rateLimit({
 
 // Middlewares globales
 app.use(helmet());
+app.use(cookieParser());
 
 // CORS Configurado
 const allowedOrigins = [
@@ -191,6 +193,10 @@ app.use('/api/papelera', verifyToken, cacheGet(30), papeleraRoutes);
 const personaRoutes = require('./modules/personas/routes/persona.routes');
 app.use('/api/personas', verifyToken, personaRoutes);
 
+// Rutas de Auditoría
+const auditoriaRoutes = require('./modules/auth/routes/auditoria.routes');
+app.use('/api/auth/logs', verifyToken, auditoriaRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ message: 'Backend MAVET - Activo' });
@@ -285,6 +291,18 @@ async function migrateTablas() {
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS intentos_fallidos INTEGER DEFAULT 0;`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS bloqueado_hasta TIMESTAMP WITH TIME ZONE;`,
+    `CREATE TABLE IF NOT EXISTS bitacora_auditoria (
+      id_auditoria VARCHAR(15) PRIMARY KEY,
+      id_usuario VARCHAR(15),
+      correo VARCHAR(255),
+      tipo VARCHAR(50) NOT NULL,
+      detalle TEXT,
+      ip VARCHAR(45),
+      user_agent VARCHAR(500),
+      fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );`,
     `ALTER TABLE inventario_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE inventario_talleres ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
@@ -294,6 +312,23 @@ async function migrateTablas() {
     `UPDATE espacios_museo SET codigo_espacio = CONCAT('SALA-', LPAD(id_espacio::text, 3, '0')) WHERE codigo_espacio IS NULL;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_disponible TYPE INTEGER USING COALESCE(NULLIF(cantidad_disponible, ''), '0')::INTEGER;`,
+    `ALTER TABLE obras ADD COLUMN IF NOT EXISTS clasificacion_patrimonial VARCHAR(50) DEFAULT 'no_clasificado';`,
+    `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS consentimiento_datos BOOLEAN DEFAULT false;`,
+    `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS consentimiento_fecha TIMESTAMP WITH TIME ZONE;`,
+    `CREATE TABLE IF NOT EXISTS movimientos_obras (
+      id_movimiento VARCHAR(15) PRIMARY KEY,
+      id_obra VARCHAR(15) NOT NULL,
+      tipo VARCHAR(50) NOT NULL,
+      descripcion TEXT NOT NULL,
+      fecha DATE NOT NULL,
+      ubicacion_origen VARCHAR(255),
+      ubicacion_destino VARCHAR(255),
+      responsable VARCHAR(255),
+      observaciones TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE,
+      FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE CASCADE
+    );`,
     `ALTER TABLE obras ALTER COLUMN imagen_url TYPE VARCHAR(500);`,
     `CREATE TABLE IF NOT EXISTS consultas_sala (
       id_consulta VARCHAR(15) PRIMARY KEY,

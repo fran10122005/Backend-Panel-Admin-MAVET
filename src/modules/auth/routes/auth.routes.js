@@ -63,5 +63,6 @@ router.put('/me', verifyToken, authController.updateMe);
 router.put('/:id', verifyToken, authController.updateUsuario);
 router.delete('/:id', verifyToken, authController.deleteUsuario);
 router.get('/export/pdf', verifyToken, authController.exportUsuariosPdf);
+router.post('/logout', verifyToken, authController.logout);
 
 module.exports = router;

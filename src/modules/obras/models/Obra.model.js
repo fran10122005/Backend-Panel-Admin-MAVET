@@ -21,6 +21,10 @@ const Obra = sequelize.define(
     modalidad: { type: DataTypes.STRING(255) },
     id_categoria_obra: { type: DataTypes.STRING(15) },
     descripcion: { type: DataTypes.TEXT },
+    clasificacion_patrimonial: {
+      type: DataTypes.STRING(50),
+      defaultValue: 'no_clasificado',
+    },
   },
   {
     tableName: 'obras',

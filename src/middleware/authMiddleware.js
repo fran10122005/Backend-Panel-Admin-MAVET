@@ -4,12 +4,17 @@ const { Role, Usuario } = require('../models');
 
 const verifyToken = async (req, res, next) => {
   try {
+    let token = null;
     const authHeader = req.headers.authorization || req.headers.Authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next(new AppError('Token no proporcionado. Por favor inicie sesión.', 401));
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return next(new AppError('Token no proporcionado. Por favor inicie sesión.', 401));
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
     if (!decoded || !decoded.id) {

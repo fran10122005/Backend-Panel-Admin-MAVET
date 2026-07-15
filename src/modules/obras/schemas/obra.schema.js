@@ -19,6 +19,9 @@ const createObraSchema = z.object({
   modalidad: z.string().max(255).optional(),
   id_categoria_obra: z.string().optional(),
   descripcion: z.string().optional(),
+  clasificacion_patrimonial: z
+    .enum(['BIC', 'monumento', 'bien_cultural', 'no_clasificado'])
+    .optional(),
 });
 
 // Schema para actualización (body) - todos los campos son opcionales

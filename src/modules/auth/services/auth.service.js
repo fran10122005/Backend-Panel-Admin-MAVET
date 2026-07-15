@@ -5,6 +5,9 @@ const { Op } = require('sequelize');
 const { Usuario, Role, Trabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
+const MAX_INTENTOS = 5;
+const BLOQUEO_MINUTOS = 30;
+
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
@@ -63,12 +66,11 @@ exports.register = async (data) => {
   return { token, usuario: userResponse };
 };
 
-exports.login = async (correo, password) => {
+exports.login = async (correo, password, req = null) => {
   if (!correo || !password) {
     throw new AppError('Por favor proporcione correo y contraseña', 400);
   }
 
-  // Buscar usuario incluyendo su Rol y Trabajador
   const usuario = await Usuario.findOne({
     where: { correo },
     include: [{ model: Role }, { model: Trabajador }],
@@ -85,18 +87,55 @@ exports.login = async (correo, password) => {
     );
   }
 
-  // Verificar contraseña
+  const ahora = new Date();
+  if (usuario.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > ahora) {
+    const minutosRestantes = Math.ceil((new Date(usuario.bloqueado_hasta) - ahora) / 60000);
+    throw new AppError(
+      `Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intente de nuevo en ${minutosRestantes} minuto(s).`,
+      429
+    );
+  }
+
   const isMatch = await bcrypt.compare(password, usuario.password_hash);
   if (!isMatch) {
+    usuario.intentos_fallidos = (usuario.intentos_fallidos || 0) + 1;
+    if (usuario.intentos_fallidos >= MAX_INTENTOS) {
+      usuario.bloqueado_hasta = new Date(ahora.getTime() + BLOQUEO_MINUTOS * 60000);
+      await usuario.save();
+      const auditoria = require('./auditoria.service');
+      await auditoria.registrar({
+        id_usuario: usuario.id_usuario,
+        correo: usuario.correo,
+        tipo: 'error',
+        detalle: `Cuenta bloqueada tras ${MAX_INTENTOS} intentos fallidos`,
+        req,
+      });
+      throw new AppError(
+        `Cuenta bloqueada temporalmente por ${BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos.`,
+        429
+      );
+    }
+    await usuario.save();
     throw new AppError('Correo o contraseña incorrectos', 401);
   }
 
-  // Generar token
+  usuario.intentos_fallidos = 0;
+  usuario.bloqueado_hasta = null;
+  await usuario.save();
+
   const token = signToken(usuario.id_usuario);
 
-  // Limpiar contraseña
   const userResponse = usuario.toJSON();
   delete userResponse.password_hash;
+
+  const auditoria = require('./auditoria.service');
+  await auditoria.registrar({
+    id_usuario: usuario.id_usuario,
+    correo: usuario.correo,
+    tipo: 'login',
+    detalle: `Inicio de sesión exitoso`,
+    req,
+  });
 
   return { token, usuario: userResponse };
 };

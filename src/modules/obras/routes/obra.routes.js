@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const obraController = require('../controllers/obra.controller');
+const historialController = require('../controllers/historialObra.controller');
 const upload = require('../../../middleware/uploadMiddleware');
 const validateZod = require('../../../middleware/validateSchema');
 const {
@@ -27,5 +28,17 @@ router.put(
   obraController.updateObra
 );
 router.delete('/:id', validateZod({ params: obraIdParamSchema }), obraController.deleteObra);
+
+router.get(
+  '/:id/historial',
+  validateZod({ params: obraIdParamSchema }),
+  historialController.obtenerHistorial
+);
+router.post(
+  '/:id/historial',
+  validateZod({ params: obraIdParamSchema }),
+  historialController.registrarMovimiento
+);
+router.get('/:id/historial/:idMov', historialController.obtenerMovimientoPorId);
 
 module.exports = router;

@@ -14,7 +14,16 @@ exports.register = catchAsync(async (req, res) => {
 
 exports.login = catchAsync(async (req, res) => {
   const { correo, password } = req.body;
-  const result = await authService.login(correo, password);
+  const result = await authService.login(correo, password, req);
+
+  const token = result.token;
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000,
+  });
 
   res.status(200).json({
     status: 'success',
@@ -134,4 +143,23 @@ exports.deleteUsuario = catchAsync(async (req, res) => {
     status: 'success',
     message: 'Usuario eliminado exitosamente',
   });
+});
+
+exports.logout = catchAsync(async (req, res) => {
+  const auditoria = require('../services/auditoria.service');
+  if (req.user) {
+    await auditoria.registrar({
+      id_usuario: req.user.id_usuario,
+      correo: req.user.correo,
+      tipo: 'logout',
+      detalle: 'Cierre de sesión',
+      req,
+    });
+  }
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.status(200).json({ status: 'success', message: 'Sesión cerrada exitosamente' });
 });

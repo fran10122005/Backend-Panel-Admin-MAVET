@@ -11,6 +11,8 @@ const RegistroIngreso = sequelize.define(
     id_solicitud: { type: DataTypes.STRING(15), allowNull: true },
     cantidad_acompanantes: { type: DataTypes.STRING(15), defaultValue: 0 },
     fecha_hora_entrada: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    consentimiento_datos: { type: DataTypes.BOOLEAN, defaultValue: false },
+    consentimiento_fecha: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'registros_ingresos',

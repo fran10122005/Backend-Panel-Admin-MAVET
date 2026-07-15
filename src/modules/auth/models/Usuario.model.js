@@ -13,6 +13,8 @@ const Usuario = sequelize.define(
     foto_url: { type: DataTypes.STRING(500), allowNull: true },
     reset_password_token: { type: DataTypes.STRING(255), allowNull: true },
     reset_password_expires: { type: DataTypes.DATE, allowNull: true },
+    intentos_fallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
+    bloqueado_hasta: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'usuarios',
