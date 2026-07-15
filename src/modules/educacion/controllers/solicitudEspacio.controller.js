@@ -2,7 +2,7 @@ const solicitudService = require('../services/solicitudEspacio.service');
 const catchAsync = require('../../../utils/catchAsync');
 
 exports.createSolicitud = catchAsync(async (req, res) => {
-  const solicitud = await solicitudService.createSolicitud(req.body);
+  const solicitud = await solicitudService.createSolicitud(req.body, req.user);
   res.status(201).json({ message: 'Reserva creada exitosamente', data: solicitud });
 });
 

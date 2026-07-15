@@ -33,7 +33,7 @@ const rechazarSolicitud = async (id, usuarioId, motivo) => {
   return solicitud;
 };
 
-const createSolicitud = async (solicitudData) => {
+const createSolicitud = async (solicitudData, usuario = null) => {
   let finalIdPersona = solicitudData.id_persona;
 
   if (!finalIdPersona && solicitudData.cedula) {
@@ -75,7 +75,11 @@ const createSolicitud = async (solicitudData) => {
     solicitudData.hora_fin
   );
 
-  const result = await SolicitudEspacio.create({
+  const estatusFinal = ['aprobado', 'confirmado'].includes(solicitudData.estatus_aprobacion)
+    ? 'aprobado'
+    : 'pendiente';
+
+  const createPayload = {
     codigo_reserva: solicitudData.codigo_reserva,
     id_espacio: solicitudData.id_espacio,
     id_persona: finalIdPersona,
@@ -85,7 +89,15 @@ const createSolicitud = async (solicitudData) => {
     hora_fin: solicitudData.hora_fin,
     motivo: solicitudData.motivo || solicitudData.motivo_uso,
     estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente',
-  });
+    estatus_aprobacion: estatusFinal,
+  };
+
+  if (estatusFinal === 'aprobado' && usuario && usuario.id_usuario) {
+    createPayload.id_usuario_aprobador = usuario.id_usuario;
+    createPayload.fecha_aprobacion = new Date();
+  }
+
+  const result = await SolicitudEspacio.create(createPayload);
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
   return result;
 };
