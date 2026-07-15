@@ -4,6 +4,7 @@ const {
   InscripcionTaller,
   Alumno,
   Taller,
+  Persona,
 } = require('../../../models');
 
 exports.createSesion = async (id_taller, fecha, tema_impartido) => {
@@ -141,7 +142,7 @@ exports.getMetricasTaller = async (id_taller) => {
 
   const inscripciones = await InscripcionTaller.findAll({
     where: { id_taller },
-    include: [{ model: Alumno }],
+    include: [{ model: Alumno, include: [{ model: Persona }] }],
   });
 
   const metricas = await Promise.all(
@@ -155,10 +156,12 @@ exports.getMetricasTaller = async (id_taller) => {
         asistidas = asistencias.length;
       }
       const porcentaje = totalSesiones === 0 ? 0 : Math.round((asistidas / totalSesiones) * 100);
+
+      const persona = ins.Alumno?.Persona || {};
       return {
         id_alumno: ins.id_alumno,
-        nombres: ins.Alumno.nombres,
-        apellidos: ins.Alumno.apellidos,
+        nombres: persona.nombres || ins.Alumno?.nombres || '',
+        apellidos: persona.apellidos || ins.Alumno?.apellidos || '',
         asistidas,
         totalSesiones,
         porcentaje,
