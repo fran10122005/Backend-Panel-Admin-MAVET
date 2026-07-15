@@ -4,7 +4,11 @@ const inscripcionController = require('../controllers/inscripcionTaller.controll
 const validateZod = require('../../../middleware/validateSchema');
 const { inscribirAlumnoSchema } = require('../schemas/inscripcionTaller.schema');
 
-router.post('/', validateZod(inscribirAlumnoSchema), inscripcionController.inscribirAlumno);
+router.post(
+  '/',
+  validateZod({ body: inscribirAlumnoSchema }),
+  inscripcionController.inscribirAlumno
+);
 router.get('/', inscripcionController.getAllInscripciones);
 router.get('/taller/:id', inscripcionController.getInscripcionesByTaller);
 router.get('/taller/:id/export', inscripcionController.exportPlanilla);
