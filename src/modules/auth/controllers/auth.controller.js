@@ -159,7 +159,7 @@ exports.logout = catchAsync(async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   });
   res.status(200).json({ status: 'success', message: 'Sesión cerrada exitosamente' });
 });
