@@ -11,6 +11,29 @@ const AppError = require('../../../utils/AppError');
 const sequelize = require('../../../config/db');
 const cacheService = require('../../../services/cache.service');
 
+const subirImagenObra = async (filePath) => {
+  const cloudinary = require('../../../config/cloudinary');
+  const fs = require('fs');
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'mavet_uploads',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif'],
+    });
+    return result.secure_url;
+  } catch (err) {
+    console.error('Error uploading image to Cloudinary', err);
+    throw new AppError('Error al procesar la imagen.', 500);
+  } finally {
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+};
+
+exports.subirImagen = subirImagenObra;
+
 const processForeignKeys = async (data, transaction) => {
   let id_artista = data.id_artista;
   let id_tecnica = data.id_tecnica;
