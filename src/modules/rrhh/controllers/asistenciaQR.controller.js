@@ -86,3 +86,8 @@ exports.resetPinTrabajador = catchAsync(async (req, res) => {
   const result = await asistenciaQRService.resetPinTrabajador(req.params.id, req);
   res.status(200).json({ status: 'success', data: result });
 });
+
+exports.verificarFacial = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.verificarFacial(req.body, req);
+  res.status(200).json({ status: 'success', data: result });
+});

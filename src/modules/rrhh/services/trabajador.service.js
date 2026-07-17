@@ -14,6 +14,10 @@ const camposPermitidosTrabajador = [
   'fecha_ingreso',
   'qr_uuid',
   'estado',
+  'descriptor_facial',
+  'usarFacial',
+  'consentimientoFacial',
+  'fechaConsentimiento',
 ];
 
 exports.createTrabajador = async (data) => {

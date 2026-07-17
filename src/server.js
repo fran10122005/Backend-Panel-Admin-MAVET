@@ -344,6 +344,12 @@ async function migrateTablas() {
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'pin_reset';`,
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'confirmacion_asistencia';`,
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'cancelacion_asistencia';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_exitoso';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_fallido';`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS descriptor_facial TEXT;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "usarFacial" BOOLEAN DEFAULT false;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "consentimientoFacial" BOOLEAN DEFAULT false;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "fechaConsentimiento" DATE;`,
     `CREATE TABLE IF NOT EXISTS consultas_sala (
       id_consulta VARCHAR(15) PRIMARY KEY,
       id_libro VARCHAR(15) NOT NULL,

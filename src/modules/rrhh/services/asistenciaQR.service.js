@@ -211,6 +211,8 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
     entradaActual,
     horasTranscurridas,
     tienePin: !!trabajador.pin_hash,
+    usarFacial: !!trabajador.usarFacial && !!trabajador.descriptor_facial,
+    descriptorFacial: trabajador.usarFacial ? trabajador.descriptor_facial : null,
     asistencia: recordToUse || null,
   };
 };
@@ -606,4 +608,80 @@ exports.getAllAsistencias = async (page, limit, fecha) => {
     };
   }
   return await AsistenciaQR.findAll(query);
+};
+
+exports.verificarFacial = async ({ qr_uuid, cedulaTrabajador }, req = null) => {
+  const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
+  if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
+
+  const trabajador = await Trabajador.findOne({
+    where: whereClause,
+    include: [{ model: CargoTrabajador }],
+  });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+  if (!trabajador.usarFacial || !trabajador.descriptor_facial) {
+    throw new AppError('Verificación facial no habilitada para este trabajador.', 400);
+  }
+
+  const siguienteMovimiento = await exports.getSiguienteMovimiento(trabajador);
+  const serverTime = new Date().toISOString();
+
+  const payload = {
+    id_trabajador: trabajador.id_trabajador,
+    tipoMovimiento: siguienteMovimiento,
+    origen: 'facial',
+  };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: `${PIN_TOKEN_EXPIRACION_MIN}m`,
+  });
+
+  // Auditoría
+  try {
+    const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req?.ip || '0.0.0.0';
+    const userAgent = req?.headers?.['user-agent'] || 'desconocido';
+    await BitacoraAuditoria.create({
+      tipo: 'facial_exitoso',
+      detalle: `Verificación facial exitosa para ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+      ip,
+      user_agent: userAgent,
+    });
+  } catch (e) {
+    // No bloquear si falla la auditoría
+  }
+
+  return {
+    valido: true,
+    token,
+    trabajador: {
+      nombres: trabajador.nombres,
+      apellidos: trabajador.apellidos,
+      cedula: trabajador.cedula,
+      id: trabajador.id_trabajador,
+    },
+    siguienteMovimiento,
+    serverTime,
+  };
+};
+
+exports.getSiguienteMovimiento = async (trabajador) => {
+  const isSecurity = trabajador.CargoTrabajador?.nombre_cargo === 'Seguridad / Vigilante';
+  const dateObj = new Date();
+  const fecha = getVenezuelaDateString(dateObj);
+
+  const asistencia = await AsistenciaQR.findOne({
+    where: { id_trabajador: trabajador.id_trabajador },
+    order: [['fecha', 'DESC']],
+  });
+
+  let siguienteMovimiento = 'Entrada';
+  if (asistencia) {
+    if (!asistencia.salida_manana) {
+      if (asistencia.fecha === fecha || isSecurity) {
+        siguienteMovimiento = 'Salida';
+      }
+    } else if (asistencia.fecha === fecha) {
+      siguienteMovimiento = null;
+    }
+  }
+  return siguienteMovimiento;
 };
