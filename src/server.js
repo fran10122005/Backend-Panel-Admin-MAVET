@@ -280,6 +280,9 @@ async function migrateTablas() {
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS horas_semanales DECIMAL;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS direccion TEXT;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_ingreso DATE;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255);`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS pin_intentos_fallidos INTEGER DEFAULT 0;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS pin_bloqueado_hasta TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE libros ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
@@ -335,6 +338,12 @@ async function migrateTablas() {
       FOREIGN KEY (id_obra) REFERENCES obras(id_obra) ON DELETE CASCADE
     );`,
     `ALTER TABLE obras ALTER COLUMN imagen_url TYPE VARCHAR(500);`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'pin_fallido';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'pin_exitoso';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'pin_cambio';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'pin_reset';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'confirmacion_asistencia';`,
+    `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'cancelacion_asistencia';`,
     `CREATE TABLE IF NOT EXISTS consultas_sala (
       id_consulta VARCHAR(15) PRIMARY KEY,
       id_libro VARCHAR(15) NOT NULL,

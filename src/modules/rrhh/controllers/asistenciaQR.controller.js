@@ -66,3 +66,23 @@ exports.getResumenSemanalTodos = catchAsync(async (req, res) => {
   const resumen = await asistenciaQRService.getResumenSemanalTodos();
   res.status(200).json({ status: 'success', data: resumen });
 });
+
+exports.verificarPin = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.verificarPin(req.body, req);
+  res.status(200).json({ status: 'success', data: result });
+});
+
+exports.confirmarAsistencia = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.confirmarAsistencia(req.body, req);
+  res.status(200).json({ status: 'success', data: result });
+});
+
+exports.cambiarPin = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.cambiarPin(req.body, req);
+  res.status(200).json({ status: 'success', data: result });
+});
+
+exports.resetPinTrabajador = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.resetPinTrabajador(req.params.id, req);
+  res.status(200).json({ status: 'success', data: result });
+});

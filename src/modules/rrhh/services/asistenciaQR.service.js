@@ -1,6 +1,13 @@
-const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../../models');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const { AsistenciaQR, Trabajador, CargoTrabajador, BitacoraAuditoria } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const { normalizeCedula } = require('../../../utils/cedula');
+
+const PIN_MAX_INTENTOS = 3;
+const PIN_BLOQUEO_MINUTOS = 5;
+const PIN_TOKEN_EXPIRACION_MIN = 2;
 
 const getVenezuelaDateString = (dateObj) => {
   const vTime = new Date(dateObj.getTime() - 4 * 60 * 60 * 1000);
@@ -198,13 +205,273 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
       nombres: trabajador.nombres,
       apellidos: trabajador.apellidos,
       cedula: trabajador.cedula,
+      id: trabajador.id_trabajador,
     },
     siguienteMovimiento,
     entradaActual,
     horasTranscurridas,
+    tienePin: !!trabajador.pin_hash,
     asistencia: recordToUse || null,
   };
 };
+
+exports.verificarPin = async ({ qr_uuid, cedulaTrabajador, pin }, req = null) => {
+  const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
+  if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
+
+  const trabajador = await Trabajador.findOne({
+    where: whereClause,
+    include: [{ model: CargoTrabajador }],
+  });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+  if (!trabajador.pin_hash) {
+    throw new AppError('PIN no configurado. Contacte al departamento de RRHH.', 400);
+  }
+
+  const ahora = new Date();
+  if (trabajador.pin_bloqueado_hasta && new Date(trabajador.pin_bloqueado_hasta) > ahora) {
+    const minutosRestantes = Math.ceil((new Date(trabajador.pin_bloqueado_hasta) - ahora) / 60000);
+    throw new AppError(
+      `Demasiados intentos fallidos. Intente de nuevo en ${minutosRestantes} minuto(s).`,
+      429
+    );
+  }
+
+  const isMatch = await bcrypt.compare(pin, trabajador.pin_hash);
+  if (!isMatch) {
+    trabajador.pin_intentos_fallidos = (trabajador.pin_intentos_fallidos || 0) + 1;
+    const intentosRestantes = PIN_MAX_INTENTOS - trabajador.pin_intentos_fallidos;
+
+    if (trabajador.pin_intentos_fallidos >= PIN_MAX_INTENTOS) {
+      trabajador.pin_bloqueado_hasta = new Date(ahora.getTime() + PIN_BLOQUEO_MINUTOS * 60000);
+      await trabajador.save();
+      await registrarAuditoria({
+        tipo: 'pin_fallido',
+        detalle: `PIN bloqueado tras ${PIN_MAX_INTENTOS} intentos fallidos - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+        req,
+      });
+      throw new AppError(
+        `PIN bloqueado temporalmente por ${PIN_BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos.`,
+        429
+      );
+    }
+
+    await trabajador.save();
+    await registrarAuditoria({
+      tipo: 'pin_fallido',
+      detalle: `PIN incorrecto - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula}) - intento ${trabajador.pin_intentos_fallidos}/${PIN_MAX_INTENTOS}`,
+      req,
+    });
+
+    throw new AppError(`PIN incorrecto. Intentos restantes: ${intentosRestantes}`, 401);
+  }
+
+  trabajador.pin_intentos_fallidos = 0;
+  trabajador.pin_bloqueado_hasta = null;
+  await trabajador.save();
+
+  const dateObj = new Date();
+  const fecha = getVenezuelaDateString(dateObj);
+  const isSecurity = trabajador.CargoTrabajador?.nombre_cargo === 'Seguridad / Vigilante';
+
+  const asistencia = await AsistenciaQR.findOne({
+    where: { id_trabajador: trabajador.id_trabajador },
+    order: [['fecha', 'DESC']],
+  });
+
+  let siguienteMovimiento = 'Entrada';
+  if (asistencia) {
+    if (!asistencia.salida_manana) {
+      if (asistencia.fecha === fecha || isSecurity) {
+        siguienteMovimiento = 'Salida';
+      }
+    } else if (asistencia.fecha !== fecha) {
+      siguienteMovimiento = 'Entrada';
+    } else {
+      siguienteMovimiento = null;
+    }
+  }
+
+  const tokenPayload = {
+    id_trabajador: trabajador.id_trabajador,
+    tipoMovimiento: siguienteMovimiento,
+    ts: dateObj.toISOString(),
+  };
+
+  const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'secret', {
+    expiresIn: `${PIN_TOKEN_EXPIRACION_MIN}m`,
+  });
+
+  await registrarAuditoria({
+    tipo: 'pin_exitoso',
+    detalle: `PIN verificado correctamente - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+    req,
+  });
+
+  return {
+    valido: true,
+    token,
+    trabajador: {
+      nombres: trabajador.nombres,
+      apellidos: trabajador.apellidos,
+      cedula: trabajador.cedula,
+      id: trabajador.id_trabajador,
+    },
+    siguienteMovimiento,
+    serverTime: dateObj.toISOString(),
+  };
+};
+
+exports.confirmarAsistencia = async (
+  { tokenConfirmacion, dispositivo, coordenadas },
+  req = null
+) => {
+  let decoded;
+  try {
+    decoded = jwt.verify(tokenConfirmacion, process.env.JWT_SECRET || 'secret');
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      throw new AppError(
+        'El tiempo de confirmación ha expirado. Por favor, inicie el proceso nuevamente.',
+        401
+      );
+    }
+    throw new AppError('Token de confirmación inválido.', 401);
+  }
+
+  const { id_trabajador, tipoMovimiento } = decoded;
+  if (!id_trabajador || !tipoMovimiento) {
+    throw new AppError('Token de confirmación inválido.', 401);
+  }
+
+  const trabajador = await Trabajador.findByPk(id_trabajador, {
+    include: [{ model: CargoTrabajador }],
+  });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const isSecurity = trabajador.CargoTrabajador?.nombre_cargo === 'Seguridad / Vigilante';
+  const dateObj = new Date();
+  const fecha = getVenezuelaDateString(dateObj);
+
+  let asistencia = await AsistenciaQR.findOne({
+    where: { id_trabajador: trabajador.id_trabajador },
+    order: [['fecha', 'DESC']],
+  });
+
+  switch (tipoMovimiento) {
+    case 'Entrada':
+      if (asistencia && !asistencia.salida_manana) {
+        if (asistencia.fecha === fecha || isSecurity) {
+          throw new AppError('Ya tiene una entrada abierta. Debe registrar salida primero.', 400);
+        }
+      }
+      if (asistencia && asistencia.fecha === fecha) {
+        throw new AppError('La jornada de hoy ya fue completada.', 400);
+      }
+      asistencia = await AsistenciaQR.create({
+        id_trabajador: trabajador.id_trabajador,
+        fecha,
+      });
+      asistencia.entrada_manana = dateObj;
+      break;
+    case 'Salida':
+      if (!asistencia || asistencia.salida_manana) {
+        throw new AppError('No hay una entrada abierta para registrar salida.', 400);
+      }
+      asistencia.salida_manana = dateObj;
+      break;
+    default:
+      throw new AppError('Tipo de movimiento inválido', 400);
+  }
+
+  const horasManana = calcularHoras(asistencia.entrada_manana, asistencia.salida_manana);
+  asistencia.horas_cumplidas_dia = horasManana && horasManana > 0 ? horasManana : null;
+  await asistencia.save();
+
+  const meta = {
+    dispositivo: dispositivo || null,
+    coordenadas: coordenadas ? JSON.stringify(coordenadas) : null,
+    ip: req?.ip || req?.connection?.remoteAddress || null,
+    user_agent: req?.headers?.['user-agent'] || null,
+  };
+
+  await registrarAuditoria({
+    tipo: 'confirmacion_asistencia',
+    detalle: `Asistencia ${tipoMovimiento} confirmada - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})${dispositivo ? ` - Dispositivo: ${dispositivo}` : ''}`,
+    req,
+  });
+
+  return {
+    message: `${tipoMovimiento} registrada para ${trabajador.nombres} ${trabajador.apellidos}`,
+    tipoMovimiento,
+    timestamp: dateObj.toISOString(),
+    asistencia,
+  };
+};
+
+exports.cambiarPin = async ({ qr_uuid, cedulaTrabajador, pin_actual, pin_nuevo }, req = null) => {
+  const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
+  if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
+
+  const trabajador = await Trabajador.findOne({ where: whereClause });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+  if (!trabajador.pin_hash) {
+    throw new AppError(
+      'El trabajador no tiene un PIN configurado. Use la opción de restablecer PIN.',
+      400
+    );
+  }
+
+  const isMatch = await bcrypt.compare(pin_actual, trabajador.pin_hash);
+  if (!isMatch) throw new AppError('El PIN actual es incorrecto.', 401);
+
+  const salt = await bcrypt.genSalt(10);
+  trabajador.pin_hash = await bcrypt.hash(pin_nuevo, salt);
+  trabajador.pin_intentos_fallidos = 0;
+  trabajador.pin_bloqueado_hasta = null;
+  await trabajador.save();
+
+  await registrarAuditoria({
+    tipo: 'pin_cambio',
+    detalle: `PIN cambiado - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+    req,
+  });
+
+  return { message: 'PIN cambiado exitosamente.' };
+};
+
+exports.resetPinTrabajador = async (id_trabajador, req = null) => {
+  const trabajador = await Trabajador.findByPk(id_trabajador);
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  const pinTemporal = String(Math.floor(1000 + Math.random() * 9000));
+  const salt = await bcrypt.genSalt(10);
+  trabajador.pin_hash = await bcrypt.hash(pinTemporal, salt);
+  trabajador.pin_intentos_fallidos = 0;
+  trabajador.pin_bloqueado_hasta = null;
+  await trabajador.save();
+
+  await registrarAuditoria({
+    tipo: 'pin_reset',
+    detalle: `PIN restablecido por administrador - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+    req,
+  });
+
+  return { pinTemporal, message: 'PIN restablecido exitosamente.' };
+};
+
+async function registrarAuditoria({ tipo, detalle, req }) {
+  try {
+    await BitacoraAuditoria.create({
+      tipo,
+      detalle,
+      ip: req?.ip || req?.connection?.remoteAddress || null,
+      user_agent: req?.headers?.['user-agent'] || null,
+    });
+  } catch (err) {
+    console.error('[Auditoria PIN] Error al registrar:', err.message);
+  }
+}
 
 exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
   const asistencia = await AsistenciaQR.findByPk(id);

@@ -21,6 +21,9 @@ const Trabajador = sequelize.define(
     qr_uuid: { type: DataTypes.STRING(255), unique: true },
     estado: { type: DataTypes.BOOLEAN, defaultValue: true },
     foto_url: { type: DataTypes.STRING(500), allowNull: true },
+    pin_hash: { type: DataTypes.STRING(255), allowNull: true },
+    pin_intentos_fallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
+    pin_bloqueado_hasta: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'trabajadores',

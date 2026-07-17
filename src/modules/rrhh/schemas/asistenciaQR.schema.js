@@ -48,9 +48,46 @@ const asistenciaIdParamSchema = z.object({
   id: z.string().regex(/^\d+$/, 'El ID debe ser un número entero'),
 });
 
+const verificarPinSchema = z
+  .object({
+    cedulaTrabajador: z.string().optional(),
+    qr_uuid: z.string().min(1).optional(),
+    pin: z.string().min(4).max(6).regex(/^\d+$/, 'El PIN debe contener solo dígitos'),
+  })
+  .refine((data) => data.cedulaTrabajador || data.qr_uuid, {
+    message: 'Debe proveer cédula o QR UUID',
+    path: ['cedulaTrabajador'],
+  });
+
+const confirmarAsistenciaSchema = z.object({
+  tokenConfirmacion: z.string().min(1, 'Token de confirmación requerido'),
+  dispositivo: z.string().optional(),
+  coordenadas: z
+    .object({
+      lat: z.number(),
+      lng: z.number(),
+    })
+    .optional(),
+});
+
+const cambiarPinSchema = z
+  .object({
+    cedulaTrabajador: z.string().optional(),
+    qr_uuid: z.string().min(1).optional(),
+    pin_actual: z.string().min(4).max(6).regex(/^\d+$/, 'El PIN debe contener solo dígitos'),
+    pin_nuevo: z.string().min(4).max(6).regex(/^\d+$/, 'El PIN debe contener solo dígitos'),
+  })
+  .refine((data) => data.cedulaTrabajador || data.qr_uuid, {
+    message: 'Debe proveer cédula o QR UUID',
+    path: ['cedulaTrabajador'],
+  });
+
 module.exports = {
   createAsistenciaQRSchema,
   updateAsistenciaQRSchema,
   asistenciaIdParamSchema,
   registrarAsistenciaSchema,
+  verificarPinSchema,
+  confirmarAsistenciaSchema,
+  cambiarPinSchema,
 };
