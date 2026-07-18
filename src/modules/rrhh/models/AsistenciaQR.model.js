@@ -13,6 +13,7 @@ const AsistenciaQR = sequelize.define(
     salida_tarde: { type: DataTypes.DATE },
     horas_cumplidas_dia: { type: DataTypes.DECIMAL },
     horas_justificadas: { type: DataTypes.DECIMAL },
+    tipo_justificacion: { type: DataTypes.ENUM('medica', 'personal', 'permiso', 'lottt', 'otro') },
     observaciones: { type: DataTypes.TEXT },
   },
   {

@@ -37,14 +37,15 @@ exports.getSemanaAsistencia = catchAsync(async (req, res) => {
 
 exports.updateAsistenciaObservaciones = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const { observaciones, horas_justificadas } = req.body;
+  const { observaciones, horas_justificadas, tipo_justificacion } = req.body;
   if (observaciones === undefined) {
     return res.status(400).json({ message: 'observaciones es requerido' });
   }
   const asistencia = await asistenciaQRService.updateObservaciones(
     id,
     observaciones,
-    horas_justificadas
+    horas_justificadas,
+    tipo_justificacion
   );
   res.status(200).json({ status: 'success', data: asistencia });
 });

@@ -503,12 +503,36 @@ exports.registrarFacialFallido = async ({ qr_uuid, cedulaTrabajador, motivo }, r
   return { registrado: true };
 };
 
-exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
+const HORA_APERTURA = 8 * 60;
+const HORA_CIERRE = 17 * 60;
+const DESCANSO = 60;
+const HORA_SALIDA_MINIMA = HORA_CIERRE - DESCANSO;
+
+function minutosDesdeMediaNoche(fecha) {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}
+
+function esRetardo(entrada) {
+  if (!entrada) return false;
+  return minutosDesdeMediaNoche(entrada) > HORA_APERTURA + 5;
+}
+
+function esSalidaTemprano(salida) {
+  if (!salida) return false;
+  return minutosDesdeMediaNoche(salida) < HORA_SALIDA_MINIMA;
+}
+
+exports.updateObservaciones = async (id, observaciones, horas_justificadas, tipo_justificacion) => {
   const asistencia = await AsistenciaQR.findByPk(id);
   if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
   asistencia.observaciones = observaciones || null;
   if (horas_justificadas !== undefined) {
     asistencia.horas_justificadas = horas_justificadas || null;
+  }
+  if (tipo_justificacion !== undefined) {
+    asistencia.tipo_justificacion = tipo_justificacion || null;
   }
   await asistencia.save();
   return asistencia;
@@ -602,6 +626,9 @@ exports.getResumenSemanalTodos = async () => {
         horas: r.horas_cumplidas_dia,
         observaciones: r.observaciones,
         horas_justificadas: r.horas_justificadas,
+        tipo_justificacion: r.tipo_justificacion,
+        retardo: esRetardo(r.entrada_manana),
+        salida_temprano: esSalidaTemprano(r.salida_manana),
       })),
     };
   });

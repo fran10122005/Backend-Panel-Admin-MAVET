@@ -142,7 +142,6 @@ function drawHeadersAndFooters(doc, title, pw, F, margin = MARGIN) {
 
 // ─── Generar PDF con tabla ─────────────────────────────────────────────────
 const generateTablePdf = async (title, headers, rows, signatureLabel) => {
-  console.log('[PDF] generateTablePdf called with:', title, '| signatureLabel:', signatureLabel);
   return new Promise((resolve, reject) => {
     (async () => {
       try {
