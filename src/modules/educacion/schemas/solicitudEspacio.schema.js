@@ -31,6 +31,8 @@ const createSolicitudSchema = z
     motivo_uso: z.string().optional(),
     estado: z.string().optional(),
     estado_solicitud: z.string().optional(),
+    correo_electronico: z.string().email('Correo electrónico inválido').optional(),
+    recursos_solicitados: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
@@ -85,6 +87,8 @@ const updateSolicitudSchema = z
     motivo_uso: z.string().optional(),
     estado: z.string().optional(),
     estado_solicitud: z.string().optional(),
+    correo_electronico: z.string().email('Correo electrónico inválido').optional(),
+    recursos_solicitados: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {

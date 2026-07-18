@@ -3,35 +3,7 @@ const AppError = require('../../../utils/AppError');
 const validatorService = require('../../../services/validator.service');
 const cacheService = require('../../../services/cache.service');
 
-const aprobarSolicitud = async (id, usuarioId) => {
-  const solicitud = await SolicitudEspacio.findByPk(id);
-  if (!solicitud) throw new AppError('Solicitud no encontrada', 404);
-  if (solicitud.estatus_aprobacion !== 'pendiente') {
-    throw new AppError(`La solicitud ya ha sido ${solicitud.estatus_aprobacion}`, 400);
-  }
-  solicitud.estatus_aprobacion = 'aprobado';
-  solicitud.id_usuario_aprobador = usuarioId;
-  solicitud.fecha_aprobacion = new Date();
-  await solicitud.save();
-  return solicitud;
-};
-
-const rechazarSolicitud = async (id, usuarioId, motivo) => {
-  if (!motivo || !motivo.trim()) {
-    throw new AppError('Debe proporcionar un motivo de rechazo', 400);
-  }
-  const solicitud = await SolicitudEspacio.findByPk(id);
-  if (!solicitud) throw new AppError('Solicitud no encontrada', 404);
-  if (solicitud.estatus_aprobacion !== 'pendiente') {
-    throw new AppError(`La solicitud ya ha sido ${solicitud.estatus_aprobacion}`, 400);
-  }
-  solicitud.estatus_aprobacion = 'rechazado';
-  solicitud.id_usuario_aprobador = usuarioId;
-  solicitud.fecha_aprobacion = new Date();
-  solicitud.motivo_rechazo = motivo.trim();
-  await solicitud.save();
-  return solicitud;
-};
+// Funciones aprobar/rechazar removidas.
 
 const createSolicitud = async (solicitudData, usuario = null) => {
   let finalIdPersona = solicitudData.id_persona;
@@ -75,10 +47,6 @@ const createSolicitud = async (solicitudData, usuario = null) => {
     solicitudData.hora_fin
   );
 
-  const estatusFinal = ['aprobado', 'confirmado'].includes(solicitudData.estatus_aprobacion)
-    ? 'aprobado'
-    : 'pendiente';
-
   const createPayload = {
     codigo_reserva: solicitudData.codigo_reserva,
     id_espacio: solicitudData.id_espacio,
@@ -89,13 +57,9 @@ const createSolicitud = async (solicitudData, usuario = null) => {
     hora_fin: solicitudData.hora_fin,
     motivo: solicitudData.motivo || solicitudData.motivo_uso,
     estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente',
-    estatus_aprobacion: estatusFinal,
+    correo_electronico: solicitudData.correo_electronico,
+    recursos_solicitados: solicitudData.recursos_solicitados || [],
   };
-
-  if (estatusFinal === 'aprobado' && usuario && usuario.id_usuario) {
-    createPayload.id_usuario_aprobador = usuario.id_usuario;
-    createPayload.fecha_aprobacion = new Date();
-  }
 
   const result = await SolicitudEspacio.create(createPayload);
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
@@ -115,16 +79,12 @@ const mapEstadoDinamico = (solicitud) => {
   if (data.fecha_uso) data.fecha_uso = fecha;
   if (data.fecha_solicitada) data.fecha_solicitada = fecha;
 
-  // Solo marcar como Realizada si la solicitud fue aprobada y la hora ya pasó
-  if (data.estatus_aprobacion === 'aprobado') {
-    const horaFin = data.hora_fin;
-    if (fecha && horaFin) {
-      const eventEnd = new Date(`${fecha}T${horaFin}`);
-      const now = new Date();
-      data.estado = eventEnd < now ? 'Realizada' : 'Pendiente';
-    } else {
-      data.estado = 'Pendiente';
-    }
+  // Solo marcar como Realizada si la hora ya pasó
+  const horaFin = data.hora_fin;
+  if (fecha && horaFin) {
+    const eventEnd = new Date(`${fecha}T${horaFin}`);
+    const now = new Date();
+    data.estado = eventEnd < now ? 'Realizada' : 'Pendiente';
   } else {
     data.estado = 'Pendiente';
   }
@@ -199,6 +159,4 @@ module.exports = {
   getSolicitudById,
   updateSolicitud,
   deleteSolicitud,
-  aprobarSolicitud,
-  rechazarSolicitud,
 };

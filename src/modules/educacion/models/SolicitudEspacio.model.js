@@ -15,16 +15,9 @@ const SolicitudEspacio = sequelize.define(
     hora_fin: { type: DataTypes.TIME },
     motivo: { type: DataTypes.TEXT },
     estado: { type: DataTypes.STRING(255) },
-    estatus_aprobacion: {
-      type: DataTypes.STRING(20),
-      defaultValue: 'pendiente',
-      validate: {
-        isIn: [['pendiente', 'aprobado', 'rechazado']],
-      },
-    },
-    id_usuario_aprobador: { type: DataTypes.STRING(15) },
-    fecha_aprobacion: { type: DataTypes.DATE },
-    motivo_rechazo: { type: DataTypes.TEXT },
+
+    correo_electronico: { type: DataTypes.STRING(255) },
+    recursos_solicitados: { type: DataTypes.JSON },
     fecha_creacion: { type: DataTypes.DATE },
     fecha_modificacion: { type: DataTypes.DATE },
   },

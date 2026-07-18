@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { SolicitudEspacio } = require('./models');
+const { sendEmailJSEventCompleted } = require('./utils/emailjs');
 
 const startCronJobs = () => {
   // Check every 5 minutes
@@ -9,7 +10,7 @@ const startCronJobs = () => {
       const now = new Date();
 
       const reservas = await SolicitudEspacio.findAll({
-        where: { estado: 'Pendiente', estatus_aprobacion: 'aprobado' },
+        where: { estado: 'Pendiente' },
       });
 
       let actualizadas = 0;
@@ -24,6 +25,9 @@ const startCronJobs = () => {
           if (eventEnd < now) {
             await reserva.update({ estado: 'Realizada' });
             actualizadas++;
+
+            // Enviar notificación de evento realizado
+            await sendEmailJSEventCompleted(reserva);
           }
         }
       }
