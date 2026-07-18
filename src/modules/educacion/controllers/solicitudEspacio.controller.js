@@ -17,12 +17,12 @@ exports.getSolicitudById = catchAsync(async (req, res) => {
 });
 
 exports.updateSolicitud = catchAsync(async (req, res) => {
-  const solicitud = await solicitudService.updateSolicitud(req.params.id, req.body);
+  const solicitud = await solicitudService.updateSolicitud(req.params.id, req.body, req.user);
   res.status(200).json({ message: 'Reserva actualizada', data: solicitud });
 });
 
 exports.deleteSolicitud = catchAsync(async (req, res) => {
-  await solicitudService.deleteSolicitud(req.params.id);
+  await solicitudService.deleteSolicitud(req.params.id, req.user);
   res.status(200).json({ message: 'Reserva eliminada' });
 });
 

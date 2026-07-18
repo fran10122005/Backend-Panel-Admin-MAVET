@@ -1,4 +1,10 @@
-const { SolicitudEspacio, Persona, EspacioMuseo, sequelize } = require('../../../models');
+const {
+  SolicitudEspacio,
+  Persona,
+  EspacioMuseo,
+  BitacoraAuditoria,
+  sequelize,
+} = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const validatorService = require('../../../services/validator.service');
 const cacheService = require('../../../services/cache.service');
@@ -95,6 +101,16 @@ const createSolicitud = async (solicitudData, usuario = null) => {
   };
 
   const result = await SolicitudEspacio.create(createPayload);
+
+  if (usuario) {
+    await BitacoraAuditoria.create({
+      id_usuario: usuario.id_usuario,
+      correo: usuario.correo,
+      tipo: 'create',
+      detalle: `Se registró una nueva reserva de espacio [${result.id_solicitud}] para: ${solicitudData.institucion || 'Persona Natural'}`,
+    });
+  }
+
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
 
   // Enviar correo de confirmación al organizador
@@ -170,7 +186,7 @@ const getSolicitudById = async (id) => {
   return mapEstadoDinamico(solicitud);
 };
 
-const updateSolicitud = async (id, solicitudData) => {
+const updateSolicitud = async (id, solicitudData, user) => {
   const solicitud = await SolicitudEspacio.findByPk(id);
   if (!solicitud) {
     throw new AppError('Solicitud no encontrada', 404);
@@ -197,12 +213,44 @@ const updateSolicitud = async (id, solicitudData) => {
     id // idExcluido para que no marque conflicto consigo mismo
   );
 
-  const result = await solicitud.update(solicitudData);
+  const updatePayload = {};
+  if (solicitudData.id_espacio !== undefined) updatePayload.id_espacio = solicitudData.id_espacio;
+  if (solicitudData.institucion !== undefined)
+    updatePayload.institucion = solicitudData.institucion;
+  if (solicitudData.fecha_uso !== undefined) updatePayload.fecha_uso = solicitudData.fecha_uso;
+  if (solicitudData.fecha_solicitada !== undefined && solicitudData.fecha_uso === undefined)
+    updatePayload.fecha_uso = solicitudData.fecha_solicitada;
+  if (solicitudData.hora_inicio !== undefined)
+    updatePayload.hora_inicio = solicitudData.hora_inicio;
+  if (solicitudData.hora_fin !== undefined) updatePayload.hora_fin = solicitudData.hora_fin;
+  if (solicitudData.motivo !== undefined) updatePayload.motivo = solicitudData.motivo;
+  if (solicitudData.motivo_uso !== undefined && solicitudData.motivo === undefined)
+    updatePayload.motivo = solicitudData.motivo_uso;
+  if (solicitudData.estado !== undefined) updatePayload.estado = solicitudData.estado;
+  if (solicitudData.estado_solicitud !== undefined && solicitudData.estado === undefined)
+    updatePayload.estado = solicitudData.estado_solicitud;
+  if (solicitudData.correo_electronico !== undefined)
+    updatePayload.correo_electronico = solicitudData.correo_electronico;
+  if (solicitudData.recursos_solicitados !== undefined)
+    updatePayload.recursos_solicitados = solicitudData.recursos_solicitados;
+
+  const result = await solicitud.update(updatePayload);
+
+  if (arguments[2]) {
+    const user = arguments[2];
+    await BitacoraAuditoria.create({
+      id_usuario: user.id_usuario,
+      correo: user.correo,
+      tipo: 'update',
+      detalle: `Se actualizó la reserva de espacio [${solicitud.id_solicitud}]`,
+    });
+  }
+
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
   return result;
 };
 
-const deleteSolicitud = async (id) => {
+const deleteSolicitud = async (id, user) => {
   const solicitud = await SolicitudEspacio.findByPk(id);
   if (!solicitud) {
     throw new AppError('Solicitud no encontrada', 404);
@@ -213,6 +261,16 @@ const deleteSolicitud = async (id) => {
   await validatorService.validarFechaPasada(fecha, sequelize, 'eliminar', solicitud.hora_inicio);
 
   await solicitud.destroy();
+
+  if (user) {
+    await BitacoraAuditoria.create({
+      id_usuario: user.id_usuario,
+      correo: user.correo,
+      tipo: 'delete',
+      detalle: `Se canceló / eliminó la reserva de espacio [${solicitud.id_solicitud}]`,
+    });
+  }
+
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
 };
 
