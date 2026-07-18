@@ -40,6 +40,7 @@ router.post(
 
 // Verificación facial (pública para el kiosko)
 router.post('/verificar-facial', asistenciaQRController.verificarFacial);
+router.post('/facial-fallido', asistenciaQRController.registrarFacialFallido);
 
 // Ruta para restablecer PIN (solo administradores)
 router.post(

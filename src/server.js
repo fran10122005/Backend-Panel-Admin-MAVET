@@ -347,9 +347,11 @@ async function migrateTablas() {
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_exitoso';`,
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_fallido';`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS descriptor_facial TEXT;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS descriptores_faciales JSONB DEFAULT '[]'::jsonb;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "usarFacial" BOOLEAN DEFAULT false;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "consentimientoFacial" BOOLEAN DEFAULT false;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "fechaConsentimiento" DATE;`,
+    `UPDATE trabajadores SET descriptores_faciales = CASE WHEN descriptor_facial IS NOT NULL AND descriptor_facial != '' THEN jsonb_build_array(descriptor_facial) ELSE '[]'::jsonb END WHERE descriptores_faciales IS NULL OR descriptores_faciales = '[]'::jsonb;`,
     `CREATE TABLE IF NOT EXISTS consultas_sala (
       id_consulta VARCHAR(15) PRIMARY KEY,
       id_libro VARCHAR(15) NOT NULL,

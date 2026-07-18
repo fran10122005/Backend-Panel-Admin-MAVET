@@ -91,3 +91,8 @@ exports.verificarFacial = catchAsync(async (req, res) => {
   const result = await asistenciaQRService.verificarFacial(req.body, req);
   res.status(200).json({ status: 'success', data: result });
 });
+
+exports.registrarFacialFallido = catchAsync(async (req, res) => {
+  const result = await asistenciaQRService.registrarFacialFallido(req.body, req);
+  res.status(200).json({ status: 'success', data: result });
+});

@@ -211,8 +211,13 @@ exports.getEstadoAsistencia = async ({ qr_uuid, cedulaTrabajador }) => {
     entradaActual,
     horasTranscurridas,
     tienePin: !!trabajador.pin_hash,
-    usarFacial: !!trabajador.usarFacial && !!trabajador.descriptor_facial,
+    usarFacial:
+      !!trabajador.usarFacial &&
+      (!!trabajador.descriptor_facial || trabajador.descriptores_faciales?.length > 0),
     descriptorFacial: trabajador.usarFacial ? trabajador.descriptor_facial : null,
+    descriptoresFaciales: trabajador.usarFacial ? trabajador.descriptores_faciales : null,
+    cantidadDescriptores:
+      trabajador.descriptores_faciales?.length || (trabajador.descriptor_facial ? 1 : 0),
     asistencia: recordToUse || null,
   };
 };
@@ -475,6 +480,29 @@ async function registrarAuditoria({ tipo, detalle, req }) {
   }
 }
 
+exports.registrarFacialFallido = async ({ qr_uuid, cedulaTrabajador, motivo }, req = null) => {
+  const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
+  if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
+
+  const trabajador = await Trabajador.findOne({ where: whereClause });
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+
+  try {
+    const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req?.ip || '0.0.0.0';
+    const userAgent = req?.headers?.['user-agent'] || 'desconocido';
+    await BitacoraAuditoria.create({
+      tipo: 'facial_fallido',
+      detalle: `Verificación facial fallida - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula}) - Motivo: ${motivo || 'No coincide'}`,
+      ip,
+      user_agent: userAgent,
+    });
+  } catch (e) {
+    // No bloquear si falla la auditoría
+  }
+
+  return { registrado: true };
+};
+
 exports.updateObservaciones = async (id, observaciones, horas_justificadas) => {
   const asistencia = await AsistenciaQR.findByPk(id);
   if (!asistencia) throw new AppError('Registro de asistencia no encontrado', 404);
@@ -610,7 +638,10 @@ exports.getAllAsistencias = async (page, limit, fecha) => {
   return await AsistenciaQR.findAll(query);
 };
 
-exports.verificarFacial = async ({ qr_uuid, cedulaTrabajador }, req = null) => {
+exports.verificarFacial = async (
+  { qr_uuid, cedulaTrabajador, descriptores_faciales, intento, total_intentos },
+  req = null
+) => {
   const whereClause = resolverWhereTrabajador(qr_uuid, cedulaTrabajador);
   if (!whereClause) throw new AppError('Debe proveer qr_uuid o cedulaTrabajador', 400);
 
@@ -619,8 +650,27 @@ exports.verificarFacial = async ({ qr_uuid, cedulaTrabajador }, req = null) => {
     include: [{ model: CargoTrabajador }],
   });
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
-  if (!trabajador.usarFacial || !trabajador.descriptor_facial) {
+
+  const tieneFacial =
+    trabajador.usarFacial &&
+    (!!trabajador.descriptor_facial || trabajador.descriptores_faciales?.length > 0);
+  if (!tieneFacial) {
     throw new AppError('Verificación facial no habilitada para este trabajador.', 400);
+  }
+
+  // Si el frontend envía descriptores para enrolamiento, actualizar el array
+  if (
+    descriptores_faciales &&
+    Array.isArray(descriptores_faciales) &&
+    descriptores_faciales.length > 0
+  ) {
+    const arrayActual = trabajador.descriptores_faciales || [];
+    if (trabajador.descriptor_facial && arrayActual.length === 0) {
+      arrayActual.push(trabajador.descriptor_facial);
+    }
+    const combinados = [...arrayActual, ...descriptores_faciales];
+    trabajador.descriptores_faciales = combinados;
+    await trabajador.save();
   }
 
   const siguienteMovimiento = await exports.getSiguienteMovimiento(trabajador);
@@ -635,13 +685,16 @@ exports.verificarFacial = async ({ qr_uuid, cedulaTrabajador }, req = null) => {
     expiresIn: `${PIN_TOKEN_EXPIRACION_MIN}m`,
   });
 
-  // Auditoría
+  const numDescriptores =
+    trabajador.descriptores_faciales?.length || (trabajador.descriptor_facial ? 1 : 0);
+
+  // Auditoría detallada
   try {
     const ip = req?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req?.ip || '0.0.0.0';
     const userAgent = req?.headers?.['user-agent'] || 'desconocido';
     await BitacoraAuditoria.create({
       tipo: 'facial_exitoso',
-      detalle: `Verificación facial exitosa para ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
+      detalle: `Verificación facial exitosa - ${trabajador.nombres} ${trabajador.apellidos} (${trabajador.cedula})`,
       ip,
       user_agent: userAgent,
     });
@@ -660,6 +713,12 @@ exports.verificarFacial = async ({ qr_uuid, cedulaTrabajador }, req = null) => {
     },
     siguienteMovimiento,
     serverTime,
+    descriptoresFaciales:
+      trabajador.descriptores_faciales ||
+      (trabajador.descriptor_facial ? [trabajador.descriptor_facial] : []),
+    cantidadDescriptores: numDescriptores,
+    intento: intento || 1,
+    total_intentos: total_intentos || 1,
   };
 };
 

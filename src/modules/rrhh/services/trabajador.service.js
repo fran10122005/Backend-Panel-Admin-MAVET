@@ -15,6 +15,7 @@ const camposPermitidosTrabajador = [
   'qr_uuid',
   'estado',
   'descriptor_facial',
+  'descriptores_faciales',
   'usarFacial',
   'consentimientoFacial',
   'fechaConsentimiento',

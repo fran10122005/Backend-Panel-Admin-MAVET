@@ -25,6 +25,7 @@ const Trabajador = sequelize.define(
     pin_intentos_fallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
     pin_bloqueado_hasta: { type: DataTypes.DATE, allowNull: true },
     descriptor_facial: { type: DataTypes.TEXT, allowNull: true },
+    descriptores_faciales: { type: DataTypes.JSONB, allowNull: true },
     usarFacial: { type: DataTypes.BOOLEAN, defaultValue: false },
     consentimientoFacial: { type: DataTypes.BOOLEAN, defaultValue: false },
     fechaConsentimiento: { type: DataTypes.DATEONLY, allowNull: true },
