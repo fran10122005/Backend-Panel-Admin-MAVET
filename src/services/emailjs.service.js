@@ -5,6 +5,7 @@ const EMAILJS_API_URL = 'https://api.emailjs.com/api/v1.0/email/send';
 class EmailjsService {
   buildTempPasswordHtml({ nombre, tempPassword }) {
     const year = new Date().getFullYear();
+    const logoUrl = 'https://mavet-web.vercel.app/images/logo/mavet2.png';
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,9 +22,7 @@ class EmailjsService {
           <!-- ENCABEZADO -->
           <tr>
             <td align="center" style="background:linear-gradient(135deg,#800000 0%,#600000 100%);padding:44px 32px 36px;">
-              <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:68px;height:68px;line-height:68px;text-align:center;margin-bottom:18px;">
-                <span style="font-size:30px;">&#128274;</span>
-              </div>
+              <img src="${logoUrl}" alt="MAVET" style="width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,0.15);padding:8px;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto;" />
               <h1 style="color:#ffffff;font-size:26px;font-weight:700;margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;letter-spacing:0.5px;">Contrasena Temporal</h1>
               <p style="color:#ebc2c2;font-size:13px;margin:0;letter-spacing:2px;text-transform:uppercase;font-family:'Segoe UI',Arial,sans-serif;">Museo de Artes Visuales y del Espacio</p>
             </td>
@@ -160,6 +159,7 @@ class EmailjsService {
 
   buildAuditReservationHtml(data) {
     const year = new Date().getFullYear();
+    const logoUrl = 'https://mavet-web.vercel.app/images/logo/mavet2.png';
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -176,9 +176,7 @@ class EmailjsService {
           <!-- ENCABEZADO -->
           <tr>
             <td align="center" style="background:linear-gradient(135deg,#800000 0%,#600000 100%);padding:44px 32px 36px;">
-              <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:68px;height:68px;line-height:68px;text-align:center;margin-bottom:18px;">
-                <span style="font-size:30px;">&#128293;</span>
-              </div>
+              <img src="${logoUrl}" alt="MAVET" style="width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,0.15);padding:8px;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto;" />
               <h1 style="color:#ffffff;font-size:26px;font-weight:700;margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;letter-spacing:0.5px;">Reserva Confirmada</h1>
               <p style="color:#ebc2c2;font-size:13px;margin:0;letter-spacing:2px;text-transform:uppercase;font-family:'Segoe UI',Arial,sans-serif;">Museo de Artes Visuales y del Espacio</p>
             </td>
