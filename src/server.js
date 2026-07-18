@@ -291,10 +291,7 @@ async function migrateTablas() {
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS fecha_fin DATE;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS numero_expediente VARCHAR(30);`,
-    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS estatus_aprobacion VARCHAR(20) DEFAULT 'pendiente';`,
-    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS id_usuario_aprobador VARCHAR(15);`,
-    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS fecha_aprobacion TIMESTAMP WITH TIME ZONE;`,
-    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;`,
+
     `ALTER TABLE inscripciones_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE;`,
