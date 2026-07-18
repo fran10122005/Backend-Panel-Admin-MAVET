@@ -2,6 +2,38 @@ const { SolicitudEspacio, Persona, EspacioMuseo, sequelize } = require('../../..
 const AppError = require('../../../utils/AppError');
 const validatorService = require('../../../services/validator.service');
 const cacheService = require('../../../services/cache.service');
+const emailjsService = require('../../../services/emailjs.service');
+
+const formatDateForEmail = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('es-VE', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const formatTimeForEmail = (timeStr) => {
+  if (!timeStr) return '';
+  return timeStr.slice(0, 5); // HH:mm
+};
+
+const formatDateRegistration = () => {
+  const now = new Date();
+  return now.toLocaleDateString('es-VE', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const formatResources = (resources) => {
+  if (!resources || !Array.isArray(resources) || resources.length === 0) return '';
+  return resources.join(', ');
+};
 
 // Funciones aprobar/rechazar removidas.
 
@@ -59,10 +91,42 @@ const createSolicitud = async (solicitudData, usuario = null) => {
     estado: solicitudData.estado || solicitudData.estado_solicitud || 'Pendiente',
     correo_electronico: solicitudData.correo_electronico,
     recursos_solicitados: solicitudData.recursos_solicitados || [],
+    nombre_responsable: solicitudData.nombre_responsable || solicitudData.organizador,
   };
 
   const result = await SolicitudEspacio.create(createPayload);
   await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+
+  // Enviar correo de confirmación al organizador
+  if (result.correo_electronico) {
+    try {
+      const espacio = await EspacioMuseo.findByPk(result.id_espacio);
+      const nombreEspacio = espacio ? espacio.nombre_espacio : 'Auditorio MAVET';
+
+      await emailjsService.sendAuditReservationConfirmation({
+        to: result.correo_electronico,
+        nombreResponsable: result.nombre_responsable || 'Organizador',
+        codigoReserva: result.codigo_reserva,
+        numeroExpediente: result.numero_expediente,
+        institucion: result.institucion,
+        motivo: result.motivo,
+        fechaUso: result.fecha_uso,
+        horaInicio: result.hora_inicio,
+        horaFin: result.hora_fin,
+        fechaRegistro: formatDateRegistration(),
+        fechaFormateada: formatDateForEmail(result.fecha_uso),
+        horaInicioFormateada: formatTimeForEmail(result.hora_inicio),
+        horaFinFormateada: formatTimeForEmail(result.hora_fin),
+        recursosSolicitados: formatResources(result.recursos_solicitados),
+        espacio: nombreEspacio,
+      });
+      console.log('✅ Correo de confirmación enviado a:', result.correo_electronico);
+    } catch (emailError) {
+      console.error('❌ Error enviando correo de confirmación:', emailError.message);
+      // No lanzamos error para no fallar la reserva si el correo falla
+    }
+  }
+
   return result;
 };
 

@@ -18,6 +18,7 @@ const SolicitudEspacio = sequelize.define(
 
     correo_electronico: { type: DataTypes.STRING(255) },
     recursos_solicitados: { type: DataTypes.JSON },
+    nombre_responsable: { type: DataTypes.STRING(255) },
     fecha_creacion: { type: DataTypes.DATE },
     fecha_modificacion: { type: DataTypes.DATE },
   },
