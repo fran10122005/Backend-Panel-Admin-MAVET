@@ -56,6 +56,8 @@ router.post(
   authController.resetPassword
 );
 
+router.post('/refresh', authController.refresh);
+
 // Rutas protegidas
 router.get('/', verifyToken, authController.getAllUsuarios);
 router.get('/me', verifyToken, authController.getMe);
