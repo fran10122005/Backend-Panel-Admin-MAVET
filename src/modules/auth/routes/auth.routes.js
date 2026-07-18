@@ -60,6 +60,7 @@ router.post(
 router.get('/', verifyToken, authController.getAllUsuarios);
 router.get('/me', verifyToken, authController.getMe);
 router.put('/me', verifyToken, authController.updateMe);
+router.put('/me/password', verifyToken, authController.changePassword);
 router.put('/:id', verifyToken, authController.updateUsuario);
 router.delete('/:id', verifyToken, authController.deleteUsuario);
 router.get('/export/pdf', verifyToken, authController.exportUsuariosPdf);

@@ -141,41 +141,34 @@ exports.login = async (correo, password, req = null) => {
 };
 
 exports.forgotPassword = async (correo) => {
-  const usuario = await Usuario.findOne({ where: { correo } });
+  const usuario = await Usuario.findOne({
+    where: { correo },
+    include: [{ model: Trabajador }],
+  });
 
   // Por seguridad, no revelamos si el correo existe o no
   if (!usuario) return true;
 
-  // Generar token aleatorio seguro
-  const resetToken = crypto.randomBytes(32).toString('hex');
+  // Generar contraseña temporal aleatoria (10 caracteres alfanuméricos)
+  const tempPassword = crypto.randomBytes(5).toString('hex');
 
-  usuario.reset_password_token = resetToken;
-  usuario.reset_password_expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+  // Hashear la contraseña temporal y guardarla
+  const salt = await bcrypt.genSalt(10);
+  usuario.password_hash = await bcrypt.hash(tempPassword, salt);
   await usuario.save();
-
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
   // Obtener el nombre del trabajador asociado si existe
   let nombreMostrar = 'Usuario';
-  if (usuario.id_trabajador) {
-    const { Trabajador } = require('../../../models');
-    const trabajador = await Trabajador.findByPk(usuario.id_trabajador);
-    if (trabajador)
-      nombreMostrar =
-        `${trabajador.nombres || ''} ${trabajador.apellidos || ''}`.trim() || 'Usuario';
+  if (usuario.Trabajador) {
+    nombreMostrar =
+      `${usuario.Trabajador.nombres || ''} ${usuario.Trabajador.apellidos || ''}`.trim() || 'Usuario';
   }
 
-  const emailService = require('../../../services/email.service');
-  await emailService.sendEmail({
+  const emailjsService = require('../../../services/emailjs.service');
+  await emailjsService.sendTempPassword({
     to: usuario.correo,
-    subject: 'Recuperación de Contraseña - Panel MAVET',
-    templateName: 'recover-password',
-    templatePath: require('path').join(__dirname, '../templates'),
-    context: {
-      nombre: nombreMostrar,
-      resetUrl,
-    },
+    nombre: nombreMostrar,
+    tempPassword,
   });
 
   return true;
@@ -369,5 +362,21 @@ exports.deleteUsuario = async (id_usuario, solicitante_id) => {
   await Trabajador.update({ id_usuario: null }, { where: { id_usuario } });
 
   await usuario.destroy();
+  return true;
+};
+
+exports.changePassword = async (id_usuario, passwordActual, passwordNuevo) => {
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+  const isMatch = await bcrypt.compare(passwordActual, usuario.password_hash);
+  if (!isMatch) {
+    throw new AppError('La contraseña actual no es correcta', 401);
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  usuario.password_hash = await bcrypt.hash(passwordNuevo, salt);
+  await usuario.save();
+
   return true;
 };

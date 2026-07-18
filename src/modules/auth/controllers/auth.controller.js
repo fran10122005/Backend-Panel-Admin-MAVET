@@ -72,7 +72,7 @@ exports.forgotPassword = catchAsync(async (req, res) => {
   res.status(200).json({
     status: 'success',
     message:
-      'Si el correo está registrado en el sistema, recibirás un enlace de recuperación en breve.',
+      'Si el correo está registrado en el sistema, recibirás una contraseña temporal en tu correo electrónico.',
   });
 });
 
@@ -134,6 +134,16 @@ exports.updateUsuario = catchAsync(async (req, res) => {
     status: 'success',
     message: 'Usuario actualizado exitosamente',
     data: usuario,
+  });
+});
+
+exports.changePassword = catchAsync(async (req, res) => {
+  const { password_actual, password_nuevo } = req.body;
+  await authService.changePassword(req.user.id_usuario, password_actual, password_nuevo);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Contraseña actualizada exitosamente',
   });
 });
 
