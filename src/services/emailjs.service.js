@@ -5,84 +5,83 @@ const EMAILJS_API_URL = 'https://api.emailjs.com/api/v1.0/email/send';
 class EmailjsService {
   buildTempPasswordHtml({ nombre, tempPassword }) {
     const year = new Date().getFullYear();
-    return `
-<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contraseña Temporal - MAVET</title>
+  <title>Contrasena Temporal - MAVET</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0f0f1a;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f0f1a;padding:40px 0;">
+<body style="margin:0;padding:0;background-color:#faf0f0;font-family:'Playfair Display',Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf0f0;padding:40px 0;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:16px;box-shadow:0 4px 24px rgba(128,0,0,0.10);">
 
           <!-- ENCABEZADO -->
           <tr>
-            <td align="center" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px 16px 0 0;padding:40px 32px 32px;">
-              <div style="display:inline-block;background:linear-gradient(135deg,#6c63ff,#a78bfa);border-radius:50%;width:64px;height:64px;line-height:64px;text-align:center;margin-bottom:16px;">
-                <span style="font-size:28px;">🔑</span>
+            <td align="center" style="background:linear-gradient(135deg,#800000 0%,#600000 100%);padding:44px 32px 36px;">
+              <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:68px;height:68px;line-height:68px;text-align:center;margin-bottom:18px;">
+                <span style="font-size:30px;">&#128274;</span>
               </div>
-              <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0 0 8px;">Contraseña Temporal</h1>
-              <p style="color:#a78bfa;font-size:14px;margin:0;letter-spacing:1px;text-transform:uppercase;">Museo de Artes Visuales y del Espacio</p>
+              <h1 style="color:#ffffff;font-size:26px;font-weight:700;margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;letter-spacing:0.5px;">Contrasena Temporal</h1>
+              <p style="color:#ebc2c2;font-size:13px;margin:0;letter-spacing:2px;text-transform:uppercase;font-family:'Segoe UI',Arial,sans-serif;">Museo de Artes Visuales y del Espacio</p>
             </td>
           </tr>
 
           <!-- CUERPO -->
           <tr>
-            <td style="background:#1a1a2e;padding:40px 32px;">
-              <p style="color:#c4c4d4;font-size:16px;line-height:1.6;margin:0 0 16px;">Hola, <strong style="color:#ffffff;">${nombre}</strong></p>
-              <p style="color:#c4c4d4;font-size:16px;line-height:1.6;margin:0 0 24px;">
-                Has solicitado la recuperación de tu contraseña en el Panel Administrativo MAVET.
-                Utiliza la siguiente contraseña temporal para acceder al sistema:
+            <td style="background:#ffffff;padding:40px 36px;">
+              <p style="color:#333333;font-size:16px;line-height:1.7;margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;">Hola, <strong style="color:#800000;">${nombre}</strong></p>
+              <p style="color:#555555;font-size:15px;line-height:1.7;margin:0 0 28px;font-family:'Segoe UI',Arial,sans-serif;">
+                Has solicitado la recuperacion de tu contrasena en el Panel Administrativo MAVET.
+                Utiliza la siguiente contrasena temporal para acceder al sistema:
               </p>
 
-              <!-- CONTRASEÑA TEMPORAL -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+              <!-- CONTRASENA TEMPORAL -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
                 <tr>
-                  <td align="center" style="background:#0f0f1a;border-radius:12px;border:2px dashed #6c63ff;padding:20px;">
-                    <p style="color:#8888aa;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:2px;">Tu contraseña temporal es</p>
-                    <p style="color:#ffffff;font-size:28px;font-weight:700;margin:0;letter-spacing:4px;font-family:'Courier New',monospace;">${tempPassword}</p>
+                  <td align="center" style="background:#faf0f0;border-radius:12px;border:2px dashed #800000;padding:24px 20px;">
+                    <p style="color:#800000;font-size:11px;margin:0 0 10px;text-transform:uppercase;letter-spacing:3px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Tu contrasena temporal es</p>
+                    <p style="color:#800000;font-size:30px;font-weight:700;margin:0;letter-spacing:5px;font-family:'Courier New',monospace;background:#ffffff;display:inline-block;padding:10px 24px;border-radius:8px;border:1px solid #ebc2c2;">${tempPassword}</p>
                   </td>
                 </tr>
               </table>
 
               <!-- INSTRUCCIONES -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a;border-radius:12px;border-left:4px solid #6c63ff;margin-bottom:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <p style="color:#a78bfa;font-size:14px;font-weight:700;margin:0 0 8px;">📋 Instrucciones</p>
-                    <p style="color:#c4c4d4;font-size:14px;margin:0;line-height:1.6;">
-                      1. Ingresa al sistema con esta contraseña temporal<br/>
-                      2. Dirígete a tu <strong style="color:#ffffff;">Perfil</strong><br/>
-                      3. Selecciona la pestaña <strong style="color:#ffffff;">Seguridad</strong><br/>
-                      4. Establece una contraseña nueva de tu preferencia
+                  <td style="background:#faf0f0;border-radius:12px;border-left:4px solid #800000;padding:20px 24px;">
+                    <p style="color:#800000;font-size:14px;font-weight:700;margin:0 0 10px;font-family:'Playfair Display',Georgia,serif;">Instrucciones</p>
+                    <p style="color:#555555;font-size:14px;margin:0;line-height:1.8;font-family:'Segoe UI',Arial,sans-serif;">
+                      1. Ingresa al sistema con esta contrasena temporal<br/>
+                      2. Dirigete a tu <strong style="color:#800000;">Perfil</strong><br/>
+                      3. Selecciona la pestana <strong style="color:#800000;">Seguridad</strong><br/>
+                      4. Establece una contrasena nueva de tu preferencia
                     </p>
                   </td>
                 </tr>
               </table>
 
               <!-- AVISO SEGURIDAD -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a;border-radius:12px;border-left:4px solid #f59e0b;margin-bottom:32px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <p style="color:#f59e0b;font-size:14px;font-weight:700;margin:0 0 4px;">⚠️ Aviso de seguridad</p>
-                    <p style="color:#c4c4d4;font-size:14px;margin:0;">Si no solicitaste esta contraseña temporal, ignora este correo. Tu cuenta permanece segura.</p>
+                  <td style="background:#fff9f0;border-radius:12px;border-left:4px solid #d4a843;padding:16px 20px;">
+                    <p style="color:#8a6d2a;font-size:13px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;">&#9888; Aviso de seguridad</p>
+                    <p style="color:#6b5a30;font-size:13px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">Si no solicitaste esta contrasena temporal, ignora este correo. Tu cuenta permanece segura.</p>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- PIE DE PÁGINA -->
+          <!-- PIE DE PAGINA -->
           <tr>
-            <td align="center" style="background:#12122a;border-radius:0 0 16px 16px;padding:24px 32px;">
-              <p style="color:#555577;font-size:12px;margin:0 0 8px;">
-                Este correo fue enviado automáticamente por el sistema. Por favor, no respondas a este mensaje.
+            <td align="center" style="background:#f5e1e1;padding:24px 32px;">
+              <p style="color:#800000;font-size:11px;margin:0 0 8px;font-family:'Segoe UI',Arial,sans-serif;letter-spacing:0.5px;">
+                Este correo fue enviado automaticamente por el sistema. Por favor, no respondas a este mensaje.
               </p>
-              <p style="color:#555577;font-size:12px;margin:0;">
+              <p style="color:#a33d3d;font-size:11px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">
                 &copy; ${year} Museo de Artes Visuales y del Espacio (MAVET). Todos los derechos reservados.
               </p>
             </td>
