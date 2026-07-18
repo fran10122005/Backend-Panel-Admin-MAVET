@@ -47,7 +47,7 @@ const exportInscripciones = async (tallerId, format) => {
         : '-',
       ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString('es-VE') : '-',
     ]);
-    const buffer = await generateTablePdf(`Inscripciones — Taller #${tallerId}`, headers, rows);
+    const buffer = await generateTablePdf(`Inscripciones — Taller #${tallerId}`, headers, rows, 'Coordinador(a) de Talleres');
     const filename = `Inscripciones_Taller_${tallerId}_${new Date().toISOString().split('T')[0]}.pdf`;
     const mimeType = 'application/pdf';
     return { buffer, filename, mimeType };

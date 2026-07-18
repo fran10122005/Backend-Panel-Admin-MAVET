@@ -112,7 +112,7 @@ exports.exportUsuariosPdf = catchAsync(async (req, res) => {
   ]);
 
   const filename = 'usuarios_mavet.pdf';
-  const pdfBuffer = await generateTablePdf(title, headers, rows);
+  const pdfBuffer = await generateTablePdf(title, headers, rows, 'Coordinador(a) de Sistemas');
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
