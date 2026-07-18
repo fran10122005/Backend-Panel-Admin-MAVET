@@ -92,9 +92,8 @@ const mapEstadoDinamico = (solicitud) => {
 };
 
 const getAllSolicitudes = async () => {
-  const { Usuario } = require('../../../models');
   const solicitudes = await SolicitudEspacio.findAll({
-    include: [Persona, EspacioMuseo, Usuario],
+    include: [Persona, EspacioMuseo],
   });
   return solicitudes.map(mapEstadoDinamico);
 };
