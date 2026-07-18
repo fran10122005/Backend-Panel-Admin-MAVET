@@ -1,4 +1,4 @@
-const { EspacioMuseo, BitacoraAuditoria, SolicitudEspacio } = require('../../../models');
+const { EspacioMuseo, BitacoraAuditoria, SolicitudEspacio, Obra } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const { Op, Sequelize } = require('sequelize');
 
@@ -27,7 +27,7 @@ exports.createEspacio = async (data, user) => {
       id_usuario: user.id_usuario,
       correo: user.correo,
       tipo: 'create',
-      detalle: `Se creó el espacio: ${nuevoEspacio.nombre}`,
+      detalle: `Se creó el espacio [${nuevoEspacio.id_espacio}]: ${nuevoEspacio.nombre}`,
     });
   }
 
@@ -108,9 +108,45 @@ exports.deleteEspacio = async (id, user) => {
       id_usuario: user.id_usuario,
       correo: user.correo,
       tipo: 'delete',
-      detalle: `Se eliminó lógicamente el espacio: ${espacio.nombre}`,
+      detalle: `Se eliminó lógicamente el espacio [${espacio.id_espacio}]: ${espacio.nombre}`,
     });
   }
 
   return true;
+};
+
+exports.getEspacioDetalles = async (id) => {
+  const espacio = await EspacioMuseo.findByPk(id);
+  if (!espacio) throw new AppError('Espacio no encontrado', 404);
+
+  // 1. Contar obras que están en este espacio
+  // Asumiendo que Obras tiene un campo ubicacion o relacion con EspacioMuseo
+  // Si no tiene relacion directa pero usa ubicacion_actual, buscamos por texto
+  // Verificaremos esto. Por ahora usaremos un like si ubicacion_actual es texto.
+  let cantidadObras = 0;
+  if (Obra) {
+    cantidadObras = await Obra.count({
+      where: {
+        ubicacion_actual: {
+          [Op.iLike]: `%${espacio.nombre}%`,
+        },
+      },
+    });
+  }
+
+  // 2. Historial de Auditoria
+  const historial = await BitacoraAuditoria.findAll({
+    where: {
+      detalle: {
+        [Op.like]: `%[${id}]%`,
+      },
+    },
+    order: [['fecha', 'DESC']],
+  });
+
+  return {
+    espacio,
+    cantidadObras,
+    historial,
+  };
 };

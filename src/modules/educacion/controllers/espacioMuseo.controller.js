@@ -16,6 +16,11 @@ exports.getEspacioById = catchAsync(async (req, res) => {
   res.status(200).json(espacio);
 });
 
+exports.getEspacioDetalles = catchAsync(async (req, res) => {
+  const detalles = await espacioService.getEspacioDetalles(req.params.id);
+  res.status(200).json(detalles);
+});
+
 exports.updateEspacio = catchAsync(async (req, res) => {
   const espacio = await espacioService.updateEspacio(req.params.id, req.body, req.user);
   res.status(200).json({ message: 'Espacio actualizado', data: espacio });
