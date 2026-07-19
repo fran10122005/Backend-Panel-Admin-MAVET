@@ -70,6 +70,5 @@ exports.getDocumentoPlan = catchAsync(async (req, res) => {
   if (!url) {
     return res.status(404).json({ message: 'Documento no encontrado' });
   }
-  // Redirect browser to the Cloudinary URL to trigger download
-  res.redirect(url);
+  res.status(200).json({ url });
 });
