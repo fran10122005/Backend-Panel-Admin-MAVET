@@ -66,9 +66,15 @@ exports.subirDocumentoPlan = catchAsync(async (req, res) => {
 });
 
 exports.getDocumentoPlan = catchAsync(async (req, res) => {
-  const url = await tallerService.getDocumentoPlanUrl(req.params.id);
-  if (!url) {
+  const rawUrl = await tallerService.getDocumentoPlanUrl(req.params.id);
+  if (!rawUrl) {
     return res.status(404).json({ message: 'Documento no encontrado' });
   }
+
+  // Insert fl_attachment into the Cloudinary URL so the browser downloads
+  // the file with the correct MIME type (PDF, Word, etc.)
+  // Example: .../raw/upload/v123/... → .../raw/upload/fl_attachment/v123/...
+  const url = rawUrl.replace('/raw/upload/', '/raw/upload/fl_attachment/');
+
   res.status(200).json({ url });
 });
