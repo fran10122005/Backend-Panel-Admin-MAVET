@@ -11,5 +11,6 @@ router.use('/turnos', verifyToken, turnoRoutes);
 router.use('/trabajadores', trabajadorRoutes);
 router.use('/asistencias', require('./asistenciaQR.routes'));
 router.use('/horarios', require('./horario.routes'));
+router.use('/trabajadores', verifyToken, require('./trabajadorExtras.routes'));
 
 module.exports = router;
