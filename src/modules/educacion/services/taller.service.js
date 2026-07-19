@@ -82,6 +82,24 @@ exports.planificarTaller = async (data) => {
   return result;
 };
 
+exports.updateDocumentoPlan = async (id_taller, documentoUrl) => {
+  const taller = await Taller.findByPk(id_taller);
+  if (!taller) throw new AppError('Taller no encontrado', 404);
+  taller.documento_plan = documentoUrl;
+  await taller.save();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return taller;
+};
+
+exports.getDocumentoPlanPath = async (id_taller) => {
+  const taller = await Taller.findByPk(id_taller);
+  if (!taller || !taller.documento_plan) return null;
+  // url is /uploads/documents/doc_123.pdf
+  // Convert to actual file path:
+  const path = require('path');
+  return path.join(__dirname, '../../../../public', taller.documento_plan);
+};
+
 exports.getAllTalleres = async (page, limit) => {
   const query = {
     include: [

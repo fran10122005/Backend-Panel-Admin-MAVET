@@ -34,3 +34,20 @@ exports.deleteTaller = catchAsync(async (req, res) => {
   await tallerService.deleteTaller(req.params.id);
   res.status(200).json({ message: 'Taller eliminado' });
 });
+
+exports.subirDocumentoPlan = catchAsync(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se subió ningún documento' });
+  }
+  const documentoUrl = `/uploads/documents/${req.file.filename}`;
+  const taller = await tallerService.updateDocumentoPlan(req.params.id, documentoUrl);
+  res.status(200).json({ message: 'Documento subido con éxito', data: taller });
+});
+
+exports.getDocumentoPlan = catchAsync(async (req, res) => {
+  const filePath = await tallerService.getDocumentoPlanPath(req.params.id);
+  if (!filePath) {
+    return res.status(404).json({ message: 'Documento no encontrado' });
+  }
+  res.download(filePath);
+});

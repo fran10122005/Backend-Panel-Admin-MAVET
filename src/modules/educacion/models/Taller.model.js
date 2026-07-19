@@ -17,7 +17,7 @@ const Taller = sequelize.define(
     horas_totales: { type: DataTypes.STRING(15) },
     cupo_minimo: { type: DataTypes.STRING(15) },
     cupo_maximo: { type: DataTypes.STRING(15) },
-
+    documento_plan: { type: DataTypes.STRING(500) },
     estado: { type: DataTypes.STRING(255) },
   },
   {

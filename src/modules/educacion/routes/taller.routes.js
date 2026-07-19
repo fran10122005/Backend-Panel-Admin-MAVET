@@ -34,6 +34,8 @@ const {
   planificarTallerSchema,
 } = require('../schemas/taller.schema');
 
+const uploadDocument = require('../../../middleware/uploadDocumentMiddleware');
+
 router.post('/', validateZod({ body: createTallerSchema }), tallerController.createTaller);
 router.get('/', tallerController.getAllTalleres);
 router.get('/:id', tallerController.getTallerById);
@@ -44,5 +46,12 @@ router.post(
   validateZod({ body: planificarTallerSchema }),
   tallerController.planificarTaller
 );
+
+router.post(
+  '/:id/documento',
+  uploadDocument.single('documento_plan'),
+  tallerController.subirDocumentoPlan
+);
+router.get('/:id/documento-plan', tallerController.getDocumentoPlan);
 
 module.exports = router;
