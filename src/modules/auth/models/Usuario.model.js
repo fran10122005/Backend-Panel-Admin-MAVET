@@ -15,6 +15,8 @@ const Usuario = sequelize.define(
     reset_password_expires: { type: DataTypes.DATE, allowNull: true },
     intentos_fallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
     bloqueado_hasta: { type: DataTypes.DATE, allowNull: true },
+    refresh_token: { type: DataTypes.STRING(255), allowNull: true },
+    refresh_token_expires: { type: DataTypes.DATE, allowNull: true },
   },
   {
     tableName: 'usuarios',

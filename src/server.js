@@ -299,6 +299,8 @@ async function migrateTablas() {
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS intentos_fallidos INTEGER DEFAULT 0;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS bloqueado_hasta TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS refresh_token VARCHAR(255);`,
+    `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS refresh_token_expires TIMESTAMP WITH TIME ZONE;`,
     `CREATE TABLE IF NOT EXISTS bitacora_auditoria (
       id_auditoria VARCHAR(15) PRIMARY KEY,
       id_usuario VARCHAR(15),

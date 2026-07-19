@@ -18,11 +18,23 @@ exports.login = catchAsync(async (req, res) => {
 
   const token = result.token;
 
+  const refreshToken = result.refreshToken;
+  const tokenMaxAge = 24 * 60 * 60 * 1000;
+  const refreshMaxAge = 7 * 24 * 60 * 60 * 1000;
+
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: tokenMaxAge,
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: refreshMaxAge,
+    path: '/api/auth',
   });
 
   res.status(200).json({
@@ -155,6 +167,44 @@ exports.deleteUsuario = catchAsync(async (req, res) => {
   });
 });
 
+exports.refresh = catchAsync(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Refresh token no proporcionado',
+    });
+  }
+
+  const result = await authService.refreshAccessToken(refreshToken);
+
+  const tokenMaxAge = 24 * 60 * 60 * 1000;
+  const refreshMaxAge = 7 * 24 * 60 * 60 * 1000;
+
+  res.cookie('token', result.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: tokenMaxAge,
+  });
+
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: refreshMaxAge,
+    path: '/api/auth',
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      token: result.token,
+    },
+  });
+});
+
 exports.logout = catchAsync(async (req, res) => {
   const auditoria = require('../services/auditoria.service');
   if (req.user) {
@@ -165,11 +215,18 @@ exports.logout = catchAsync(async (req, res) => {
       detalle: 'Cierre de sesión',
       req,
     });
+    await authService.clearRefreshToken(req.user.id_usuario);
   }
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/api/auth',
   });
   res.status(200).json({ status: 'success', message: 'Sesión cerrada exitosamente' });
 });

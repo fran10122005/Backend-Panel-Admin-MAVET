@@ -34,13 +34,32 @@ const subirImagenObra = async (filePath) => {
 
 exports.subirImagen = subirImagenObra;
 
+const allowedFields = [
+  'codigo_inventario',
+  'titulo',
+  'id_artista',
+  'id_tecnica',
+  'id_estado_actual',
+  'id_categoria_obra',
+  'anio',
+  'tipo_ingreso',
+  'piezas',
+  'peso',
+  'descripcion',
+  'ubicacion_actual',
+  'medidas',
+  'clasificacion_patrimonial',
+  'id_entrega',
+  'modalidad',
+  'imagen_url',
+];
+
 const processForeignKeys = async (data, transaction) => {
   let id_artista = data.id_artista;
   let id_tecnica = data.id_tecnica;
   let id_estado_actual = data.id_estado_actual;
 
-  // Process Artista from 'autor'
-  if (data.autor) {
+  if (!id_artista && data.autor) {
     let nombres = data.autor;
     let apellidos = '';
     const parts = data.autor.split(' ');
@@ -56,8 +75,7 @@ const processForeignKeys = async (data, transaction) => {
     id_artista = artista.id_artista;
   }
 
-  // Process Tecnica from 'tecnica'
-  if (data.tecnica) {
+  if (!id_tecnica && data.tecnica) {
     let tecnica = await TecnicaObra.findOne({
       where: { nombre_tecnica: data.tecnica },
       transaction,
@@ -68,8 +86,7 @@ const processForeignKeys = async (data, transaction) => {
     id_tecnica = tecnica.id_tecnica;
   }
 
-  // Process Estado from 'estado'
-  if (data.estado) {
+  if (!id_estado_actual && data.estado) {
     let estado = await EstadoObra.findOne({ where: { nombre_estado: data.estado }, transaction });
     if (!estado) {
       estado = await EstadoObra.create({ nombre_estado: data.estado }, { transaction });
@@ -176,30 +193,24 @@ exports.getObraById = async (id) => {
 exports.updateObra = async (id, data) => {
   const t = await sequelize.transaction();
   try {
-    const obra = await Obra.findByPk(id, { transaction: t });
-    if (!obra) throw new AppError('Obra no encontrada', 404);
+    const fieldsToUpdate = {};
 
-    const { id_artista, id_tecnica, id_estado_actual } = await processForeignKeys(data, t);
+    allowedFields.forEach((field) => {
+      if (data[field] !== undefined) {
+        fieldsToUpdate[field] = data[field];
+      }
+    });
 
-    await obra.update(
-      {
-        ...data,
-        id_artista: id_artista || obra.id_artista,
-        id_tecnica: id_tecnica || obra.id_tecnica,
-        id_estado_actual: id_estado_actual || obra.id_estado_actual,
-        id_categoria_obra: data.id_categoria_obra || obra.id_categoria_obra,
-        anio: data.ano || data.anio || obra.anio,
-        tipo_ingreso: data.tipo_ingreso || obra.tipo_ingreso,
-        piezas: data.piezas || obra.piezas,
-        peso: data.peso || obra.peso,
-        descripcion: data.descripcion || obra.descripcion,
-        ubicacion_actual: data.ubicacion || data.ubicacion_actual || obra.ubicacion_actual,
-      },
-      { transaction: t }
-    );
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      await Obra.update(fieldsToUpdate, { where: { id_obra: id }, transaction: t });
+    }
 
     await t.commit();
     await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
+
+    const obra = await Obra.findByPk(id, {
+      include: [{ model: Artista, as: 'Artista' }, TecnicaObra, EstadoObra, CategoriaObra, Entrega],
+    });
     return obra;
   } catch (error) {
     await t.rollback();

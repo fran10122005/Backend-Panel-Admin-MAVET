@@ -7,11 +7,18 @@ const AppError = require('../../../utils/AppError');
 
 const MAX_INTENTOS = 5;
 const BLOQUEO_MINUTOS = 30;
+const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
 
-const signToken = (id) => {
+const signAccessToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   });
+};
+
+const generateRefreshToken = (id) => {
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + REFRESH_EXPIRES_MS);
+  return { token, expiresAt };
 };
 
 exports.register = async (data) => {
@@ -58,12 +65,19 @@ exports.register = async (data) => {
     );
   }
 
-  const token = signToken(nuevoUsuario.id_usuario);
+  const token = signAccessToken(nuevoUsuario.id_usuario);
+
+  const { token: refreshToken, expiresAt } = generateRefreshToken(nuevoUsuario.id_usuario);
+  nuevoUsuario.refresh_token = refreshToken;
+  nuevoUsuario.refresh_token_expires = expiresAt;
+  await nuevoUsuario.save();
 
   const userResponse = nuevoUsuario.toJSON();
   delete userResponse.password_hash;
+  delete userResponse.refresh_token;
+  delete userResponse.refresh_token_expires;
 
-  return { token, usuario: userResponse };
+  return { token, refreshToken, usuario: userResponse };
 };
 
 exports.login = async (correo, password, req = null) => {
@@ -121,12 +135,17 @@ exports.login = async (correo, password, req = null) => {
 
   usuario.intentos_fallidos = 0;
   usuario.bloqueado_hasta = null;
-  await usuario.save();
 
-  const token = signToken(usuario.id_usuario);
+  const token = signAccessToken(usuario.id_usuario);
+  const { token: refreshToken, expiresAt } = generateRefreshToken(usuario.id_usuario);
+  usuario.refresh_token = refreshToken;
+  usuario.refresh_token_expires = expiresAt;
+  await usuario.save();
 
   const userResponse = usuario.toJSON();
   delete userResponse.password_hash;
+  delete userResponse.refresh_token;
+  delete userResponse.refresh_token_expires;
 
   const auditoria = require('./auditoria.service');
   await auditoria.registrar({
@@ -137,7 +156,7 @@ exports.login = async (correo, password, req = null) => {
     req,
   });
 
-  return { token, usuario: userResponse };
+  return { token, refreshToken, usuario: userResponse };
 };
 
 exports.forgotPassword = async (correo) => {
@@ -161,7 +180,8 @@ exports.forgotPassword = async (correo) => {
   let nombreMostrar = 'Usuario';
   if (usuario.Trabajador) {
     nombreMostrar =
-      `${usuario.Trabajador.nombres || ''} ${usuario.Trabajador.apellidos || ''}`.trim() || 'Usuario';
+      `${usuario.Trabajador.nombres || ''} ${usuario.Trabajador.apellidos || ''}`.trim() ||
+      'Usuario';
   }
 
   const emailjsService = require('../../../services/emailjs.service');
@@ -376,7 +396,43 @@ exports.changePassword = async (id_usuario, passwordActual, passwordNuevo) => {
 
   const salt = await bcrypt.genSalt(10);
   usuario.password_hash = await bcrypt.hash(passwordNuevo, salt);
+
+  usuario.refresh_token = null;
+  usuario.refresh_token_expires = null;
   await usuario.save();
 
   return true;
+};
+
+exports.refreshAccessToken = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new AppError('Refresh token no proporcionado', 401);
+  }
+
+  const usuario = await Usuario.findOne({
+    where: {
+      refresh_token: refreshToken,
+      refresh_token_expires: { [Op.gt]: new Date() },
+    },
+    include: [{ model: Role }, { model: Trabajador }],
+  });
+
+  if (!usuario) {
+    throw new AppError('Refresh token inválido o expirado. Inicie sesión nuevamente.', 401);
+  }
+
+  const nuevoAccessToken = signAccessToken(usuario.id_usuario);
+  const { token: nuevoRefreshToken, expiresAt } = generateRefreshToken(usuario.id_usuario);
+  usuario.refresh_token = nuevoRefreshToken;
+  usuario.refresh_token_expires = expiresAt;
+  await usuario.save();
+
+  return { token: nuevoAccessToken, refreshToken: nuevoRefreshToken, usuario };
+};
+
+exports.clearRefreshToken = async (id_usuario) => {
+  await Usuario.update(
+    { refresh_token: null, refresh_token_expires: null },
+    { where: { id_usuario } }
+  );
 };
