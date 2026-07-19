@@ -1,4 +1,4 @@
-const trabajadorHorarioService = require('./trabajadorHorario.service');
+const trabajadorHorarioService = require('../services/trabajadorHorario.service');
 const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/AppError');
 
