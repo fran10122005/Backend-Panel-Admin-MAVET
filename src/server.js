@@ -290,6 +290,7 @@ async function migrateTablas() {
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS fecha_fin DATE;`,
+    `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS documento_plan VARCHAR(500);`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS numero_expediente VARCHAR(30);`,
 

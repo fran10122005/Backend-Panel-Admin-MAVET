@@ -82,6 +82,21 @@ exports.planificarTaller = async (data) => {
   return result;
 };
 
+exports.updateDocumentoPlan = async (id_taller, cloudinaryUrl) => {
+  const taller = await Taller.findByPk(id_taller);
+  if (!taller) throw new AppError('Taller no encontrado', 404);
+  taller.documento_plan = cloudinaryUrl;
+  await taller.save();
+  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  return taller;
+};
+
+exports.getDocumentoPlanUrl = async (id_taller) => {
+  const taller = await Taller.findByPk(id_taller);
+  if (!taller || !taller.documento_plan) return null;
+  return taller.documento_plan; // already a Cloudinary URL
+};
+
 exports.getAllTalleres = async (page, limit) => {
   const query = {
     include: [
