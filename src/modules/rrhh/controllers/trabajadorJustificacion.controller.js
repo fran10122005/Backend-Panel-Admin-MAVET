@@ -1,4 +1,4 @@
-const trabajadorJustificacionService = require('./trabajadorJustificacion.service');
+const trabajadorJustificacionService = require('../services/trabajadorJustificacion.service');
 const catchAsync = require('../../../utils/catchAsync');
 const AppError = require('../../../utils/AppError');
 

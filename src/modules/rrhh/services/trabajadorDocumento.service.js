@@ -3,7 +3,7 @@ const cloudinary = require('../../../config/cloudinary');
 const fs = require('fs');
 const AppError = require('../../../utils/AppError');
 
-const TIPOS_DOCUMENTO_VALIDOS = ['contrato', 'cv', 'cedula', 'certificado', 'otro'];
+const TIPOS_DOCUMENTO_VALIDOS = ['contrato', 'cv', 'cedula', 'certificado', 'foto', 'otro'];
 
 const getTipoDocumentoLabel = (tipo) => {
   const labels = {
@@ -11,6 +11,7 @@ const getTipoDocumentoLabel = (tipo) => {
     cv: 'Curriculum Vitae',
     cedula: 'Cédula de Identidad',
     certificado: 'Certificado',
+    foto: 'Foto',
     otro: 'Otro',
   };
   return labels[tipo] || tipo;
@@ -35,8 +36,13 @@ exports.subirDocumento = async (id_trabajador, file, tipo_documento, notas = nul
     });
     url = result.secure_url;
   } catch (uploadError) {
-    console.error('Error subiendo a Cloudinary:', uploadError.message);
-    throw new AppError('Error al procesar el archivo. Intente nuevamente.', 500);
+    console.error(
+      'Error subiendo a Cloudinary:',
+      uploadError.message,
+      uploadError.http_code,
+      uploadError
+    );
+    throw new AppError(`Error al procesar el archivo: ${uploadError.message}`, 500);
   } finally {
     if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
   }

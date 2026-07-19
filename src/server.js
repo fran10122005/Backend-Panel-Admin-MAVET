@@ -346,6 +346,7 @@ async function migrateTablas() {
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'cancelacion_asistencia';`,
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_exitoso';`,
     `ALTER TYPE enum_bitacora_auditoria_tipo ADD VALUE IF NOT EXISTS 'facial_fallido';`,
+    `ALTER TYPE enum_trabajador_documentos_tipo_documento ADD VALUE IF NOT EXISTS 'foto';`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS descriptor_facial TEXT;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS descriptores_faciales JSONB DEFAULT '[]'::jsonb;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "usarFacial" BOOLEAN DEFAULT false;`,
