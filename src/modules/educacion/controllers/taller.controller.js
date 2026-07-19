@@ -39,15 +39,37 @@ exports.subirDocumentoPlan = catchAsync(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No se subió ningún documento' });
   }
-  const documentoUrl = `/uploads/documents/${req.file.filename}`;
-  const taller = await tallerService.updateDocumentoPlan(req.params.id, documentoUrl);
+
+  const cloudinary = require('../../../config/cloudinary');
+  const streamifier = require('streamifier');
+
+  const uploadToCloudinary = () =>
+    new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: `mavet_uploads/talleres/${req.params.id}/documentos`,
+          resource_type: 'raw',
+          use_filename: true,
+          unique_filename: true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+
+  const result = await uploadToCloudinary();
+  const taller = await tallerService.updateDocumentoPlan(req.params.id, result.secure_url);
   res.status(200).json({ message: 'Documento subido con éxito', data: taller });
 });
 
 exports.getDocumentoPlan = catchAsync(async (req, res) => {
-  const filePath = await tallerService.getDocumentoPlanPath(req.params.id);
-  if (!filePath) {
+  const url = await tallerService.getDocumentoPlanUrl(req.params.id);
+  if (!url) {
     return res.status(404).json({ message: 'Documento no encontrado' });
   }
-  res.download(filePath);
+  // Redirect browser to the Cloudinary URL to trigger download
+  res.redirect(url);
 });
