@@ -66,7 +66,7 @@ class EmailjsService {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#fff9f0;border-radius:12px;border-left:4px solid #d4a843;padding:16px 20px;">
-                    <p style="color:#8a6d2a;font-size:13px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;">&#9888; Aviso de seguridad</p>
+                    <p style="color:#8a6d2a;font-size:13px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;">Aviso de seguridad</p>
                     <p style="color:#6b5a30;font-size:13px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">Si no solicitaste esta contrasena temporal, ignora este correo. Tu cuenta permanece segura.</p>
                   </td>
                 </tr>
@@ -270,7 +270,7 @@ class EmailjsService {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#fff9f0;border-radius:12px;border-left:4px solid #d4a843;padding:16px 20px;">
-                    <p style="color:#8a6d2a;font-size:13px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;">&#9888; Recordatorio</p>
+                    <p style="color:#8a6d2a;font-size:13px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;">Recordatorio</p>
                     <p style="color:#6b5a30;font-size:13px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">Presenta este correo y tu documento de identidad el día del evento. Tu reserva está en estado <strong style="color:#800000;">Pendiente</strong> hasta ser aprobada.</p>
                   </td>
                 </tr>
