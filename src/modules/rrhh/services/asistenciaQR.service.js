@@ -115,14 +115,14 @@ exports.getSemanaAsistencia = async (cedulaTrabajador) => {
   const fechaActual = new Date(fechaActualStr + 'T00:00:00');
 
   const diaSemana = fechaActual.getDay();
-  const diffMiercoles = (diaSemana + 4) % 7;
-  const miercoles = new Date(fechaActual);
-  miercoles.setDate(fechaActual.getDate() - diffMiercoles);
-  const inicioStr = miercoles.toISOString().split('T')[0];
+  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(fechaActual);
+  lunes.setDate(fechaActual.getDate() - diffLunes);
+  const inicioStr = lunes.toISOString().split('T')[0];
 
-  const martes = new Date(miercoles);
-  martes.setDate(miercoles.getDate() + 6);
-  const finStr = martes.toISOString().split('T')[0];
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() + 6);
+  const finStr = domingo.toISOString().split('T')[0];
 
   const registros = await AsistenciaQR.findAll({
     where: {
@@ -573,14 +573,14 @@ exports.getResumenSemanalTodos = async () => {
   const fechaActual = new Date(fechaActualStr + 'T00:00:00');
 
   const diaSemana = fechaActual.getDay();
-  const diffMiercoles = (diaSemana + 4) % 7;
-  const miercoles = new Date(fechaActual);
-  miercoles.setDate(fechaActual.getDate() - diffMiercoles);
-  const inicioStr = miercoles.toISOString().split('T')[0];
+  const diffLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(fechaActual);
+  lunes.setDate(fechaActual.getDate() - diffLunes);
+  const inicioStr = lunes.toISOString().split('T')[0];
 
-  const martes = new Date(miercoles);
-  martes.setDate(miercoles.getDate() + 6);
-  const finStr = martes.toISOString().split('T')[0];
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() + 6);
+  const finStr = domingo.toISOString().split('T')[0];
 
   const { Op } = require('sequelize');
 
