@@ -275,6 +275,7 @@ async function migrateTablas() {
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS id_solicitud VARCHAR(15);`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE asistencias_qr ADD COLUMN IF NOT EXISTS horas_justificadas DECIMAL;`,
+    `ALTER TABLE asistencias_qr ADD COLUMN IF NOT EXISTS tipo_justificacion VARCHAR(20) DEFAULT NULL;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS foto_url VARCHAR(500);`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS horas_semanales DECIMAL;`,
