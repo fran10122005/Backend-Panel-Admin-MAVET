@@ -6,91 +6,76 @@ const trabajadorDocumentoController = require('../controllers/trabajadorDocument
 const trabajadorHorarioController = require('../controllers/trabajadorHorario.controller');
 const trabajadorJustificacionController = require('../controllers/trabajadorJustificacion.controller');
 
-// Proteger todas las rutas
 router.use(verifyToken);
 
 // ==========================================
 // TRABAJADOR - DOCUMENTOS
 // ==========================================
 router.post(
-  '/trabajadores/:id_trabajador/documentos',
-  upload.single('archivo'),
+  '/:id_trabajador/documentos',
+  upload.document.single('archivo'),
   trabajadorDocumentoController.subirDocumento
 );
+router.get('/:id_trabajador/documentos', trabajadorDocumentoController.obtenerDocumentos);
+router.get('/:id_trabajador/documentos/tipos', trabajadorDocumentoController.obtenerTiposDocumento);
 router.get(
-  '/trabajadores/:id_trabajador/documentos',
-  trabajadorDocumentoController.obtenerDocumentos
-);
-router.get(
-  '/trabajadores/:id_trabajador/documentos/tipos',
-  trabajadorDocumentoController.obtenerTiposDocumento
-);
-router.get(
-  '/trabajadores/:id_trabajador/documentos/:id_documento',
+  '/:id_trabajador/documentos/:id_documento',
   trabajadorDocumentoController.obtenerDocumentoPorId
 );
 router.delete(
-  '/trabajadores/:id_trabajador/documentos/:id_documento',
+  '/:id_trabajador/documentos/:id_documento',
   trabajadorDocumentoController.eliminarDocumento
 );
 
 // ==========================================
 // TRABAJADOR - HORARIOS
 // ==========================================
-router.post('/trabajadores/:id_trabajador/horarios', trabajadorHorarioController.crearHorario);
+router.post('/:id_trabajador/horarios', trabajadorHorarioController.crearHorario);
+router.post('/:id_trabajador/horarios/bulk', trabajadorHorarioController.guardarHorariosMasivos);
 router.post(
-  '/trabajadores/:id_trabajador/horarios/completos',
+  '/:id_trabajador/horarios/completos',
   trabajadorHorarioController.crearHorariosCompletos
 );
-router.get('/trabajadores/:id_trabajador/horarios', trabajadorHorarioController.obtenerHorarios);
+router.get('/:id_trabajador/horarios', trabajadorHorarioController.obtenerHorarios);
 router.get(
-  '/trabajadores/:id_trabajador/horarios/completos',
+  '/:id_trabajador/horarios/completos',
   trabajadorHorarioController.obtenerHorariosCompletos
 );
-router.get('/trabajadores/horarios/dias-semana', trabajadorHorarioController.obtenerDiasSemana);
-router.put(
-  '/trabajadores/:id_trabajador/horarios/:dia_semana',
-  trabajadorHorarioController.actualizarHorario
-);
-router.delete(
-  '/trabajadores/:id_trabajador/horarios/:dia_semana',
-  trabajadorHorarioController.eliminarHorario
-);
+router.get('/horarios/dias-semana', trabajadorHorarioController.obtenerDiasSemana);
+router.put('/:id_trabajador/horarios/:dia_semana', trabajadorHorarioController.actualizarHorario);
+router.delete('/:id_trabajador/horarios/:dia_semana', trabajadorHorarioController.eliminarHorario);
 
 // ==========================================
 // TRABAJADOR - JUSTIFICACIONES
 // ==========================================
 router.post(
-  '/trabajadores/:id_trabajador/justificaciones',
-  upload.single('archivo'),
+  '/:id_trabajador/justificaciones',
+  upload.document.single('archivo'),
   trabajadorJustificacionController.crearJustificacion
 );
 router.get(
-  '/trabajadores/:id_trabajador/justificaciones',
+  '/:id_trabajador/justificaciones',
   trabajadorJustificacionController.obtenerJustificaciones
 );
+router.get('/:id_trabajador/justificaciones/tipos', trabajadorJustificacionController.obtenerTipos);
 router.get(
-  '/trabajadores/:id_trabajador/justificaciones/tipos',
-  trabajadorJustificacionController.obtenerTipos
-);
-router.get(
-  '/trabajadores/:id_trabajador/justificaciones/estados',
+  '/:id_trabajador/justificaciones/estados',
   trabajadorJustificacionController.obtenerEstados
 );
 router.get(
-  '/trabajadores/:id_trabajador/justificaciones/estadisticas',
+  '/:id_trabajador/justificaciones/estadisticas',
   trabajadorJustificacionController.obtenerEstadisticas
 );
 router.get(
-  '/trabajadores/:id_trabajador/justificaciones/:id_justificacion',
+  '/:id_trabajador/justificaciones/:id_justificacion',
   trabajadorJustificacionController.obtenerJustificacionPorId
 );
 router.put(
-  '/trabajadores/:id_trabajador/justificaciones/:id_justificacion/estado',
+  '/:id_trabajador/justificaciones/:id_justificacion/estado',
   trabajadorJustificacionController.actualizarEstado
 );
 router.delete(
-  '/trabajadores/:id_trabajador/justificaciones/:id_justificacion',
+  '/:id_trabajador/justificaciones/:id_justificacion',
   trabajadorJustificacionController.eliminarJustificacion
 );
 

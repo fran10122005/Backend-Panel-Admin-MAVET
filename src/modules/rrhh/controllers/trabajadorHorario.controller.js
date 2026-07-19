@@ -87,6 +87,26 @@ exports.eliminarHorario = catchAsync(async (req, res) => {
   });
 });
 
+exports.guardarHorariosMasivos = catchAsync(async (req, res) => {
+  const { id_trabajador } = req.params;
+  const horariosArray = req.body;
+
+  if (!Array.isArray(horariosArray) || horariosArray.length === 0) {
+    throw new AppError('Debe enviar un array con los horarios de la semana', 400);
+  }
+
+  const resultados = await trabajadorHorarioService.crearOActualizarHorario(
+    id_trabajador,
+    horariosArray
+  );
+
+  res.status(200).json({
+    status: 'success',
+    data: resultados,
+    message: 'Horarios guardados correctamente',
+  });
+});
+
 exports.obtenerDiasSemana = catchAsync(async (req, res) => {
   res.status(200).json({
     status: 'success',

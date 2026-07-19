@@ -14,7 +14,7 @@ const TrabajadorDocumento = sequelize.define(
       allowNull: false,
     },
     tipo_documento: {
-      type: DataTypes.ENUM('contrato', 'cv', 'cedula', 'certificado', 'otro'),
+      type: DataTypes.ENUM('contrato', 'cv', 'cedula', 'certificado', 'foto', 'otro'),
       allowNull: false,
     },
     nombre_archivo: {

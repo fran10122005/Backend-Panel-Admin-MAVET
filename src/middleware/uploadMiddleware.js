@@ -82,4 +82,49 @@ const compressImage = async (req, res, next) => {
 
 upload.compress = compressImage;
 
+const documentStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../../public/uploads/documents');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      `doc_${Date.now()}_${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`
+    );
+  },
+});
+
+const documentFileFilter = (req, file, cb) => {
+  const allowedMimes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'image/jpeg',
+    'image/png',
+    'image/jpg',
+    'image/webp',
+  ];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de archivo no permitido. Solo PDF, DOC, DOCX, XLS, XLSX, JPG, PNG'), false);
+  }
+};
+
+const documentUpload = multer({
+  storage: documentStorage,
+  fileFilter: documentFileFilter,
+  limits: {
+    fileSize: 20 * 1024 * 1024,
+  },
+});
+
+upload.document = documentUpload;
+
 module.exports = upload;
