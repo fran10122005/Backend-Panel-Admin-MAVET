@@ -981,66 +981,113 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
         const ph = doc.page.height;
         const mmToPt = (mm) => mm * 2.83465;
 
-        // Draw header
         drawHeader(doc, 'CÓDIGO QR – AUTO INGRESO', pw, F, 48);
 
-        const qrSize = mmToPt(100);
-        const xPos = (pw - qrSize) / 2;
-        const yPos = mmToPt(55);
+        // ── Card container ──────────────────────────────────────────────────
+        const cardW = mmToPt(130);
+        const cardX = (pw - cardW) / 2;
+        const cardY = mmToPt(16);
 
-        // Shadow
         doc
-          .rect(xPos - mmToPt(6), yPos + mmToPt(1), qrSize + mmToPt(12), qrSize + mmToPt(12))
-          .fill(C.line || '#E4E4E4');
+          .rect(cardX, cardY, cardW, mmToPt(148))
+          .fill('#FFFFFF');
+        doc
+          .rect(cardX, cardY, cardW, mmToPt(148))
+          .lineWidth(0.5)
+          .strokeColor(C.line)
+          .stroke();
 
-        // White background + border
+        // Top accent bar
         doc
-          .rect(xPos - mmToPt(6), yPos - mmToPt(6), qrSize + mmToPt(12), qrSize + mmToPt(12))
-          .fill(C.white || '#FFFFFF');
+          .rect(cardX, cardY, cardW, mmToPt(3))
+          .fill(C.brand);
+
+        // ── QR code ─────────────────────────────────────────────────────────
+        const qrSize = mmToPt(85);
+        const qrX = (pw - qrSize) / 2;
+        const qrY = cardY + mmToPt(10);
+
         doc
-          .rect(xPos - mmToPt(6), yPos - mmToPt(6), qrSize + mmToPt(12), qrSize + mmToPt(12))
-          .lineWidth(mmToPt(0.5))
-          .stroke(C.brand || '#800000');
+          .rect(qrX - mmToPt(3), qrY - mmToPt(3), qrSize + mmToPt(6), qrSize + mmToPt(6))
+          .lineWidth(1.2)
+          .strokeColor(C.brand)
+          .stroke();
 
         if (qrBuffer) {
-          doc.image(qrBuffer, xPos, yPos, { width: qrSize, height: qrSize });
+          doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
         }
 
+        // ── Label below QR ──────────────────────────────────────────────────
         doc
-          .fillColor(C.textSoft || '#6B6B6B')
-          .fontSize(9)
-          .font(F.normal)
-          .text('O escanee el código QR o visite:', MARGIN, yPos + qrSize + mmToPt(14), {
-            width: pw - 2 * MARGIN,
-            align: 'center',
-          });
-
-        doc
-          .fillColor(C.brand || '#800000')
-          .fontSize(10)
+          .fillColor(C.text)
           .font(F.bold)
-          .text(publicUrl, MARGIN, yPos + qrSize + mmToPt(22), {
-            width: pw - 2 * MARGIN,
-            align: 'center',
+          .fontSize(9)
+          .text('REGISTRO DE INGRESO', MARGIN, qrY + qrSize + mmToPt(8), {
+            width: pw - 2 * MARGIN, align: 'center',
           });
 
         doc
-          .fillColor(C.text || '#2D2D2D')
-          .fontSize(9)
-          .font(F.normal);
+          .fillColor(C.textSoft)
+          .font(F.normal)
+          .fontSize(8)
+          .text('Escanee el código con su teléfono', MARGIN, qrY + qrSize + mmToPt(15), {
+            width: pw - 2 * MARGIN, align: 'center',
+          });
+
+        // ── URL box ─────────────────────────────────────────────────────────
+        const urlBoxY = qrY + qrSize + mmToPt(22);
+        const urlBoxH = mmToPt(18);
+        doc
+          .rect(cardX + mmToPt(6), urlBoxY, cardW - mmToPt(12), urlBoxH)
+          .fillColor(C.accent)
+          .fill();
+        doc
+          .rect(cardX + mmToPt(6), urlBoxY, cardW - mmToPt(12), urlBoxH)
+          .lineWidth(0.3)
+          .strokeColor(C.line)
+          .stroke();
+
+        doc
+          .fillColor(C.textSoft)
+          .font(F.normal)
+          .fontSize(6.5)
+          .text('O visite:', cardX + mmToPt(10), urlBoxY + mmToPt(2), {
+            width: cardW - mmToPt(20), align: 'center',
+          });
+
+        doc
+          .fillColor(C.brand)
+          .font(F.bold)
+          .fontSize(7)
+          .text(publicUrl, cardX + mmToPt(10), urlBoxY + mmToPt(8), {
+            width: cardW - mmToPt(20), align: 'center',
+          });
+
+        // ── Instructions ────────────────────────────────────────────────────
         const instructions = [
-          '1. Abra la cámara de su teléfono y apunte al código QR.',
-          '2. Toque el enlace que aparece en la pantalla.',
-          '3. Complete sus datos personales y seleccione el motivo de su visita.',
-          '4. ¡Listo! Su ingreso quedará registrado automáticamente.',
+          { title: '1. Abra la cámara', desc: 'Apunte al código QR desde la cámara de su teléfono.' },
+          { title: '2. Toque el enlace', desc: 'Presione la notificación o enlace que aparece en pantalla.' },
+          { title: '3. Complete sus datos', desc: 'Ingrese su nombre, cédula y seleccione el motivo de visita.' },
+          { title: '4. Ingreso registrado', desc: 'Su entrada quedará registrada automáticamente en el sistema.' },
         ];
-        let iy = yPos + qrSize + mmToPt(36);
-        instructions.forEach((line) => {
-          doc.text(line, mmToPt(28), iy);
-          iy += mmToPt(7);
+
+        let iy = cardY + mmToPt(100);
+        instructions.forEach((inst) => {
+          doc
+            .fillColor(C.brand)
+            .font(F.bold)
+            .fontSize(8.5)
+            .text(inst.title, mmToPt(28), iy);
+
+          doc
+            .fillColor(C.textSoft)
+            .font(F.normal)
+            .fontSize(8)
+            .text(inst.desc, mmToPt(48), iy, { width: mmToPt(120) });
+
+          iy += mmToPt(10);
         });
 
-        // Headers and footers
         drawHeadersAndFooters(doc, 'CÓDIGO QR – AUTO INGRESO', pw, F, MARGIN);
 
         doc.end();
