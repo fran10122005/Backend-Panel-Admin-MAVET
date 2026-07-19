@@ -14,6 +14,9 @@ const Turno = require('../modules/rrhh/models/Turno.model');
 const Trabajador = require('../modules/rrhh/models/Trabajador.model');
 const AsistenciaQR = require('../modules/rrhh/models/AsistenciaQR.model');
 const HistorialHorario = require('../modules/rrhh/models/HistorialHorario.model');
+const TrabajadorDocumento = require('../modules/rrhh/models/TrabajadorDocumento.model');
+const TrabajadorHorario = require('../modules/rrhh/models/TrabajadorHorario.model');
+const TrabajadorJustificacion = require('../modules/rrhh/models/TrabajadorJustificacion.model');
 
 // Importar modelos Obras
 const Artista = require('../modules/obras/models/Artista.model');
@@ -86,6 +89,18 @@ Turno.belongsToMany(Trabajador, {
   otherKey: 'id_trabajador',
   timestamps: false,
 });
+
+// Trabajador - Documentos
+Trabajador.hasMany(TrabajadorDocumento, { foreignKey: 'id_trabajador' });
+TrabajadorDocumento.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
+
+// Trabajador - Horarios
+Trabajador.hasMany(TrabajadorHorario, { foreignKey: 'id_trabajador' });
+TrabajadorHorario.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
+
+// Trabajador - Justificaciones
+Trabajador.hasMany(TrabajadorJustificacion, { foreignKey: 'id_trabajador' });
+TrabajadorJustificacion.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
 
 Trabajador.hasMany(AsistenciaQR, { foreignKey: 'id_trabajador' });
 AsistenciaQR.belongsTo(Trabajador, { foreignKey: 'id_trabajador' });
@@ -213,6 +228,9 @@ module.exports = {
   CargoTrabajador,
   Turno,
   Trabajador,
+  TrabajadorDocumento,
+  TrabajadorHorario,
+  TrabajadorJustificacion,
   AsistenciaQR,
   HistorialHorario,
   Artista,
