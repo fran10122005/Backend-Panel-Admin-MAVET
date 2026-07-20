@@ -1,23 +1,13 @@
-const fs = require('fs');
-const path = require('path');
 const AppError = require('../utils/AppError');
 
 const EMAILJS_API_URL = 'https://api.emailjs.com/api/v1.0/email/send';
-
-const LOGO_BASE64 = (() => {
-  try {
-    const logoPath = path.join(__dirname, '../../public/images/logo/mavet2.png');
-    const data = fs.readFileSync(logoPath);
-    return `data:image/png;base64,${data.toString('base64')}`;
-  } catch {
-    return 'https://mavet-web.vercel.app/images/logo/mavet2.png';
-  }
-})();
+const LOGO_URL =
+  'https://res.cloudinary.com/dw76ookno/image/upload/c_fill,w_68,h_68/v1784562596/mavet/logo-mavet.png';
 
 class EmailjsService {
   buildTempPasswordHtml({ nombre, tempPassword }) {
     const year = new Date().getFullYear();
-    const logoUrl = LOGO_BASE64;
+    const logoUrl = LOGO_URL;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -173,7 +163,7 @@ class EmailjsService {
 
   buildAuditReservationHtml(data) {
     const year = new Date().getFullYear();
-    const logoUrl = LOGO_BASE64;
+    const logoUrl = LOGO_URL;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
