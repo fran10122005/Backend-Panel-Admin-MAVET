@@ -7,7 +7,10 @@ const normalizeNombre = (nombre) => nombre.toLowerCase().replace(/\s+/g, '');
 
 const checkNombreCursoUnico = async (nombre_curso, excludeId = null) => {
   const normalized = normalizeNombre(nombre_curso);
-  const where = excludeId ? { id_taller: { [Op.ne]: excludeId } } : {};
+  const where = {
+    estado: 'Activo',
+    ...(excludeId ? { id_taller: { [Op.ne]: excludeId } } : {}),
+  };
   const talleres = await Taller.findAll({ attributes: ['id_taller', 'nombre_curso'], where });
 
   for (const t of talleres) {
