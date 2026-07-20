@@ -209,67 +209,6 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 
 // SINCRONIZACIÓN Y ARRANQUE
-async function seedInventarioTalleres() {
-  const { InventarioTaller, Taller } = require('./models');
-  const talleresBase = [
-    {
-      nombre: 'Taller de Pintura y Dibujo',
-      descripcion: 'Taller básico de técnicas de pintura al óleo, acrílico y dibujo artístico.',
-    },
-    {
-      nombre: 'Taller de Escultura en Arcilla',
-      descripcion: 'Taller de modelado y escultura con arcilla y herramientas básicas.',
-    },
-    {
-      nombre: 'Taller de Fotografía Digital',
-      descripcion: 'Taller de fotografía digital, composición y edición básica.',
-    },
-    {
-      nombre: 'Taller de Historia del Arte',
-      descripcion: 'Taller teórico sobre corrientes artísticas y obras emblemáticas.',
-    },
-    {
-      nombre: 'Taller de Música y Percusión',
-      descripcion: 'Taller de iniciación musical con instrumentos de percusión.',
-    },
-  ];
-  for (const t of talleresBase) {
-    try {
-      await InventarioTaller.findOrCreate({
-        where: { nombre: t.nombre },
-        defaults: t,
-        paranoid: false,
-      });
-    } catch {
-      // Si ya existe (unique), ignoramos silenciosamente
-    }
-  }
-  // Crear taller planificado de ejemplo si no existe
-  const inventarioPintura = await InventarioTaller.findOne({
-    where: { nombre: 'Taller de Pintura y Dibujo' },
-    paranoid: false,
-  });
-  if (inventarioPintura) {
-    const yaExiste = await Taller.findOne({
-      where: { inventario_id: inventarioPintura.id },
-    });
-    if (!yaExiste) {
-      await Taller.create({
-        nombre_curso: inventarioPintura.nombre,
-        inventario_id: inventarioPintura.id,
-        sesiones: 8,
-        fecha: new Date(),
-        hora_inicio: '10:00',
-        hora_fin: '12:00',
-        horas_totales: 16,
-        cupo_minimo: 5,
-        cupo_maximo: 20,
-        estado: 'Activo',
-      });
-    }
-  }
-}
-
 async function migrateTablas() {
   const cambios = [
     `ALTER TABLE registros_ingresos ADD COLUMN IF NOT EXISTS id_solicitud VARCHAR(15);`,
@@ -389,7 +328,6 @@ async function startServer() {
     await sequelize.sync();
     await migrateTablas();
     console.log('✅ Base de datos sincronizada exitosamente');
-    await seedInventarioTalleres();
 
     if (require.main === module) {
       app.listen(PORT, () => {

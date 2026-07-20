@@ -12,6 +12,7 @@ router.post(
 router.get('/', inscripcionController.getAllInscripciones);
 router.get('/taller/:id', inscripcionController.getInscripcionesByTaller);
 router.get('/taller/:id/export', inscripcionController.exportPlanilla);
+router.put('/:id', inscripcionController.actualizarInscripcion);
 router.delete('/:id', inscripcionController.eliminarInscripcion);
 
 module.exports = router;

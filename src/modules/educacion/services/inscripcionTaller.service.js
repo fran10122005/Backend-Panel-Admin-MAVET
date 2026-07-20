@@ -47,7 +47,12 @@ const exportInscripciones = async (tallerId, format) => {
         : '-',
       ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString('es-VE') : '-',
     ]);
-    const buffer = await generateTablePdf(`Inscripciones — Taller #${tallerId}`, headers, rows, 'Coordinador(a) de Talleres');
+    const buffer = await generateTablePdf(
+      `Inscripciones — Taller #${tallerId}`,
+      headers,
+      rows,
+      'Coordinador(a) de Talleres'
+    );
     const filename = `Inscripciones_Taller_${tallerId}_${new Date().toISOString().split('T')[0]}.pdf`;
     const mimeType = 'application/pdf';
     return { buffer, filename, mimeType };
@@ -241,9 +246,29 @@ const eliminarInscripcion = async (id) => {
   return { message: 'Inscripción eliminada correctamente. Puede restaurarla desde la papelera.' };
 };
 
+const actualizarInscripcion = async (id, data) => {
+  const inscripcion = await InscripcionTaller.findByPk(id);
+  if (!inscripcion) {
+    throw new AppError('Inscripción no encontrada', 404);
+  }
+  const camposPermitidos = ['estado_inscripcion'];
+  const cambios = {};
+  for (const campo of camposPermitidos) {
+    if (data[campo] !== undefined) {
+      cambios[campo] = data[campo];
+    }
+  }
+  if (Object.keys(cambios).length === 0) {
+    throw new AppError('No hay campos válidos para actualizar', 400);
+  }
+  await inscripcion.update(cambios);
+  return inscripcion;
+};
+
 module.exports = {
   getInscripcionesConDetalles,
   inscribirAlumno,
   exportInscripciones,
   eliminarInscripcion,
+  actualizarInscripcion,
 };

@@ -27,6 +27,11 @@ exports.eliminarInscripcion = catchAsync(async (req, res) => {
   res.status(200).json(result);
 });
 
+exports.actualizarInscripcion = catchAsync(async (req, res) => {
+  const result = await inscripcionService.actualizarInscripcion(req.params.id, req.body);
+  res.status(200).json({ message: 'Inscripción actualizada correctamente', data: result });
+});
+
 // New endpoint: export planilla for a specific taller
 exports.exportPlanilla = catchAsync(async (req, res) => {
   const { id } = req.params; // taller id
