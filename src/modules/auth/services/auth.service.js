@@ -165,18 +165,10 @@ exports.forgotPassword = async (correo) => {
     include: [{ model: Trabajador }],
   });
 
-  // Por seguridad, no revelamos si el correo existe o no
   if (!usuario) return true;
 
-  // Generar contraseña temporal aleatoria (10 caracteres alfanuméricos)
   const tempPassword = crypto.randomBytes(5).toString('hex');
 
-  // Hashear la contraseña temporal y guardarla
-  const salt = await bcrypt.genSalt(10);
-  usuario.password_hash = await bcrypt.hash(tempPassword, salt);
-  await usuario.save();
-
-  // Obtener el nombre del trabajador asociado si existe
   let nombreMostrar = 'Usuario';
   if (usuario.Trabajador) {
     nombreMostrar =
@@ -185,11 +177,32 @@ exports.forgotPassword = async (correo) => {
   }
 
   const emailjsService = require('../../../services/emailjs.service');
-  await emailjsService.sendTempPassword({
-    to: usuario.correo,
-    nombre: nombreMostrar,
-    tempPassword,
-  });
+  const htmlBody = emailjsService.buildTempPasswordHtml({ nombre: nombreMostrar, tempPassword });
+
+  try {
+    await emailjsService.sendTempPassword({
+      to: usuario.correo,
+      nombre: nombreMostrar,
+      tempPassword,
+    });
+  } catch (emailjsError) {
+    console.error('❌ EmailJS falló, intentando con SMTP:', emailjsError.message);
+    try {
+      const emailService = require('../../../services/email.service');
+      await emailService.sendEmail({
+        to: usuario.correo,
+        subject: 'Recuperación de Contraseña - MAVET',
+        html: htmlBody,
+      });
+    } catch (smtpError) {
+      console.error('❌ SMTP también falló:', smtpError.message);
+      throw new AppError('No se pudo enviar el correo de recuperación. Intente más tarde.', 500);
+    }
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  usuario.password_hash = await bcrypt.hash(tempPassword, salt);
+  await usuario.save();
 
   return true;
 };

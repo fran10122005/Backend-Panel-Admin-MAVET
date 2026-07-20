@@ -26,30 +26,23 @@ const SolicitudEspacio = sequelize.define(
     tableName: 'solicitudes_espacios',
     hooks: {
       beforeCreate: async (instance, options) => {
-        // Obtenemos el nombre de la clave primaria
         const pkField = instance.constructor.primaryKeyAttribute;
         if (!pkField || (pkField === 'id' && instance.rawAttributes.id.type.key !== 'STRING'))
-          return; // En caso de tablas pivot sin PK explícito
+          return;
 
-        const lastRecord = await instance.constructor.findOne({
-          order: [[pkField, 'DESC']],
+        await sequelize.query(`SELECT pg_advisory_xact_lock(123456)`, {
           transaction: options.transaction,
-          raw: true,
-          paranoid: false, // Para incluir registros eliminados si hay soft deletes
         });
 
-        let newNumber = 1;
-        if (lastRecord && lastRecord[pkField] && lastRecord[pkField].startsWith('SES-')) {
-          const lastNumber = parseInt(lastRecord[pkField].replace('SES-', ''), 10);
-          if (!isNaN(lastNumber)) {
-            newNumber = lastNumber + 1;
-          }
-        }
+        const [result] = await sequelize.query(
+          `SELECT COALESCE(MAX(CAST(REPLACE(id_solicitud, 'SES-', '') AS INTEGER)), 0) + 1 AS next_num FROM solicitudes_espacios`,
+          { transaction: options.transaction, raw: true }
+        );
+        const newNumber = parseInt(result[0]?.next_num, 10) || 1;
 
         const padded = String(newNumber).padStart(5, '0');
         instance[pkField] = `SES-${padded}`;
         instance.codigo_reserva = `RES-${padded}`;
-        // Generar número de expediente: EXP-AUD-XXXXX
         const year = new Date().getFullYear();
         instance.numero_expediente = `EXP-AUD-${year}-${padded}`;
       },

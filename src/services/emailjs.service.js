@@ -1,11 +1,23 @@
+const fs = require('fs');
+const path = require('path');
 const AppError = require('../utils/AppError');
 
 const EMAILJS_API_URL = 'https://api.emailjs.com/api/v1.0/email/send';
 
+const LOGO_BASE64 = (() => {
+  try {
+    const logoPath = path.join(__dirname, '../../public/images/logo/mavet2.png');
+    const data = fs.readFileSync(logoPath);
+    return `data:image/png;base64,${data.toString('base64')}`;
+  } catch {
+    return 'https://mavet-web.vercel.app/images/logo/mavet2.png';
+  }
+})();
+
 class EmailjsService {
   buildTempPasswordHtml({ nombre, tempPassword }) {
     const year = new Date().getFullYear();
-    const logoUrl = 'https://mavet-web.vercel.app/images/logo/mavet2.png';
+    const logoUrl = LOGO_BASE64;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -123,6 +135,8 @@ class EmailjsService {
       template_params: {
         to_email: to,
         body: htmlBody,
+        subject: 'Recuperación de Contraseña - MAVET',
+        reply_to: process.env.EMAILJS_USER || 'adminmavet@gmail.com',
       },
     };
 
@@ -159,7 +173,7 @@ class EmailjsService {
 
   buildAuditReservationHtml(data) {
     const year = new Date().getFullYear();
-    const logoUrl = 'https://mavet-web.vercel.app/images/logo/mavet2.png';
+    const logoUrl = LOGO_BASE64;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -187,7 +201,7 @@ class EmailjsService {
             <td style="background:#ffffff;padding:40px 36px;">
               <p style="color:#333333;font-size:16px;line-height:1.7;margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;">Hola, <strong style="color:#800000;">${data.nombreResponsable}</strong></p>
               <p style="color:#555555;font-size:15px;line-height:1.7;margin:0 0 28px;font-family:'Segoe UI',Arial,sans-serif;">
-                Tu reserva para el <strong>${data.espacio}</strong> ha sido registrada exitosamente. Aquí están los detalles:
+                Tu reserva para el <strong>${data.motivo || data.espacio || 'su evento'}</strong> ha sido registrada exitosamente. Aquí están los detalles:
               </p>
 
               <!-- CÓDIGO DE RESERVA -->
@@ -218,13 +232,13 @@ class EmailjsService {
                       <tr>
                         <td style="padding:8px 0;border-bottom:1px solid #ebc2c2;">
                           <p style="color:#800000;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:2px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Tipo de Evento</p>
-                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Playfair Display',Georgia,serif;">${data.institucion}</p>
+                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Playfair Display',Georgia,serif;">${data.institucion || 'Persona Natural'}</p>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding:12px 0;border-bottom:1px solid #ebc2c2;">
                           <p style="color:#800000;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:2px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Nombre del Evento</p>
-                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Playfair Display',Georgia,serif;">${data.motivo}</p>
+                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Playfair Display',Georgia,serif;">${data.motivo || 'No especificado'}</p>
                         </td>
                       </tr>
                       <tr>
@@ -245,7 +259,7 @@ class EmailjsService {
                       <tr>
                         <td style="padding:12px 0;">
                           <p style="color:#800000;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:2px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Recursos Solicitados</p>
-                          <p style="color:#333333;font-size:14px;margin:4px 0 0;font-family:'Segoe UI',Arial,sans-serif;">${data.recursosSolicitados}</p>
+                          <p style="color:#333333;font-size:14px;margin:4px 0 0;font-family:'Segoe UI',Arial,sans-serif;">${data.recursosSolicitados || 'Ninguno'}</p>
                         </td>
                       </tr>
                       `
@@ -261,7 +275,7 @@ class EmailjsService {
                 <tr>
                   <td style="background:#fff9f0;border-radius:12px;border-left:4px solid #d4a843;padding:16px 20px;">
                     <p style="color:#8a6d2a;font-size:12px;font-weight:700;margin:0 0 4px;font-family:'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;">Fecha de Registro</p>
-                    <p style="color:#6b5a30;font-size:14px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">${data.fechaRegistro}</p>
+                    <p style="color:#6b5a30;font-size:14px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">${data.fechaRegistro || '—'}</p>
                   </td>
                 </tr>
               </table>
@@ -327,6 +341,8 @@ class EmailjsService {
       template_params: {
         to_email: data.to,
         body: htmlBody,
+        subject: 'Confirmación de Reserva - MAVET',
+        reply_to: process.env.EMAILJS_USER || 'adminmavet@gmail.com',
       },
     };
 

@@ -11,8 +11,9 @@ const cacheService = require('../../../services/cache.service');
 const emailjsService = require('../../../services/emailjs.service');
 
 const formatDateForEmail = (dateStr) => {
-  if (!dateStr) return '';
+  if (!dateStr) return '—';
   const date = new Date(dateStr + 'T00:00:00');
+  if (isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('es-VE', {
     weekday: 'long',
     year: 'numeric',
@@ -22,12 +23,13 @@ const formatDateForEmail = (dateStr) => {
 };
 
 const formatTimeForEmail = (timeStr) => {
-  if (!timeStr) return '';
-  return timeStr.slice(0, 5); // HH:mm
+  if (!timeStr) return '—';
+  return timeStr.slice(0, 5);
 };
 
-const formatDateRegistration = () => {
-  const now = new Date();
+const formatDateRegistration = (date) => {
+  const now = date ? new Date(date) : new Date();
+  if (isNaN(now.getTime())) return '—';
   return now.toLocaleDateString('es-VE', {
     weekday: 'long',
     year: 'numeric',
@@ -126,7 +128,7 @@ const createSolicitud = async (solicitudData, usuario = null) => {
   if (result.correo_electronico) {
     try {
       const espacio = await EspacioMuseo.findByPk(result.id_espacio);
-      const nombreEspacio = espacio ? espacio.nombre_espacio : 'Auditorio MAVET';
+      const nombreEspacio = espacio?.nombre_espacio || 'Auditorio MAVET';
 
       await emailjsService.sendAuditReservationConfirmation({
         to: result.correo_electronico,
