@@ -11,10 +11,22 @@ exports.createInstructor = async (data) => {
   return await Instructor.create(data);
 };
 
-exports.getAllInstructores = async () => {
-  return await Instructor.findAll({
+exports.getAllInstructores = async (page = null, limit = null) => {
+  const query = {
     include: [Persona],
-  });
+    order: [[Persona, 'apellidos', 'ASC']],
+  };
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    query.limit = limit;
+    query.offset = offset;
+    const { count, rows } = await Instructor.findAndCountAll(query);
+    return {
+      data: rows,
+      meta: { totalItems: count, totalPages: Math.ceil(count / limit), currentPage: page },
+    };
+  }
+  return await Instructor.findAll(query);
 };
 
 exports.getInstructorById = async (id) => {

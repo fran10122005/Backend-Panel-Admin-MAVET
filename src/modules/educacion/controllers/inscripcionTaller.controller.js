@@ -8,7 +8,9 @@ exports.inscribirAlumno = catchAsync(async (req, res) => {
 });
 
 exports.getAllInscripciones = catchAsync(async (req, res) => {
-  const result = await inscripcionService.getInscripcionesConDetalles();
+  const page = parseInt(req.query.page) || null;
+  const limit = parseInt(req.query.limit) || null;
+  const result = await inscripcionService.getInscripcionesConDetalles(page, limit);
   res.status(200).json(result);
 });
 

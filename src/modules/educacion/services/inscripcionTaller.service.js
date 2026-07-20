@@ -71,8 +71,24 @@ const {
 } = require('../../../models');
 const { normalizeCedula } = require('../../../utils/cedula');
 
-const getInscripcionesConDetalles = async () => {
-  const inscripciones = await InscripcionTaller.findAll();
+const getInscripcionesConDetalles = async (page = null, limit = null) => {
+  let inscripciones;
+  let totalItems = 0;
+
+  if (page && limit) {
+    const offset = (page - 1) * limit;
+    const { count, rows } = await InscripcionTaller.findAndCountAll({
+      limit,
+      offset,
+      order: [['fecha_inscripcion', 'DESC']],
+    });
+    inscripciones = rows;
+    totalItems = count;
+  } else {
+    inscripciones = await InscripcionTaller.findAll({
+      order: [['fecha_inscripcion', 'DESC']],
+    });
+  }
 
   const result = [];
   for (let ins of inscripciones) {
@@ -97,6 +113,17 @@ const getInscripcionesConDetalles = async () => {
       Taller: taller,
       Representante: representante,
     });
+  }
+
+  if (page && limit) {
+    return {
+      data: result,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+    };
   }
   return result;
 };

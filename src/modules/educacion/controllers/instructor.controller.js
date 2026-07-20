@@ -7,7 +7,9 @@ exports.createInstructor = catchAsync(async (req, res) => {
 });
 
 exports.getAllInstructores = catchAsync(async (req, res) => {
-  const result = await instructorService.getAllInstructores();
+  const page = parseInt(req.query.page) || null;
+  const limit = parseInt(req.query.limit) || null;
+  const result = await instructorService.getAllInstructores(page, limit);
   res.status(200).json(result);
 });
 
