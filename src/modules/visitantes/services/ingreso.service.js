@@ -229,18 +229,19 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
     let start, end;
     if (fecha.length === 4) {
       // YYYY
-      start = new Date(`${fecha}-01-01T00:00:00.000Z`);
-      end = new Date(`${fecha}-12-31T23:59:59.999Z`);
+      start = new Date(parseInt(fecha, 10), 0, 1, 0, 0, 0, 0);
+      end = new Date(parseInt(fecha, 10), 11, 31, 23, 59, 59, 999);
     } else if (fecha.length === 7) {
       // YYYY-MM
-      const [year, month] = fecha.split('-');
-      start = new Date(`${year}-${month}-01T00:00:00.000Z`);
+      const [year, month] = fecha.split('-').map(Number);
+      start = new Date(year, month - 1, 1, 0, 0, 0, 0);
       const lastDay = new Date(year, month, 0).getDate();
-      end = new Date(`${year}-${month}-${lastDay}T23:59:59.999Z`);
+      end = new Date(year, month - 1, lastDay, 23, 59, 59, 999);
     } else {
       // YYYY-MM-DD
-      start = new Date(`${fecha}T00:00:00.000Z`);
-      end = new Date(`${fecha}T23:59:59.999Z`);
+      const [year, month, day] = fecha.split('-').map(Number);
+      start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      end = new Date(year, month - 1, day, 23, 59, 59, 999);
     }
     where.fecha_hora_entrada = { [Op.between]: [start, end] };
   }

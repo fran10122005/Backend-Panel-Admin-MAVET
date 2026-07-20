@@ -47,7 +47,16 @@ const createSolicitud = async (solicitudData, usuario = null) => {
   let finalIdPersona = solicitudData.id_persona;
 
   if (!finalIdPersona && solicitudData.cedula) {
-    const persona = await Persona.findOne({ where: { cedula: solicitudData.cedula } });
+    const cedulaLimpia = solicitudData.cedula.replace(/\D/g, '');
+    let persona = await Persona.findOne({ where: { cedula: solicitudData.cedula } });
+    if (!persona && cedulaLimpia) {
+      persona = await Persona.findOne({
+        where: sequelize.where(
+          sequelize.fn('REGEXP_REPLACE', sequelize.col('cedula'), '[^0-9]', '', 'g'),
+          cedulaLimpia
+        ),
+      });
+    }
     if (!persona) {
       throw new AppError(
         'La persona con cédula ' +
