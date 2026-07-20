@@ -1,4 +1,3 @@
-/* global fetch */
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
@@ -41,7 +40,9 @@ function resolveFonts(doc) {
         doc.registerFont('_FB', fs.existsSync(c.bold) ? c.bold : c.normal);
         return { normal: '_F', bold: '_FB' };
       }
-    } catch {}
+    } catch (_) {
+      /* empty */
+    }
   }
   return { normal: 'Helvetica', bold: 'Helvetica-Bold' };
 }
@@ -74,7 +75,9 @@ function drawHeader(doc, title, pw, F, logoSize) {
   try {
     doc.image(LOGO_IMG, margin, 12, { width: ls });
     logoWidth = ls + 6;
-  } catch (e) {}
+  } catch (_) {
+    /* empty */
+  }
 
   const tx = margin + logoWidth;
   const textW = pw - tx - margin;
@@ -163,9 +166,15 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
 
         // ── Grid: left + top border ──
         function strokeCell(x, yy, w, hh) {
-          doc.lineWidth(0.4).strokeColor(C.line)
-            .moveTo(x, yy).lineTo(x + w, yy).stroke()
-            .moveTo(x, yy).lineTo(x, yy + hh).stroke();
+          doc
+            .lineWidth(0.4)
+            .strokeColor(C.line)
+            .moveTo(x, yy)
+            .lineTo(x + w, yy)
+            .stroke()
+            .moveTo(x, yy)
+            .lineTo(x, yy + hh)
+            .stroke();
         }
 
         const drawTableHead = (cy) => {
@@ -182,8 +191,12 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
             cx += h.width;
           });
           // right border
-          doc.lineWidth(0.4).strokeColor(C.line)
-            .moveTo(cx, cy).lineTo(cx, cy + rowH).stroke();
+          doc
+            .lineWidth(0.4)
+            .strokeColor(C.line)
+            .moveTo(cx, cy)
+            .lineTo(cx, cy + rowH)
+            .stroke();
           return cy + rowH;
         };
 
@@ -201,11 +214,19 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
             });
             cx += h.width;
           });
-          doc.lineWidth(0.4).strokeColor(C.line)
-            .moveTo(cx, cy).lineTo(cx, cy + rowH).stroke();
+          doc
+            .lineWidth(0.4)
+            .strokeColor(C.line)
+            .moveTo(cx, cy)
+            .lineTo(cx, cy + rowH)
+            .stroke();
           // bottom
-          doc.lineWidth(0.4).strokeColor(C.line)
-            .moveTo(m, cy + rowH).lineTo(pw - m, cy + rowH).stroke();
+          doc
+            .lineWidth(0.4)
+            .strokeColor(C.line)
+            .moveTo(m, cy + rowH)
+            .lineTo(pw - m, cy + rowH)
+            .stroke();
         };
 
         y = drawTableHead(y);
@@ -228,24 +249,24 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
         }
         const sigW = 260;
         const sigX = (pw - sigW) / 2;
-        doc.lineWidth(0.5).strokeColor(C.text)
-          .moveTo(sigX, y).lineTo(sigX + sigW, y).stroke();
-        doc.fillColor(C.text).font(F.bold).fontSize(10)
+        doc
+          .lineWidth(0.5)
+          .strokeColor(C.text)
+          .moveTo(sigX, y)
+          .lineTo(sigX + sigW, y)
+          .stroke();
+        doc
+          .fillColor(C.text)
+          .font(F.bold)
+          .fontSize(10)
           .text(signatureLabel || 'Coordinador(a) MAVET', sigX, y + 6, {
-            width: sigW, align: 'center',
+            width: sigW,
+            align: 'center',
           });
-        doc.fontSize(9).font(F.normal)
+        doc
+          .fontSize(9)
+          .font(F.normal)
           .text('Firma Autorizada', sigX, y + 20, { width: sigW, align: 'center' });
-
-        // ── Sello a la derecha ──
-        const sx = pw - m - 40, sy2 = y - 5;
-        doc.lineWidth(0.6).strokeColor(C.brand).circle(sx, sy2, 18).stroke();
-        doc.fontSize(6.5).font(F.bold).fillColor(C.brand)
-          .text('MAVET', sx, sy2 - 4, { align: 'center' });
-        doc.fontSize(4.5).font(F.normal)
-          .text('MUSEO DE', sx, sy2 + 3, { align: 'center' })
-          .text('ARTES VISUALES', sx, sy2 + 8, { align: 'center' })
-          .text('DEL TÁCHIRA', sx, sy2 + 13, { align: 'center' });
 
         drawHeadersAndFooters(doc, title, pw, F, m);
 
@@ -428,22 +449,6 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
           .fontSize(9)
           .font(F.normal)
           .text('Firma Autorizada', 40, y + 20);
-
-        // ── Sello ──
-        const sx = pw - 65,
-          sy = y - 8;
-        doc.lineWidth(0.6).strokeColor(C.brand).circle(sx, sy, 18).stroke();
-        doc
-          .fontSize(6.5)
-          .font(F.bold)
-          .fillColor(C.brand)
-          .text('MAVET', sx, sy - 4, { align: 'center' });
-        doc
-          .fontSize(4.5)
-          .font(F.normal)
-          .text('MUSEO DE', sx, sy + 3, { align: 'center' })
-          .text('ARTES VISUALES', sx, sy + 8, { align: 'center' })
-          .text('DEL TÁCHIRA', sx, sy + 13, { align: 'center' });
 
         drawHeadersAndFooters(doc, 'CARTA DE AVAL', pw, F, MARGIN);
         doc.end();
@@ -988,19 +993,11 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
         const cardX = (pw - cardW) / 2;
         const cardY = mmToPt(16);
 
-        doc
-          .rect(cardX, cardY, cardW, mmToPt(148))
-          .fill('#FFFFFF');
-        doc
-          .rect(cardX, cardY, cardW, mmToPt(148))
-          .lineWidth(0.5)
-          .strokeColor(C.line)
-          .stroke();
+        doc.rect(cardX, cardY, cardW, mmToPt(148)).fill('#FFFFFF');
+        doc.rect(cardX, cardY, cardW, mmToPt(148)).lineWidth(0.5).strokeColor(C.line).stroke();
 
         // Top accent bar
-        doc
-          .rect(cardX, cardY, cardW, mmToPt(3))
-          .fill(C.brand);
+        doc.rect(cardX, cardY, cardW, mmToPt(3)).fill(C.brand);
 
         // ── QR code ─────────────────────────────────────────────────────────
         const qrSize = mmToPt(85);
@@ -1023,7 +1020,8 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
           .font(F.bold)
           .fontSize(9)
           .text('REGISTRO DE INGRESO', MARGIN, qrY + qrSize + mmToPt(8), {
-            width: pw - 2 * MARGIN, align: 'center',
+            width: pw - 2 * MARGIN,
+            align: 'center',
           });
 
         doc
@@ -1031,7 +1029,8 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
           .font(F.normal)
           .fontSize(8)
           .text('Escanee el código con su teléfono', MARGIN, qrY + qrSize + mmToPt(15), {
-            width: pw - 2 * MARGIN, align: 'center',
+            width: pw - 2 * MARGIN,
+            align: 'center',
           });
 
         // ── URL box ─────────────────────────────────────────────────────────
@@ -1052,7 +1051,8 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
           .font(F.normal)
           .fontSize(6.5)
           .text('O visite:', cardX + mmToPt(10), urlBoxY + mmToPt(2), {
-            width: cardW - mmToPt(20), align: 'center',
+            width: cardW - mmToPt(20),
+            align: 'center',
           });
 
         doc
@@ -1060,24 +1060,33 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
           .font(F.bold)
           .fontSize(7)
           .text(publicUrl, cardX + mmToPt(10), urlBoxY + mmToPt(8), {
-            width: cardW - mmToPt(20), align: 'center',
+            width: cardW - mmToPt(20),
+            align: 'center',
           });
 
         // ── Instructions ────────────────────────────────────────────────────
         const instructions = [
-          { title: '1. Abra la cámara', desc: 'Apunte al código QR desde la cámara de su teléfono.' },
-          { title: '2. Toque el enlace', desc: 'Presione la notificación o enlace que aparece en pantalla.' },
-          { title: '3. Complete sus datos', desc: 'Ingrese su nombre, cédula y seleccione el motivo de visita.' },
-          { title: '4. Ingreso registrado', desc: 'Su entrada quedará registrada automáticamente en el sistema.' },
+          {
+            title: '1. Abra la cámara',
+            desc: 'Apunte al código QR desde la cámara de su teléfono.',
+          },
+          {
+            title: '2. Toque el enlace',
+            desc: 'Presione la notificación o enlace que aparece en pantalla.',
+          },
+          {
+            title: '3. Complete sus datos',
+            desc: 'Ingrese su nombre, cédula y seleccione el motivo de visita.',
+          },
+          {
+            title: '4. Ingreso registrado',
+            desc: 'Su entrada quedará registrada automáticamente en el sistema.',
+          },
         ];
 
         let iy = cardY + mmToPt(100);
         instructions.forEach((inst) => {
-          doc
-            .fillColor(C.brand)
-            .font(F.bold)
-            .fontSize(8.5)
-            .text(inst.title, mmToPt(28), iy);
+          doc.fillColor(C.brand).font(F.bold).fontSize(8.5).text(inst.title, mmToPt(28), iy);
 
           doc
             .fillColor(C.textSoft)
