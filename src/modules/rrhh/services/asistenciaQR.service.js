@@ -587,6 +587,8 @@ exports.getResumenSemanalTodos = async () => {
   const trabajadores = await Trabajador.findAll({
     where: { estado: true },
     include: [{ model: CargoTrabajador }],
+    distinct: true,
+    order: [['id_trabajador', 'ASC']],
   });
 
   const registros = await AsistenciaQR.findAll({
@@ -594,10 +596,15 @@ exports.getResumenSemanalTodos = async () => {
       fecha: { [Op.between]: [inicioStr, finStr] },
     },
     include: [{ model: Trabajador }],
+    distinct: true,
+    order: [
+      ['id_trabajador', 'ASC'],
+      ['fecha', 'ASC'],
+    ],
   });
 
   const resumen = trabajadores.map((t) => {
-    const tRegistros = registros.filter((r) => r.id_trabajador === t.id_trabajador);
+    const tRegistros = registros.filter((r) => String(r.id_trabajador) === String(t.id_trabajador));
     const horasAcumuladas = tRegistros.reduce(
       (sum, r) =>
         sum + (parseFloat(r.horas_cumplidas_dia) || 0) + (parseFloat(r.horas_justificadas) || 0),
