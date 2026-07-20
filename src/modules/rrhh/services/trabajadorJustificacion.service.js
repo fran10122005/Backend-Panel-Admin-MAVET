@@ -1,4 +1,9 @@
-const { TrabajadorJustificacion, Trabajador, TrabajadorHorario } = require('../../../models');
+const {
+  TrabajadorJustificacion,
+  Trabajador,
+  TrabajadorHorario,
+  AsistenciaQR,
+} = require('../../../models');
 const AppError = require('../../../utils/AppError');
 const { Op } = require('sequelize');
 const path = require('path');
@@ -143,25 +148,103 @@ exports.obtenerJustificacionPorId = async (id_justificacion) => {
   return justificacion;
 };
 
+function calcularHorasJustificadas(justificacion, horasSemanales) {
+  const horasDiarias = horasSemanales > 0 ? horasSemanales / 5 : 8;
+  const HORA_INICIO_JORNADA = 8 * 60;
+  const HORA_FIN_JORNADA = 17 * 60;
+  const DESCANSO = 60;
+
+  switch (justificacion.tipo) {
+    case 'falta_dia_completo':
+      return horasDiarias;
+
+    case 'falta_parcial': {
+      if (justificacion.hora_inicio && justificacion.hora_fin) {
+        const [hI, mI] = justificacion.hora_inicio.split(':').map(Number);
+        const [hF, mF] = justificacion.hora_fin.split(':').map(Number);
+        const diffMin = Math.abs(hF * 60 + mF - (hI * 60 + mI));
+        return Math.round((diffMin / 60) * 100) / 100;
+      }
+      return horasDiarias / 2;
+    }
+
+    case 'llegada_tardia': {
+      if (justificacion.hora_inicio) {
+        const [hI, mI] = justificacion.hora_inicio.split(':').map(Number);
+        const minutosRetardo = Math.max(0, hI * 60 + mI - HORA_INICIO_JORNADA);
+        return Math.round((minutosRetardo / 60) * 100) / 100;
+      }
+      return 1;
+    }
+
+    case 'salida_anticipada': {
+      if (justificacion.hora_fin) {
+        const [hF, mF] = justificacion.hora_fin.split(':').map(Number);
+        const minutosAnticipo = Math.max(0, HORA_FIN_JORNADA - DESCANSO - (hF * 60 + mF));
+        return Math.round((minutosAnticipo / 60) * 100) / 100;
+      }
+      return 1;
+    }
+
+    default:
+      return horasDiarias;
+  }
+}
+
 exports.actualizarEstadoJustificacion = async (
   id_justificacion,
   estado,
   usuario_id,
   observaciones = null
 ) => {
-  const justificacion = await TrabajadorJustificacion.findByPk(id_justificacion);
+  const justificacion = await TrabajadorJustificacion.findByPk(id_justificacion, {
+    include: [{ model: Trabajador }],
+  });
   if (!justificacion) throw new AppError('Justificación no encontrada', 404);
 
   if (!['pendiente', 'aprobada', 'rechazada'].includes(estado)) {
     throw new AppError('Estado inválido', 400);
   }
 
+  const estadoAnterior = justificacion.estado;
   justificacion.estado = estado;
   justificacion.revisada_por = usuario_id;
   justificacion.fecha_revision = new Date();
   justificacion.observaciones_revision = observaciones;
 
   await justificacion.save();
+
+  if (estado === 'aprobada') {
+    const horasSemanales = parseFloat(justificacion.Trabajador?.horas_semanales) || 40;
+    const horasAcreditadas = calcularHorasJustificadas(justificacion, horasSemanales);
+
+    let asistencia = await AsistenciaQR.findOne({
+      where: {
+        id_trabajador: justificacion.id_trabajador,
+        fecha: justificacion.fecha,
+      },
+    });
+
+    if (!asistencia) {
+      await AsistenciaQR.create({
+        id_trabajador: justificacion.id_trabajador,
+        fecha: justificacion.fecha,
+        horas_cumplidas_dia: 0,
+        horas_justificadas: horasAcreditadas,
+        tipo_justificacion: 'lottt',
+        observaciones: `Justificación aprobada: ${justificacion.motivo}`,
+      });
+    } else {
+      asistencia.horas_justificadas =
+        (parseFloat(asistencia.horas_justificadas) || 0) + horasAcreditadas;
+      asistencia.tipo_justificacion = 'lottt';
+      if (!asistencia.observaciones) {
+        asistencia.observaciones = `Justificación aprobada: ${justificacion.motivo}`;
+      }
+      await asistencia.save();
+    }
+  }
+
   return justificacion;
 };
 
