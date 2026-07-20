@@ -102,6 +102,35 @@ exports.crearJustificacion = async (id_trabajador, datos, file = null) => {
     estado: 'pendiente',
   });
 
+  const horasSemanales = parseFloat(trabajador.horas_semanales) || 40;
+  const horasAcreditadas = calcularHorasJustificadas(justificacion, horasSemanales);
+
+  let asistencia = await AsistenciaQR.findOne({
+    where: {
+      id_trabajador,
+      fecha,
+    },
+  });
+
+  if (!asistencia) {
+    await AsistenciaQR.create({
+      id_trabajador,
+      fecha,
+      horas_cumplidas_dia: 0,
+      horas_justificadas: horasAcreditadas,
+      tipo_justificacion: 'lottt',
+      observaciones: `Justificación: ${motivo}`,
+    });
+  } else {
+    asistencia.horas_justificadas =
+      (parseFloat(asistencia.horas_justificadas) || 0) + horasAcreditadas;
+    asistencia.tipo_justificacion = 'lottt';
+    if (!asistencia.observaciones) {
+      asistencia.observaciones = `Justificación: ${motivo}`;
+    }
+    await asistencia.save();
+  }
+
   return justificacion;
 };
 
