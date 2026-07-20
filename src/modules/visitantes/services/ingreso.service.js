@@ -225,28 +225,50 @@ exports.registrarIngreso = async (data) => {
 exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
   const { Op } = require('sequelize');
   const where = {};
+  const conditions = [];
   if (fecha) {
-    let start, end;
     if (fecha.length === 4) {
       // YYYY
-      start = new Date(parseInt(fecha, 10), 0, 1, 0, 0, 0, 0);
-      end = new Date(parseInt(fecha, 10), 11, 31, 23, 59, 59, 999);
+      conditions.push(
+        sequelize.where(
+          sequelize.fn(
+            'TO_CHAR',
+            sequelize.literal("fecha_hora_entrada AT TIME ZONE 'America/Caracas'"),
+            'YYYY'
+          ),
+          fecha
+        )
+      );
     } else if (fecha.length === 7) {
       // YYYY-MM
-      const [year, month] = fecha.split('-').map(Number);
-      start = new Date(year, month - 1, 1, 0, 0, 0, 0);
-      const lastDay = new Date(year, month, 0).getDate();
-      end = new Date(year, month - 1, lastDay, 23, 59, 59, 999);
+      conditions.push(
+        sequelize.where(
+          sequelize.fn(
+            'TO_CHAR',
+            sequelize.literal("fecha_hora_entrada AT TIME ZONE 'America/Caracas'"),
+            'YYYY-MM'
+          ),
+          fecha
+        )
+      );
     } else {
       // YYYY-MM-DD
-      const [year, month, day] = fecha.split('-').map(Number);
-      start = new Date(year, month - 1, day, 0, 0, 0, 0);
-      end = new Date(year, month - 1, day, 23, 59, 59, 999);
+      conditions.push(
+        sequelize.where(
+          sequelize.fn(
+            'DATE',
+            sequelize.literal("fecha_hora_entrada AT TIME ZONE 'America/Caracas'")
+          ),
+          fecha
+        )
+      );
     }
-    where.fecha_hora_entrada = { [Op.between]: [start, end] };
   }
   if (id_solicitud) {
-    where.id_solicitud = id_solicitud;
+    conditions.push({ id_solicitud });
+  }
+  if (conditions.length > 0) {
+    where[Op.and] = conditions;
   }
   const query = {
     where,
@@ -268,11 +290,12 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
 
 exports.getIngresosStats = async () => {
   const { Op, fn, col } = require('sequelize');
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
 
   const visitasHoyRaw = await RegistroIngreso.findAll({
-    where: { fecha_hora_entrada: { [Op.gte]: hoy } },
+    where: sequelize.where(
+      sequelize.fn('DATE', sequelize.literal("fecha_hora_entrada AT TIME ZONE 'America/Caracas'")),
+      sequelize.fn('CURRENT_DATE')
+    ),
     attributes: [
       [fn('COUNT', col('id_ingreso')), 'total_ingresos'],
       [fn('SUM', col('cantidad_acompanantes')), 'total_acompanantes'],
