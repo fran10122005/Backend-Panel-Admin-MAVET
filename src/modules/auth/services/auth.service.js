@@ -5,8 +5,6 @@ const { Op } = require('sequelize');
 const { Usuario, Role, Trabajador } = require('../../../models');
 const AppError = require('../../../utils/AppError');
 
-const MAX_INTENTOS = 5;
-const BLOQUEO_MINUTOS = 30;
 const REFRESH_EXPIRES_MS = 7 * 24 * 60 * 60 * 1000;
 
 const signAccessToken = (id) => {
@@ -101,35 +99,8 @@ exports.login = async (correo, password, req = null) => {
     );
   }
 
-  const ahora = new Date();
-  if (usuario.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > ahora) {
-    const minutosRestantes = Math.ceil((new Date(usuario.bloqueado_hasta) - ahora) / 60000);
-    throw new AppError(
-      `Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intente de nuevo en ${minutosRestantes} minuto(s).`,
-      429
-    );
-  }
-
   const isMatch = await bcrypt.compare(password, usuario.password_hash);
   if (!isMatch) {
-    usuario.intentos_fallidos = (usuario.intentos_fallidos || 0) + 1;
-    if (usuario.intentos_fallidos >= MAX_INTENTOS) {
-      usuario.bloqueado_hasta = new Date(ahora.getTime() + BLOQUEO_MINUTOS * 60000);
-      await usuario.save();
-      const auditoria = require('./auditoria.service');
-      await auditoria.registrar({
-        id_usuario: usuario.id_usuario,
-        correo: usuario.correo,
-        tipo: 'error',
-        detalle: `Cuenta bloqueada tras ${MAX_INTENTOS} intentos fallidos`,
-        req,
-      });
-      throw new AppError(
-        `Cuenta bloqueada temporalmente por ${BLOQUEO_MINUTOS} minutos debido a múltiples intentos fallidos.`,
-        429
-      );
-    }
-    await usuario.save();
     throw new AppError('Correo o contraseña incorrectos', 401);
   }
 

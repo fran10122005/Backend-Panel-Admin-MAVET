@@ -27,6 +27,30 @@ const FONT_NORMAL = 'Helvetica';
 const LOGO_PATH = path.join(__dirname, '../../public/images/logo/mavet2.png');
 const LOGO_IMG = fs.readFileSync(LOGO_PATH);
 
+const GOBER_PATH = path.join(__dirname, 'gober.png');
+const DIRCUL_PATH = path.join(__dirname, 'DirCul.png');
+
+function loadImageSafe(p) {
+  try {
+    if (fs.existsSync(p)) return fs.readFileSync(p);
+  } catch (_) {
+    /* empty */
+  }
+  return null;
+}
+
+const GOBER_IMG = loadImageSafe(GOBER_PATH);
+const DIRCUL_IMG = loadImageSafe(DIRCUL_PATH);
+
+function getPngDimensions(buf) {
+  if (!buf || buf.length < 24) return null;
+  if (buf[0] !== 0x89 || buf[1] !== 0x50 || buf[2] !== 0x4e || buf[3] !== 0x47) return null;
+  const w = buf.readUInt32BE(16);
+  const h = buf.readUInt32BE(20);
+  if (w <= 0 || h <= 0) return null;
+  return { width: w, height: h };
+}
+
 // ─── Font resolution (Arial for better Spanish support) ────────────────────
 function resolveFonts(doc) {
   const candidates = [
@@ -67,49 +91,43 @@ function collectBuffer(doc) {
 }
 
 // ─── Encabezado institucional ───────────────────────────────────────────────
-function drawHeader(doc, title, pw, F, logoSize) {
+function drawHeader(doc, title, pw, F) {
   const margin = MARGIN;
-  const ls = logoSize || 42;
-  let logoWidth = 0;
+  const headerY = 15;
+  const targetH = 48;
 
-  try {
-    doc.image(LOGO_IMG, margin, 12, { width: ls });
-    logoWidth = ls + 6;
-  } catch (_) {
-    /* empty */
+  if (GOBER_IMG) {
+    try {
+      const d = getPngDimensions(GOBER_IMG);
+      if (d) doc.image(GOBER_IMG, margin, headerY, { width: (d.width * targetH) / d.height });
+    } catch (_) {
+      /* empty */
+    }
   }
 
-  const tx = margin + logoWidth;
-  const textW = pw - tx - margin;
+  if (LOGO_IMG) {
+    try {
+      const d = getPngDimensions(LOGO_IMG);
+      if (d) {
+        const w = (d.width * targetH) / d.height;
+        doc.image(LOGO_IMG, (pw - w) / 2, headerY, { width: w });
+      }
+    } catch (_) {
+      /* empty */
+    }
+  }
 
-  doc
-    .fillColor(C.text)
-    .font(F.bold)
-    .fontSize(11)
-    .text('MUSEO DE ARTES VISUALES DEL ESTADO TÁCHIRA', tx, 14, {
-      width: textW,
-      lineBreak: false,
-    });
-
-  doc
-    .fillColor(C.brand)
-    .font(F.bold)
-    .fontSize(10)
-    .text(title, tx, 34, { width: textW, lineBreak: false });
-
-  const barY = 56;
-  doc
-    .lineWidth(2)
-    .strokeColor(C.brand)
-    .moveTo(margin, barY)
-    .lineTo(pw - margin, barY)
-    .stroke();
-  doc
-    .lineWidth(0.5)
-    .strokeColor(C.lineAccent)
-    .moveTo(margin, barY + 2.5)
-    .lineTo(pw - margin, barY + 2.5)
-    .stroke();
+  if (DIRCUL_IMG) {
+    try {
+      const d = getPngDimensions(DIRCUL_IMG);
+      if (d) {
+        const w = (d.width * targetH) / d.height;
+        doc.image(DIRCUL_IMG, pw - margin - w, headerY, { width: w });
+      }
+    } catch (_) {
+      /* empty */
+    }
+  }
 }
 
 // ─── Encabezados y Pies de página ──────────────────────────────────────────
@@ -117,29 +135,38 @@ function drawHeadersAndFooters(doc, title, pw, F, margin = MARGIN) {
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
-    drawHeader(doc, title, pw, F, 48);
+    drawHeader(doc, title, pw, F);
     const h = doc.page.height;
+
+    const footerTop = h - 100;
     doc
-      .lineWidth(0.3)
-      .strokeColor(C.line)
-      .moveTo(margin, h - 34)
-      .lineTo(pw - margin, h - 34)
-      .stroke();
-    const today = new Date().toLocaleDateString('es-VE', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-    doc
-      .fontSize(7)
-      .fillColor(C.textMuted)
-      .font(F.normal)
-      .text(today, margin, h - 26, { lineBreak: false })
-      .text(`Pág. ${i + 1} de ${range.count}`, margin, h - 26, {
-        width: pw - 2 * margin,
-        align: 'right',
-        lineBreak: false,
-      });
+      .fillColor(C.brand)
+      .font(F.bold)
+      .fontSize(10)
+      .text(
+        '\u00a1MAVET donde el Arte y el Tiempo Inspiran Transformar los Espacios!',
+        margin,
+        footerTop,
+        { width: pw - 2 * margin, align: 'center' }
+      );
+
+    doc.fillColor(C.text).font(F.normal).fontSize(7.5);
+
+    const lines = [
+      '"La historia es cuestión de supervivencia. Si no tuviéramos pasado, estaríamos desprovistos de la impresión que define a nuestro ser"',
+      '18 de mayo D\u00eda Internacional de los Museos',
+      '"Museos Hiperconectados: Enfoques Nuevos, P\u00fablicos Nuevos" - ICOM',
+      'Ubicado en Carrera 6 con Esquina de la Calle 4 Casona 25 Centro - San Crist\u00f3bal - Edo. T\u00e1chira',
+      'Tel\u00e9fonos: 0276\u20143433102 Rf: 3022506-2',
+    ];
+
+    let fy = footerTop + 15;
+    const maxW = pw - 2 * margin;
+    for (const line of lines) {
+      const lh = doc.heightOfString(line, { width: maxW, align: 'center' });
+      doc.text(line, margin, fy, { width: maxW, align: 'center' });
+      fy += lh + 1.5;
+    }
   }
 }
 
@@ -232,7 +259,7 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
         y = drawTableHead(y);
 
         for (let r = 0; r < rows.length; r++) {
-          if (y + rowH > ph - m - 20) {
+          if (y + rowH > ph - 120) {
             doc.addPage();
             y = m + 60;
             y = drawTableHead(y);
@@ -243,7 +270,7 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
 
         // ── Firma centrada ──
         y += 30;
-        if (y > ph - 100) {
+        if (y > ph - 130) {
           doc.addPage();
           y = m + 60;
         }
@@ -399,7 +426,7 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
             : [['Sin registros', '', '', '', '']];
 
         for (let r = 0; r < trows.length; r++) {
-          if (y + rowH > ph - 160) {
+          if (y + rowH > ph - 180) {
             doc.addPage();
             y = 120; // Debajo del header global
             y = drawHeadCarta(y);
@@ -435,7 +462,7 @@ const generateCartaAvalPdf = async (trabajador, asistencias) => {
 
         // ── Firma ──
         y += 30;
-        if (y > ph - 130) {
+        if (y > ph - 150) {
           doc.addPage();
           y = 120;
         }
@@ -986,7 +1013,7 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
         const ph = doc.page.height;
         const mmToPt = (mm) => mm * 2.83465;
 
-        drawHeader(doc, 'CÓDIGO QR – AUTO INGRESO', pw, F, 48);
+        drawHeader(doc, 'CÓDIGO QR – AUTO INGRESO', pw, F);
 
         // ── Card container ──────────────────────────────────────────────────
         const cardW = mmToPt(130);

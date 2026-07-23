@@ -8,7 +8,7 @@ const { z } = require('zod');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
   message: 'Demasiados intentos de inicio de sesión. Intente de nuevo en 15 minutos.',
   skipSuccessfulRequests: true,
   standardHeaders: true,
@@ -17,7 +17,7 @@ const loginLimiter = rateLimit({
 
 const sensitiveLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 30,
   message: 'Demasiadas solicitudes. Intente de nuevo en 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
