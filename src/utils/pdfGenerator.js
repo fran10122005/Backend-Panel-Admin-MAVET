@@ -27,8 +27,8 @@ const FONT_NORMAL = 'Helvetica';
 const LOGO_PATH = path.join(__dirname, '../../public/images/logo/mavet2.png');
 const LOGO_IMG = fs.readFileSync(LOGO_PATH);
 
-const GOBER_PATH = path.join(__dirname, 'gober.png');
-const DIRCUL_PATH = path.join(__dirname, 'DirCul.png');
+const GOBER_PATH = path.join(__dirname, '../../public/images/logo/gober.png');
+const DIRCUL_PATH = path.join(__dirname, '../../public/images/logo/DirCul.png');
 
 function loadImageSafe(p) {
   try {
