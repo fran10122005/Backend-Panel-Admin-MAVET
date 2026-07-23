@@ -97,127 +97,133 @@ const formatTitle = (modelName, item) => {
   }
 };
 
-exports.getPapeleraGlobal = async () => {
+const MODELOS = [
+  {
+    model: Obra,
+    tipo: 'Obra',
+    idField: 'id_obra',
+    extract: (o) => ({
+      id: o.id_obra,
+      titulo: formatTitle('Obra', o),
+      detalle: o.codigo_inventario,
+    }),
+  },
+  {
+    model: Libro,
+    tipo: 'Libro',
+    idField: 'id_libro',
+    extract: (l) => ({ id: l.id_libro, titulo: formatTitle('Libro', l), detalle: l.unidad }),
+  },
+  {
+    model: Trabajador,
+    tipo: 'Trabajador',
+    idField: 'id_trabajador',
+    extract: (t) => ({
+      id: t.id_trabajador,
+      titulo: formatTitle('Trabajador', t),
+      detalle: t.cedula,
+    }),
+  },
+  {
+    model: Taller,
+    tipo: 'Taller',
+    idField: 'id_taller',
+    extract: (t) => ({ id: t.id_taller, titulo: formatTitle('Taller', t), detalle: t.estado }),
+  },
+  {
+    model: Artista,
+    tipo: 'Artista',
+    idField: 'id_artista',
+    extract: (a) => ({ id: a.id_artista, titulo: formatTitle('Artista', a), detalle: a.ci }),
+  },
+  {
+    model: InscripcionTaller,
+    tipo: 'InscripcionTaller',
+    idField: 'id_inscripcion',
+    extract: (ins) => ({
+      id: ins.id_inscripcion,
+      titulo: formatTitle('InscripcionTaller', ins),
+      detalle: ins.estado_inscripcion,
+    }),
+  },
+  {
+    model: InventarioTaller,
+    tipo: 'InventarioTaller',
+    idField: 'id',
+    extract: (it) => ({
+      id: it.id,
+      titulo: formatTitle('InventarioTaller', it),
+      detalle: it.descripcion ? it.descripcion.substring(0, 50) : '',
+    }),
+  },
+  {
+    model: EspacioMuseo,
+    tipo: 'EspacioMuseo',
+    idField: 'id_espacio',
+    extract: (e) => ({
+      id: e.id_espacio,
+      titulo: formatTitle('EspacioMuseo', e),
+      detalle: e.codigo_espacio || `Capacidad: ${e.capacidad || 'N/A'}`,
+    }),
+  },
+  {
+    model: SolicitudEspacio,
+    tipo: 'SolicitudEspacio',
+    idField: 'id_solicitud',
+    extract: (s) => ({
+      id: s.id_solicitud,
+      titulo: formatTitle('SolicitudEspacio', s),
+      detalle: s.estado,
+    }),
+  },
+  {
+    model: Usuario,
+    tipo: 'Usuario',
+    idField: 'id_usuario',
+    extract: (u) => ({ id: u.id_usuario, titulo: formatTitle('Usuario', u), detalle: u.id_rol }),
+  },
+];
+
+exports.getPapeleraGlobal = async ({ page = 1, limit = 20, tipo, search } = {}) => {
   const items = [];
   const query = { where: { deleted_at: { [Op.ne]: null } }, paranoid: false };
 
+  const modelosAConsultar = tipo ? MODELOS.filter((m) => m.tipo === tipo) : MODELOS;
+
+  if (modelosAConsultar.length === 0) {
+    return { items: [], total: 0, page, limit, totalPages: 0 };
+  }
+
   try {
-    const obras = await Obra.findAll(query);
-    obras.forEach((o) =>
-      items.push({
-        id: o.id_obra,
-        tipo: 'Obra',
-        titulo: formatTitle('Obra', o),
-        fecha_eliminacion: o.deleted_at,
-        detalle: o.codigo_inventario,
-      })
-    );
-
-    const libros = await Libro.findAll(query);
-    libros.forEach((l) =>
-      items.push({
-        id: l.id_libro,
-        tipo: 'Libro',
-        titulo: formatTitle('Libro', l),
-        fecha_eliminacion: l.deleted_at,
-        detalle: l.unidad,
-      })
-    );
-
-    const trabajadores = await Trabajador.findAll(query);
-    trabajadores.forEach((t) =>
-      items.push({
-        id: t.id_trabajador,
-        tipo: 'Trabajador',
-        titulo: formatTitle('Trabajador', t),
-        fecha_eliminacion: t.deleted_at,
-        detalle: t.cedula,
-      })
-    );
-
-    const talleres = await Taller.findAll(query);
-    talleres.forEach((t) =>
-      items.push({
-        id: t.id_taller,
-        tipo: 'Taller',
-        titulo: formatTitle('Taller', t),
-        fecha_eliminacion: t.deleted_at,
-        detalle: t.estado,
-      })
-    );
-
-    const artistas = await Artista.findAll(query);
-    artistas.forEach((a) =>
-      items.push({
-        id: a.id_artista,
-        tipo: 'Artista',
-        titulo: formatTitle('Artista', a),
-        fecha_eliminacion: a.deleted_at,
-        detalle: a.ci,
-      })
-    );
-
-    const inscripciones = await InscripcionTaller.findAll(query);
-    inscripciones.forEach((ins) =>
-      items.push({
-        id: ins.id_inscripcion,
-        tipo: 'InscripcionTaller',
-        titulo: formatTitle('InscripcionTaller', ins),
-        fecha_eliminacion: ins.deleted_at,
-        detalle: ins.estado_inscripcion,
-      })
-    );
-
-    const invTalleres = await InventarioTaller.findAll(query);
-    invTalleres.forEach((it) =>
-      items.push({
-        id: it.id,
-        tipo: 'InventarioTaller',
-        titulo: formatTitle('InventarioTaller', it),
-        fecha_eliminacion: it.deleted_at,
-        detalle: it.descripcion ? it.descripcion.substring(0, 50) : '',
-      })
-    );
-
-    const espacios = await EspacioMuseo.findAll(query);
-    espacios.forEach((e) =>
-      items.push({
-        id: e.id_espacio,
-        tipo: 'EspacioMuseo',
-        titulo: formatTitle('EspacioMuseo', e),
-        fecha_eliminacion: e.deleted_at,
-        detalle: e.codigo_espacio || `Capacidad: ${e.capacidad || 'N/A'}`,
-      })
-    );
-
-    const solicitudes = await SolicitudEspacio.findAll(query);
-    solicitudes.forEach((s) =>
-      items.push({
-        id: s.id_solicitud,
-        tipo: 'SolicitudEspacio',
-        titulo: formatTitle('SolicitudEspacio', s),
-        fecha_eliminacion: s.deleted_at,
-        detalle: s.estado,
-      })
-    );
-
-    const usuarios = await Usuario.findAll(query);
-    usuarios.forEach((u) =>
-      items.push({
-        id: u.id_usuario,
-        tipo: 'Usuario',
-        titulo: formatTitle('Usuario', u),
-        fecha_eliminacion: u.deleted_at,
-        detalle: u.id_rol,
-      })
-    );
+    for (const entry of modelosAConsultar) {
+      const records = await entry.model.findAll(query);
+      for (const r of records) {
+        const { id, titulo, detalle } = entry.extract(r);
+        items.push({
+          id,
+          tipo: entry.tipo,
+          titulo,
+          fecha_eliminacion: r.deleted_at,
+          detalle,
+        });
+      }
+    }
   } catch (error) {
     console.error('Error obteniendo papelera', error);
   }
 
-  // Ordenar del más recientemente eliminado al más antiguo
   items.sort((a, b) => new Date(b.fecha_eliminacion) - new Date(a.fecha_eliminacion));
-  return items;
+
+  const filtered = search
+    ? items.filter((i) => i.titulo.toLowerCase().includes(search.toLowerCase()))
+    : items;
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const start = (page - 1) * limit;
+  const paginated = filtered.slice(start, start + limit);
+
+  return { items: paginated, total, page, limit, totalPages };
 };
 
 exports.restaurarRegistro = async (tipo, id) => {

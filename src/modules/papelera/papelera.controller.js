@@ -2,8 +2,14 @@ const papeleraService = require('./papelera.service');
 const catchAsync = require('../../utils/catchAsync');
 
 exports.getPapeleraGlobal = catchAsync(async (req, res) => {
-  const data = await papeleraService.getPapeleraGlobal();
-  res.status(200).json({ status: 'success', data });
+  const { page, limit, tipo, search } = req.query;
+  const result = await papeleraService.getPapeleraGlobal({
+    page: page ? parseInt(page, 10) : 1,
+    limit: limit ? parseInt(limit, 10) : 20,
+    tipo,
+    search,
+  });
+  res.status(200).json({ status: 'success', ...result });
 });
 
 exports.restaurarRegistro = catchAsync(async (req, res) => {
