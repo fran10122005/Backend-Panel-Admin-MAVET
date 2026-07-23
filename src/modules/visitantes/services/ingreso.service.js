@@ -222,13 +222,27 @@ exports.registrarIngreso = async (data) => {
   }
 };
 
-exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
+exports.getAllIngresos = async ({
+  page,
+  limit,
+  fecha,
+  id_solicitud,
+  q,
+  id_motivo,
+  fecha_desde,
+  fecha_hasta,
+}) => {
   const { Op } = require('sequelize');
   const where = {};
   const conditions = [];
-  if (fecha) {
+
+  if (fecha_desde || fecha_hasta) {
+    const dateCondition = {};
+    if (fecha_desde) dateCondition[Op.gte] = fecha_desde;
+    if (fecha_hasta) dateCondition[Op.lte] = fecha_hasta + ' 23:59:59';
+    conditions.push({ fecha_hora_entrada: dateCondition });
+  } else if (fecha) {
     if (fecha.length === 4) {
-      // YYYY
       conditions.push(
         sequelize.where(
           sequelize.fn(
@@ -240,7 +254,6 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
         )
       );
     } else if (fecha.length === 7) {
-      // YYYY-MM
       conditions.push(
         sequelize.where(
           sequelize.fn(
@@ -252,7 +265,6 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
         )
       );
     } else {
-      // YYYY-MM-DD
       conditions.push(
         sequelize.where(
           sequelize.fn(
@@ -264,17 +276,50 @@ exports.getAllIngresos = async (page, limit, fecha, id_solicitud) => {
       );
     }
   }
+
   if (id_solicitud) {
     conditions.push({ id_solicitud });
   }
+
+  const personaWhere = {};
+  if (q && q.trim()) {
+    const term = `%${q.trim()}%`;
+    personaWhere[Op.or] = [
+      sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('Persona.nombres')),
+        'LIKE',
+        term.toLowerCase()
+      ),
+      sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('Persona.apellidos')),
+        'LIKE',
+        term.toLowerCase()
+      ),
+      sequelize.where(sequelize.col('Persona.cedula'), 'LIKE', term),
+    ];
+  }
+
+  if (id_motivo) {
+    conditions.push({ id_motivo });
+  }
+
   if (conditions.length > 0) {
     where[Op.and] = conditions;
   }
+
   const query = {
     where,
-    include: [{ model: Persona }, { model: MotivoVisita }],
+    include: [
+      {
+        model: Persona,
+        where: Object.keys(personaWhere).length > 0 ? personaWhere : undefined,
+        required: Object.keys(personaWhere).length > 0,
+      },
+      { model: MotivoVisita },
+    ],
     order: [['fecha_hora_entrada', 'DESC']],
   };
+
   if (page && limit) {
     const offset = (page - 1) * limit;
     query.limit = limit;

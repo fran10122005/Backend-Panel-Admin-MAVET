@@ -128,6 +128,14 @@ function drawHeader(doc, title, pw, F) {
       /* empty */
     }
   }
+
+  if (title) {
+    doc
+      .fillColor(C.brand)
+      .font(F.bold)
+      .fontSize(11)
+      .text(title, margin, 72, { width: pw - 2 * margin, align: 'center' });
+  }
 }
 
 // ─── Encabezados y Pies de página ──────────────────────────────────────────
@@ -1018,7 +1026,7 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
         // ── Card container ──────────────────────────────────────────────────
         const cardW = mmToPt(130);
         const cardX = (pw - cardW) / 2;
-        const cardY = mmToPt(16);
+        const cardY = mmToPt(38);
 
         doc.rect(cardX, cardY, cardW, mmToPt(148)).fill('#FFFFFF');
         doc.rect(cardX, cardY, cardW, mmToPt(148)).lineWidth(0.5).strokeColor(C.line).stroke();

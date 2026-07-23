@@ -18,11 +18,16 @@ exports.registrarIngreso = catchAsync(async (req, res) => {
 });
 
 exports.getAllIngresos = catchAsync(async (req, res) => {
-  const page = req.query.page ? parseInt(req.query.page, 10) : null;
-  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-  const fecha = req.query.fecha || null;
-  const id_solicitud = req.query.id_solicitud || null;
-  const result = await ingresoService.getAllIngresos(page, limit, fecha, id_solicitud);
+  const result = await ingresoService.getAllIngresos({
+    page: req.query.page ? parseInt(req.query.page, 10) : null,
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
+    fecha: req.query.fecha || null,
+    id_solicitud: req.query.id_solicitud || null,
+    q: req.query.q || null,
+    id_motivo: req.query.id_motivo || null,
+    fecha_desde: req.query.fecha_desde || null,
+    fecha_hasta: req.query.fecha_hasta || null,
+  });
   res.status(200).json({
     message: 'Registros de ingreso obtenidos',
     data: result.data || result,
