@@ -64,12 +64,19 @@ const validarMesPresente = async (fecha, sequelize) => {
   const [results] = await sequelize.query('SELECT CURRENT_DATE AS db_date');
   const dbDate = new Date(results[0].db_date);
 
-  if (
-    parsedDate.getMonth() !== dbDate.getMonth() ||
-    parsedDate.getFullYear() !== dbDate.getFullYear()
-  ) {
+  const mesActual = dbDate.getMonth();
+  const anioActual = dbDate.getFullYear();
+  const mesSiguiente = mesActual === 11 ? 0 : mesActual + 1;
+  const anioSiguiente = mesActual === 11 ? anioActual + 1 : anioActual;
+
+  const esMesActual =
+    parsedDate.getMonth() === mesActual && parsedDate.getFullYear() === anioActual;
+  const esMesSiguiente =
+    parsedDate.getMonth() === mesSiguiente && parsedDate.getFullYear() === anioSiguiente;
+
+  if (!esMesActual && !esMesSiguiente) {
     throw new AppError(
-      'Error 400 Bad Request: Las reservas solo están permitidas para el mes en curso',
+      'Error 400 Bad Request: Las reservas solo están permitidas para el mes en curso y el siguiente',
       400
     );
   }
