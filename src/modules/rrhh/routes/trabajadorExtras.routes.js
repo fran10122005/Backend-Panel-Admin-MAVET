@@ -5,6 +5,7 @@ const upload = require('../../../middleware/uploadMiddleware');
 const trabajadorDocumentoController = require('../controllers/trabajadorDocumento.controller');
 const trabajadorHorarioController = require('../controllers/trabajadorHorario.controller');
 const trabajadorJustificacionController = require('../controllers/trabajadorJustificacion.controller');
+const minutaHorarioController = require('../controllers/minutaHorario.controller');
 
 router.use(verifyToken);
 
@@ -44,6 +45,17 @@ router.get(
 router.get('/horarios/dias-semana', trabajadorHorarioController.obtenerDiasSemana);
 router.put('/:id_trabajador/horarios/:dia_semana', trabajadorHorarioController.actualizarHorario);
 router.delete('/:id_trabajador/horarios/:dia_semana', trabajadorHorarioController.eliminarHorario);
+
+// ==========================================
+// TRABAJADOR - MINUTA DE HORARIO
+// ==========================================
+router.post(
+  '/:id_trabajador/horarios/minuta',
+  upload.document.single('archivo'),
+  minutaHorarioController.subirMinuta
+);
+router.get('/:id_trabajador/horarios/minuta', minutaHorarioController.obtenerMinuta);
+router.delete('/:id_trabajador/horarios/minuta', minutaHorarioController.eliminarMinuta);
 
 // ==========================================
 // TRABAJADOR - JUSTIFICACIONES

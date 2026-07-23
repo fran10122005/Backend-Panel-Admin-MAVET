@@ -292,6 +292,8 @@ async function migrateTablas() {
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "usarFacial" BOOLEAN DEFAULT false;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "consentimientoFacial" BOOLEAN DEFAULT false;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS "fechaConsentimiento" DATE;`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS documento_minuta_url VARCHAR(500);`,
+    `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS documento_minuta_nombre VARCHAR(255);`,
     `UPDATE trabajadores SET descriptores_faciales = CASE WHEN descriptor_facial IS NOT NULL AND descriptor_facial != '' THEN jsonb_build_array(descriptor_facial) ELSE '[]'::jsonb END WHERE descriptores_faciales IS NULL OR descriptores_faciales = '[]'::jsonb;`,
     `CREATE TABLE IF NOT EXISTS consultas_sala (
       id_consulta VARCHAR(15) PRIMARY KEY,

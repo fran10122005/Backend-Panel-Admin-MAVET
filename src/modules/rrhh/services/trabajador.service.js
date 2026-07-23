@@ -19,6 +19,8 @@ const camposPermitidosTrabajador = [
   'usarFacial',
   'consentimientoFacial',
   'fechaConsentimiento',
+  'documento_minuta_url',
+  'documento_minuta_nombre',
 ];
 
 exports.createTrabajador = async (data) => {

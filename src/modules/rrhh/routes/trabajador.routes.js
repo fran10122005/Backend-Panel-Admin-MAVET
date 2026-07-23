@@ -10,6 +10,7 @@ const {
 
 const upload = require('../../../middleware/uploadMiddleware');
 const { verifyToken } = require('../../../middleware/authMiddleware');
+const minutaHorarioController = require('../controllers/minutaHorario.controller');
 
 router.post(
   '/',
@@ -43,5 +44,14 @@ router.delete(
   validateZod({ params: trabajadorIdParamSchema }),
   trabajadorController.deleteTrabajador
 );
+
+router.post(
+  '/:id/minuta',
+  verifyToken,
+  upload.document.single('archivo'),
+  minutaHorarioController.subirMinuta
+);
+router.get('/:id/minuta', verifyToken, minutaHorarioController.obtenerMinuta);
+router.delete('/:id/minuta', verifyToken, minutaHorarioController.eliminarMinuta);
 
 module.exports = router;
