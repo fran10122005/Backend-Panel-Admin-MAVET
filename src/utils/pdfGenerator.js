@@ -1027,9 +1027,10 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
         const cardW = mmToPt(130);
         const cardX = (pw - cardW) / 2;
         const cardY = mmToPt(38);
+        const cardH = mmToPt(195); // Increased height to fit instructions
 
-        doc.rect(cardX, cardY, cardW, mmToPt(148)).fill('#FFFFFF');
-        doc.rect(cardX, cardY, cardW, mmToPt(148)).lineWidth(0.5).strokeColor(C.line).stroke();
+        doc.rect(cardX, cardY, cardW, cardH).fill('#FFFFFF');
+        doc.rect(cardX, cardY, cardW, cardH).lineWidth(0.5).strokeColor(C.line).stroke();
 
         // Top accent bar
         doc.rect(cardX, cardY, cardW, mmToPt(3)).fill(C.brand);
@@ -1119,15 +1120,19 @@ const generateQRPdf = async (publicUrl, qrBuffer) => {
           },
         ];
 
-        let iy = cardY + mmToPt(100);
+        let iy = urlBoxY + urlBoxH + mmToPt(8);
         instructions.forEach((inst) => {
-          doc.fillColor(C.brand).font(F.bold).fontSize(8.5).text(inst.title, mmToPt(28), iy);
+          doc
+            .fillColor(C.brand)
+            .font(F.bold)
+            .fontSize(8.5)
+            .text(inst.title, cardX + mmToPt(8), iy);
 
           doc
             .fillColor(C.textSoft)
             .font(F.normal)
             .fontSize(8)
-            .text(inst.desc, mmToPt(48), iy, { width: mmToPt(120) });
+            .text(inst.desc, cardX + mmToPt(38), iy, { width: cardW - mmToPt(46) });
 
           iy += mmToPt(10);
         });
