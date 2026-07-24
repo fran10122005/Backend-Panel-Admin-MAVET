@@ -133,8 +133,8 @@ function drawHeader(doc, title, pw, F) {
     doc
       .fillColor(C.brand)
       .font(F.bold)
-      .fontSize(11)
-      .text(title, margin, 72, { width: pw - 2 * margin, align: 'center' });
+      .fontSize(13)
+      .text(title, margin, 75, { width: pw - 2 * margin, align: 'center' });
   }
 }
 
@@ -194,7 +194,7 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
           return { label: h.label || `col_${i}`, width: h.width || 100, align: h.align || 'left' };
         });
 
-        let y = 80;
+        let y = 95;
         const rowH = 20;
         const m = MARGIN;
         const tblW = pw - 2 * m;
@@ -217,7 +217,7 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
           let cx = m;
           tableHeaders.forEach((h) => {
             strokeCell(cx, cy, h.width, rowH);
-            doc.fillColor('#FFFFFF').font(F.bold).fontSize(8.5);
+            doc.fillColor('#FFFFFF').font(F.bold).fontSize(9);
             doc.text(h.label, cx + 5, cy + 5, {
               width: h.width - 10,
               align: h.align,
@@ -241,7 +241,7 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
           tableHeaders.forEach((h, i) => {
             strokeCell(cx, cy, h.width, rowH);
             const val = rowArr[i] != null ? String(rowArr[i]) : '';
-            doc.fillColor(C.text).font(F.normal).fontSize(7.5);
+            doc.fillColor(C.text).font(F.normal).fontSize(8);
             doc.text(val, cx + 5, cy + 5, {
               width: h.width - 10,
               align: h.align,
