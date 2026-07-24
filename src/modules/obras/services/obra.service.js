@@ -153,6 +153,7 @@ exports.getAllObras = async (page, limit) => {
 
 exports.getObrasPublicas = async (page, limit) => {
   const query = {
+    where: { mostrar_en_web: true },
     attributes: ['id_obra', 'titulo', 'anio', 'imagen_url', 'descripcion', 'medidas'],
     include: [
       { model: Artista, as: 'Artista', attributes: ['nombres', 'apellidos'] },
