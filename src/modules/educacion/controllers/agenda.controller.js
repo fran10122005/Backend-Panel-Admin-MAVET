@@ -21,7 +21,6 @@ exports.getAgenda = catchAsync(async (req, res) => {
   // Traer eventos aprobados que se deban mostrar en web
   const eventos = await SolicitudEspacio.findAll({
     where: {
-      estatus_aprobacion: 'aprobado',
       mostrar_en_web: true,
     },
     attributes: [
@@ -32,7 +31,6 @@ exports.getAgenda = catchAsync(async (req, res) => {
       'hora_inicio',
       'hora_fin',
       'estado',
-      'estatus_aprobacion',
       'descripcion_web',
     ],
   });
