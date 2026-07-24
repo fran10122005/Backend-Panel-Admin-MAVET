@@ -15,5 +15,6 @@ router.get('/credenciales-masivas', reportesController.reporteCredencialesMasiva
 router.get('/qr', reportesController.reporteQR);
 router.get('/inventario-talleres', reportesController.reporteInventarioTalleres);
 router.get('/talleres', reportesController.reporteTalleres);
+router.get('/auditoria', reportesController.reporteAuditoria);
 
 module.exports = router;

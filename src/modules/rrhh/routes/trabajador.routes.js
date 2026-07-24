@@ -44,6 +44,12 @@ router.delete(
   validateZod({ params: trabajadorIdParamSchema }),
   trabajadorController.deleteTrabajador
 );
+router.patch(
+  '/:id/estado',
+  verifyToken,
+  validateZod({ params: trabajadorIdParamSchema }),
+  trabajadorController.toggleEstadoTrabajador
+);
 
 router.post(
   '/:id/minuta',

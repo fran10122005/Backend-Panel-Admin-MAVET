@@ -1,4 +1,3 @@
-/* global fetch */
 const {
   generateTablePdf,
   generateCartaAvalPdf,
@@ -6,7 +5,7 @@ const {
   generateCredencialesMasivasPdf,
   generateQRPdf,
 } = require('../../utils/pdfGenerator');
-const { Libro, CategoriaLibro, AutorLibro } = require('../../models');
+const { Libro, CategoriaLibro } = require('../../models');
 const { Obra, Artista, TecnicaObra, EstadoObra } = require('../../models');
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../models');
 const {
@@ -20,6 +19,7 @@ const {
   InventarioTaller,
   Instructor,
 } = require('../../models');
+const { BitacoraAuditoria } = require('../../models');
 const AppError = require('../../utils/AppError');
 const catchAsync = require('../../utils/catchAsync');
 const { Op } = require('sequelize');
@@ -51,7 +51,12 @@ exports.reporteObras = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Inventario_Obras_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('Inventario de Bóveda – Obras de Arte', headers, rows, 'Coordinador(a) de Colecciones');
+  const pdfBuffer = await generateTablePdf(
+    'Inventario de Bóveda – Obras de Arte',
+    headers,
+    rows,
+    'Coordinador(a) de Colecciones'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -87,7 +92,12 @@ exports.reporteLibros = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Biblioteca_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('Catálogo de Biblioteca', headers, rows, 'Coordinador(a) de Biblioteca');
+  const pdfBuffer = await generateTablePdf(
+    'Catálogo de Biblioteca',
+    headers,
+    rows,
+    'Coordinador(a) de Biblioteca'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -171,7 +181,12 @@ exports.reporteAsistencia = catchAsync(async (req, res) => {
   });
 
   const filename = `MAVET_Asistencia_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('Consolidado de Asistencia del Personal', headers, rows, 'Coordinador(a) de Personal');
+  const pdfBuffer = await generateTablePdf(
+    'Consolidado de Asistencia del Personal',
+    headers,
+    rows,
+    'Coordinador(a) de Personal'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -238,6 +253,68 @@ exports.reporteEventos = catchAsync(async (req, res) => {
     headers,
     rows,
     'Coordinador(a) de Eventos'
+  );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.send(pdfBuffer);
+});
+
+// ─── Reporte: Bitácora de Auditoría ───────────────────────────────────────
+exports.reporteAuditoria = catchAsync(async (req, res) => {
+  const { tipo, desde, hasta } = req.query;
+  const where = {};
+
+  if (tipo) where.tipo = tipo;
+  if (desde || hasta) {
+    where.fecha = {};
+    if (desde) where.fecha[Op.gte] = new Date(desde);
+    if (hasta) where.fecha[Op.lte] = new Date(hasta + 'T23:59:59.999Z');
+  }
+
+  const logs = await BitacoraAuditoria.findAll({
+    where,
+    order: [['fecha', 'DESC']],
+    limit: 500,
+    raw: true,
+  });
+
+  const tipoLabel = {
+    login: 'Inicio de sesión',
+    logout: 'Cierre de sesión',
+    create: 'Creación',
+    update: 'Actualización',
+    delete: 'Eliminación',
+    restore: 'Restauración',
+    export: 'Exportación',
+    error: 'Error',
+  };
+
+  const headers = [
+    { label: 'ID', width: 65, align: 'center' },
+    { label: 'Fecha / Hora', width: 110, align: 'center' },
+    { label: 'Usuario', width: 120 },
+    { label: 'Acción', width: 100 },
+    { label: 'Detalle', width: 280 },
+  ];
+  const rows = logs.map((l) => [
+    l.id_auditoria || '—',
+    l.fecha
+      ? new Date(l.fecha)
+          .toLocaleString('es-VE', { timeZone: 'America/Caracas', hour12: false })
+          .replace(',', '')
+      : '—',
+    l.correo || '—',
+    tipoLabel[l.tipo] || l.tipo || '—',
+    l.detalle || '—',
+  ]);
+
+  const filename = `MAVET_Bitacora_Auditoria_${new Date().toISOString().split('T')[0]}.pdf`;
+  const pdfBuffer = await generateTablePdf(
+    'BITÁCORA DE AUDITORÍA',
+    headers,
+    rows,
+    'Departamento de Sistemas'
   );
 
   res.setHeader('Content-Type', 'application/pdf');
@@ -391,7 +468,12 @@ exports.reporteUsuarios = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('LISTADO DE USUARIOS DEL SISTEMA', headers, rows, 'Coordinador(a) de Sistemas');
+  const pdfBuffer = await generateTablePdf(
+    'LISTADO DE USUARIOS DEL SISTEMA',
+    headers,
+    rows,
+    'Coordinador(a) de Sistemas'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -473,7 +555,12 @@ exports.reporteInventarioTalleres = catchAsync(async (req, res) => {
   const rows = inventario.map((i) => [i.id || '—', i.nombre || '—', i.descripcion || '—']);
 
   const filename = `MAVET_Inventario_Talleres_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('INVENTARIO DE TALLERES DISPONIBLES', headers, rows, 'Coordinador(a) de Talleres');
+  const pdfBuffer = await generateTablePdf(
+    'INVENTARIO DE TALLERES DISPONIBLES',
+    headers,
+    rows,
+    'Coordinador(a) de Talleres'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
@@ -520,7 +607,12 @@ exports.reporteTalleres = catchAsync(async (req, res) => {
   ]);
 
   const filename = `MAVET_Planificacion_Talleres_${new Date().toISOString().split('T')[0]}.pdf`;
-  const pdfBuffer = await generateTablePdf('PLANIFICACIÓN DE TALLERES', headers, rows, 'Coordinador(a) de Talleres');
+  const pdfBuffer = await generateTablePdf(
+    'PLANIFICACIÓN DE TALLERES',
+    headers,
+    rows,
+    'Coordinador(a) de Talleres'
+  );
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);

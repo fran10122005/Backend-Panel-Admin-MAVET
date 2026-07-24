@@ -122,7 +122,10 @@ const createSolicitud = async (solicitudData, usuario = null) => {
     });
   }
 
-  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  await Promise.all([
+    cacheService.eliminarPatron('mavet:resp:/api/educacion*'),
+    cacheService.eliminarPatron('mavet:resp:/api/public/agenda*'),
+  ]);
 
   // Enviar correo de confirmación al organizador
   if (result.correo_electronico) {
@@ -257,7 +260,10 @@ const updateSolicitud = async (id, solicitudData, user) => {
     });
   }
 
-  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  await Promise.all([
+    cacheService.eliminarPatron('mavet:resp:/api/educacion*'),
+    cacheService.eliminarPatron('mavet:resp:/api/public/agenda*'),
+  ]);
   return result;
 };
 
@@ -282,7 +288,10 @@ const deleteSolicitud = async (id, user) => {
     });
   }
 
-  await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
+  await Promise.all([
+    cacheService.eliminarPatron('mavet:resp:/api/educacion*'),
+    cacheService.eliminarPatron('mavet:resp:/api/public/agenda*'),
+  ]);
 };
 
 module.exports = {
