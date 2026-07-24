@@ -17,6 +17,7 @@ const SolicitudEspacio = sequelize.define(
     estado: { type: DataTypes.STRING(255) },
     mostrar_en_web: { type: DataTypes.BOOLEAN, defaultValue: false },
     descripcion_web: { type: DataTypes.TEXT },
+    id_tipo_evento: { type: DataTypes.STRING(15) },
 
     correo_electronico: { type: DataTypes.STRING(255) },
     recursos_solicitados: { type: DataTypes.JSON },

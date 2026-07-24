@@ -111,6 +111,19 @@ const createSolicitud = async (solicitudData, usuario = null) => {
     nombre_responsable: solicitudData.nombre_responsable || solicitudData.organizador,
   };
 
+  let finalIdTipoEvento = solicitudData.id_tipo_evento;
+  if (solicitudData.nuevo_tipo_evento) {
+    const TipoEvento = require('../../../models').TipoEvento;
+    const [nuevoTipo] = await TipoEvento.findOrCreate({
+      where: { nombre: solicitudData.nuevo_tipo_evento },
+      defaults: { descripcion: 'Generado automáticamente' },
+    });
+    finalIdTipoEvento = nuevoTipo.id_tipo_evento;
+  }
+  if (finalIdTipoEvento) {
+    createPayload.id_tipo_evento = finalIdTipoEvento;
+  }
+
   const result = await SolicitudEspacio.create(createPayload);
 
   if (usuario) {
@@ -186,14 +199,18 @@ const mapEstadoDinamico = (solicitud) => {
 };
 
 const getAllSolicitudes = async () => {
+  const { TipoEvento } = require('../../../models');
   const solicitudes = await SolicitudEspacio.findAll({
-    include: [Persona, EspacioMuseo],
+    include: [Persona, EspacioMuseo, TipoEvento],
   });
   return solicitudes.map(mapEstadoDinamico);
 };
 
 const getSolicitudById = async (id) => {
-  const solicitud = await SolicitudEspacio.findByPk(id);
+  const { TipoEvento } = require('../../../models');
+  const solicitud = await SolicitudEspacio.findByPk(id, {
+    include: [Persona, EspacioMuseo, TipoEvento],
+  });
   if (!solicitud) {
     throw new AppError('Solicitud no encontrada', 404);
   }
@@ -247,6 +264,17 @@ const updateSolicitud = async (id, solicitudData, user) => {
     updatePayload.correo_electronico = solicitudData.correo_electronico;
   if (solicitudData.recursos_solicitados !== undefined)
     updatePayload.recursos_solicitados = solicitudData.recursos_solicitados;
+
+  if (solicitudData.nuevo_tipo_evento) {
+    const TipoEvento = require('../../../models').TipoEvento;
+    const [nuevoTipo] = await TipoEvento.findOrCreate({
+      where: { nombre: solicitudData.nuevo_tipo_evento },
+      defaults: { descripcion: 'Generado automáticamente' },
+    });
+    updatePayload.id_tipo_evento = nuevoTipo.id_tipo_evento;
+  } else if (solicitudData.id_tipo_evento !== undefined) {
+    updatePayload.id_tipo_evento = solicitudData.id_tipo_evento;
+  }
 
   const result = await solicitud.update(updatePayload);
 

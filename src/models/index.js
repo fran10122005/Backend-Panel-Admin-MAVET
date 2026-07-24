@@ -222,6 +222,9 @@ SolicitudEspacio.belongsTo(EspacioMuseo, { foreignKey: 'id_espacio' });
 Persona.hasMany(SolicitudEspacio, { foreignKey: 'id_persona' });
 SolicitudEspacio.belongsTo(Persona, { foreignKey: 'id_persona' });
 
+TipoEvento.hasMany(SolicitudEspacio, { foreignKey: 'id_tipo_evento' });
+SolicitudEspacio.belongsTo(TipoEvento, { foreignKey: 'id_tipo_evento' });
+
 module.exports = {
   sequelize,
   TipoEvento,
