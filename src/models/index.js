@@ -34,6 +34,9 @@ const AutorLibro = require('../modules/biblioteca/models/AutorLibro.model');
 const Libro = require('../modules/biblioteca/models/Libro.model');
 const ConsultaSala = require('../modules/biblioteca/models/ConsultaSala.model');
 
+// Importar modelos Auditorio
+const TipoEvento = require('../modules/auditorio/models/TipoEvento.model');
+
 // Importar modelos Visitantes
 const MotivoVisita = require('../modules/visitantes/models/MotivoVisita.model');
 const RegistroIngreso = require('../modules/visitantes/models/RegistroIngreso.model');
@@ -221,6 +224,7 @@ SolicitudEspacio.belongsTo(Persona, { foreignKey: 'id_persona' });
 
 module.exports = {
   sequelize,
+  TipoEvento,
   BitacoraAuditoria,
   Persona,
   Role,

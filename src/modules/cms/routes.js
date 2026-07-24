@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const catchAsync = require('../../../utils/catchAsync');
-const { Taller, SolicitudEspacio, Obra, ImagenWeb } = require('../../../models');
+const catchAsync = require('../../utils/catchAsync');
+const { Taller, SolicitudEspacio, Obra, ImagenWeb } = require('../../models');
 
 // ========================
 // ENDPOINTS GET (Listados)

@@ -157,6 +157,10 @@ app.get('/api/obras/tecnicas', cache(600), tecnicaController.getAllTecnicas);
 app.get('/api/obras/estados', cache(600), estadoController.getAllEstados);
 app.get('/api/obras/categorias', cache(600), categoriaController.getAllCategorias);
 
+// Catálogo de Tipos de Evento (Auditorio) — público con caché
+const tipoEventoController = require('./modules/auditorio/controllers/tipoEvento.controller');
+app.get('/api/tipos-evento', cache(600), tipoEventoController.getAllTiposEvento);
+
 // Rutas de Auto-Ingreso Públicas (Código QR)
 const publicoVisitantesRoutes = require('./modules/visitantes/routes/publico.routes');
 app.use('/api/publico/visitantes', publicoVisitantesRoutes);
@@ -186,6 +190,9 @@ app.use(
 
 const reportesRoutes = require('./modules/reportes/reportes.routes');
 app.use('/api/reportes', verifyToken, reportesRoutes);
+
+const tipoEventoRoutes = require('./modules/auditorio/routes/tipoEvento.routes');
+app.use('/api/tipos-evento', verifyToken, tipoEventoRoutes);
 
 const papeleraRoutes = require('./modules/papelera/papelera.routes');
 app.use('/api/papelera', verifyToken, cacheGet(30), papeleraRoutes);
@@ -316,6 +323,11 @@ async function migrateTablas() {
       FOREIGN KEY (id_libro) REFERENCES libros(id_libro) ON DELETE CASCADE,
       FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE SET NULL,
       FOREIGN KEY (id_trabajador) REFERENCES trabajadores(id_trabajador) ON DELETE SET NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS tipos_evento (
+      id_tipo_evento VARCHAR(15) PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL UNIQUE,
+      descripcion VARCHAR(255)
     );`,
   ];
   for (const sql of cambios) {
