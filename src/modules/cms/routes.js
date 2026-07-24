@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const catchAsync = require('../../utils/catchAsync');
 const { Taller, SolicitudEspacio, Obra, ImagenWeb } = require('../../models');
+const cacheService = require('../../services/cache.service');
 
 // ========================
 // ENDPOINTS GET (Listados)
@@ -62,6 +63,7 @@ router.put(
     if (descripcion_web !== undefined) taller.descripcion_web = descripcion_web;
 
     await taller.save();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
     res.json({ message: 'Taller actualizado exitosamente', taller });
   })
 );
@@ -79,6 +81,7 @@ router.put(
     if (descripcion_web !== undefined) evento.descripcion_web = descripcion_web;
 
     await evento.save();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/agenda*');
     res.json({ message: 'Evento actualizado exitosamente', evento });
   })
 );
@@ -97,6 +100,7 @@ router.put(
     if (descripcion_web !== undefined) obra.descripcion = descripcion_web;
 
     await obra.save();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
     res.json({ message: 'Obra actualizada exitosamente', obra });
   })
 );
