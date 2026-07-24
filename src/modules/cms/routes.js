@@ -25,7 +25,6 @@ router.get(
   '/eventos',
   catchAsync(async (req, res) => {
     const eventos = await SolicitudEspacio.findAll({
-      where: { estatus_aprobacion: 'aprobado' },
       attributes: ['id_solicitud', 'motivo', 'estado', 'mostrar_en_web', 'descripcion_web'],
       order: [['fecha_creacion', 'DESC']],
     });
