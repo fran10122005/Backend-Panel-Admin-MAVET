@@ -15,6 +15,8 @@ const SolicitudEspacio = sequelize.define(
     hora_fin: { type: DataTypes.TIME },
     motivo: { type: DataTypes.TEXT },
     estado: { type: DataTypes.STRING(255) },
+    mostrar_en_web: { type: DataTypes.BOOLEAN, defaultValue: false },
+    descripcion_web: { type: DataTypes.TEXT },
 
     correo_electronico: { type: DataTypes.STRING(255) },
     recursos_solicitados: { type: DataTypes.JSON },

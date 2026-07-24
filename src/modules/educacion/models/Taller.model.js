@@ -19,6 +19,8 @@ const Taller = sequelize.define(
     cupo_maximo: { type: DataTypes.STRING(15) },
     documento_plan: { type: DataTypes.STRING(500) },
     estado: { type: DataTypes.STRING(255) },
+    mostrar_en_web: { type: DataTypes.BOOLEAN, defaultValue: false },
+    descripcion_web: { type: DataTypes.TEXT },
   },
   {
     tableName: 'talleres',
