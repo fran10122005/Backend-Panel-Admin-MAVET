@@ -46,6 +46,7 @@ exports.getAgenda = catchAsync(async (req, res) => {
       fecha: t.fecha,
       hora_inicio: t.hora_inicio,
       hora_fin: t.hora_fin,
+      descripcion: t.descripcion_web,
     });
   });
 
@@ -58,6 +59,7 @@ exports.getAgenda = catchAsync(async (req, res) => {
       fecha: e.fecha_uso,
       hora_inicio: e.hora_inicio,
       hora_fin: e.hora_fin,
+      descripcion: e.descripcion_web,
     });
   });
 
