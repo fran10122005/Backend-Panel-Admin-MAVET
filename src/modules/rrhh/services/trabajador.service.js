@@ -72,6 +72,14 @@ exports.deleteTrabajador = async (id) => {
   return await trabajador.destroy();
 };
 
+exports.toggleEstadoTrabajador = async (id) => {
+  const trabajador = await Trabajador.findByPk(id);
+  if (!trabajador) throw new AppError('Trabajador no encontrado', 404);
+  const nuevoEstado = !trabajador.estado;
+  await trabajador.update({ estado: nuevoEstado });
+  return { ...trabajador.toJSON(), estado: nuevoEstado };
+};
+
 exports.subirFotoTrabajador = async (id_trabajador, filePath) => {
   const trabajador = await Trabajador.findByPk(id_trabajador);
   if (!trabajador) throw new AppError('Trabajador no encontrado', 404);

@@ -31,6 +31,12 @@ exports.deleteTrabajador = catchAsync(async (req, res) => {
   res.status(200).json({ message: 'Trabajador eliminado de la base de datos' });
 });
 
+exports.toggleEstadoTrabajador = catchAsync(async (req, res) => {
+  const trabajador = await trabajadorService.toggleEstadoTrabajador(req.params.id);
+  const accion = trabajador.estado ? 'activado' : 'desactivado';
+  res.status(200).json({ message: `Trabajador ${accion} correctamente`, data: trabajador });
+});
+
 exports.subirFoto = catchAsync(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ status: 'error', message: 'No se envió ninguna imagen' });
