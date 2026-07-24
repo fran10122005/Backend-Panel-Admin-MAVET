@@ -4,14 +4,26 @@ const SolicitudEspacio = require('../models/SolicitudEspacio.model');
 const { Op } = require('sequelize');
 
 exports.getAgenda = catchAsync(async (req, res) => {
-  // Traer talleres activos (todos)
+  // Traer talleres activos que se deban mostrar en web
   const talleres = await Taller.findAll({
-    attributes: ['id_taller', 'nombre_curso', 'fecha', 'hora_inicio', 'hora_fin', 'estado'],
+    where: { mostrar_en_web: true },
+    attributes: [
+      'id_taller',
+      'nombre_curso',
+      'fecha',
+      'hora_inicio',
+      'hora_fin',
+      'estado',
+      'descripcion_web',
+    ],
   });
 
-  // Traer solo eventos del auditorio aprobados
+  // Traer eventos aprobados que se deban mostrar en web
   const eventos = await SolicitudEspacio.findAll({
-    where: { estatus_aprobacion: 'aprobado' },
+    where: {
+      estatus_aprobacion: 'aprobado',
+      mostrar_en_web: true,
+    },
     attributes: [
       'id_solicitud',
       'institucion',
@@ -21,6 +33,7 @@ exports.getAgenda = catchAsync(async (req, res) => {
       'hora_fin',
       'estado',
       'estatus_aprobacion',
+      'descripcion_web',
     ],
   });
 

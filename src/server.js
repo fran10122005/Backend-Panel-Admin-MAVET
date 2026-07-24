@@ -197,6 +197,10 @@ app.use('/api/personas', verifyToken, personaRoutes);
 const auditoriaRoutes = require('./modules/auth/routes/auditoria.routes');
 app.use('/api/auth/logs', verifyToken, auditoriaRoutes);
 
+// Rutas de CMS (Web Editor)
+const cmsRoutes = require('./modules/cms/routes');
+app.use('/api/cms', verifyToken, cmsRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ message: 'Backend MAVET - Activo' });
@@ -224,13 +228,18 @@ async function migrateTablas() {
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS pin_intentos_fallidos INTEGER DEFAULT 0;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS pin_bloqueado_hasta TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE obras ADD COLUMN IF NOT EXISTS mostrar_en_web BOOLEAN DEFAULT false;`,
     `ALTER TABLE artistas ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE libros ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE trabajadores ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS mostrar_en_web BOOLEAN DEFAULT false;`,
+    `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS descripcion_web TEXT;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS fecha_fin DATE;`,
     `ALTER TABLE talleres ADD COLUMN IF NOT EXISTS documento_plan VARCHAR(500);`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
+    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS mostrar_en_web BOOLEAN DEFAULT false;`,
+    `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS descripcion_web TEXT;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS numero_expediente VARCHAR(30);`,
 
     `ALTER TABLE inscripciones_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
