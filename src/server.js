@@ -139,9 +139,13 @@ app.get(
 const agendaController = require('./modules/educacion/controllers/agenda.controller');
 app.get('/api/public/agenda', cache(300), agendaController.getAgenda);
 
+// Ruta Pública de Espacios (Salas)
+const espacioMuseoController = require('./modules/educacion/controllers/espacioMuseo.controller');
+app.get('/api/public/espacios', cache(300), espacioMuseoController.getEspaciosPublicos);
+
 // Ruta Pública de Contacto
 const contactoController = require('./modules/contacto/controllers/contacto.controller');
-app.post('/api/public/contacto', catchAsync(contactoController.enviarContacto));
+app.post('/api/public/contacto', contactoController.enviarContacto);
 
 // Ruta Pública de Biblioteca (Libros)
 const libroController = require('./modules/biblioteca/controllers/libro.controller');
@@ -184,7 +188,11 @@ app.use(
   '/api/educacion',
   verifyToken,
   cacheGet(15),
-  limpiarCache('mavet:resp:/api/educacion*', 'mavet:resp:/api/public/agenda*'),
+  limpiarCache(
+    'mavet:resp:/api/educacion*',
+    'mavet:resp:/api/public/agenda*',
+    'mavet:resp:/api/public/espacios*'
+  ),
   educacionRoutes
 );
 
@@ -207,6 +215,10 @@ app.use('/api/auth/logs', verifyToken, auditoriaRoutes);
 // Rutas de CMS (Web Editor)
 const cmsRoutes = require('./modules/cms/routes');
 app.use('/api/cms', verifyToken, cmsRoutes);
+
+// Rutas de Configuración Web (CMS y Público)
+const configRoutes = require('./modules/config/routes/config.routes');
+app.use('/api/configuracion', configRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -275,6 +287,9 @@ async function migrateTablas() {
     `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS codigo_espacio VARCHAR(255);`,
     `UPDATE espacios_museo SET codigo_espacio = CONCAT('SALA-', LPAD(id_espacio::text, 3, '0')) WHERE codigo_espacio IS NULL;`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS imagen_url VARCHAR(500);`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS mostrar_en_web BOOLEAN DEFAULT false;`,
+    `ALTER TABLE espacios_museo ADD COLUMN IF NOT EXISTS descripcion_web TEXT;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_total TYPE INTEGER USING COALESCE(NULLIF(cantidad_total, ''), '0')::INTEGER;`,
     `ALTER TABLE libros ALTER COLUMN cantidad_disponible TYPE INTEGER USING COALESCE(NULLIF(cantidad_disponible, ''), '0')::INTEGER;`,
     `ALTER TABLE obras ADD COLUMN IF NOT EXISTS clasificacion_patrimonial VARCHAR(50) DEFAULT 'no_clasificado';`,

@@ -51,6 +51,41 @@ const sendEmailJSEventCompleted = async (reservaData) => {
   }
 };
 
+const sendContactMessage = async (contactoData, correoDestino) => {
+  const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'TU_SERVICE_ID_AQUI';
+  const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_CONTACTO_TEMPLATE_ID || 'TU_CONTACTO_TEMPLATE_ID';
+  const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || 'TU_PUBLIC_KEY_AQUI';
+
+  const data = {
+    service_id: EMAILJS_SERVICE_ID,
+    template_id: EMAILJS_TEMPLATE_ID,
+    user_id: EMAILJS_PUBLIC_KEY,
+    template_params: {
+      to_email: correoDestino,
+      from_name: contactoData.nombre,
+      from_email: contactoData.correo,
+      message: contactoData.mensaje,
+    },
+  };
+
+  try {
+    const response = await axios.post('https://api.emailjs.com/api/v1.0/email/send', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log(`[EmailJS] Mensaje de contacto enviado exitosamente de ${contactoData.correo}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `[EmailJS] Error al enviar mensaje de contacto de ${contactoData.correo}:`,
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 module.exports = {
   sendEmailJSEventCompleted,
+  sendContactMessage,
 };

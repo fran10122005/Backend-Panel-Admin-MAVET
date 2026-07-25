@@ -9,6 +9,9 @@ const EspacioMuseo = sequelize.define(
     nombre: { type: DataTypes.STRING(255) },
     capacidad: { type: DataTypes.STRING(15) },
     descripcion: { type: DataTypes.STRING(255) },
+    imagen_url: { type: DataTypes.STRING(500) },
+    mostrar_en_web: { type: DataTypes.BOOLEAN, defaultValue: false },
+    descripcion_web: { type: DataTypes.TEXT },
   },
   {
     tableName: 'espacios_museo',

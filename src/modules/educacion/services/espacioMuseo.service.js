@@ -38,6 +38,31 @@ exports.getAllEspacios = async () => {
   return await EspacioMuseo.findAll();
 };
 
+exports.getEspaciosPublicos = async () => {
+  return await EspacioMuseo.findAll({
+    where: { mostrar_en_web: true },
+    order: [['created_at', 'ASC']],
+  });
+};
+
+exports.subirImagenEspacio = async (id, filePath) => {
+  const espacio = await EspacioMuseo.findByPk(id);
+  if (!espacio) throw new AppError('Espacio no encontrado', 404);
+
+  const cloudinary = require('../../../config/cloudinary');
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'mavet_uploads/espacios',
+    });
+    espacio.imagen_url = result.secure_url;
+    await espacio.save();
+    return result.secure_url;
+  } catch (error) {
+    console.error('Error uploading image to Cloudinary', error);
+    throw new AppError('Error al subir la imagen', 500);
+  }
+};
+
 exports.getEspacioById = async (id) => {
   const espacio = await EspacioMuseo.findByPk(id);
   if (!espacio) throw new AppError('Espacio no encontrado', 404);

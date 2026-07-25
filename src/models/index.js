@@ -41,6 +41,9 @@ const TipoEvento = require('../modules/auditorio/models/TipoEvento.model');
 const MotivoVisita = require('../modules/visitantes/models/MotivoVisita.model');
 const RegistroIngreso = require('../modules/visitantes/models/RegistroIngreso.model');
 
+// Importar modelos Configuracion
+const ConfiguracionWeb = require('../modules/config/models/ConfiguracionWeb.model');
+
 // Importar modelos Educacion
 const Instructor = require('../modules/educacion/models/Instructor.model');
 const Representante = require('../modules/educacion/models/Representante.model');
@@ -254,6 +257,7 @@ module.exports = {
   ConsultaSala,
   MotivoVisita,
   RegistroIngreso,
+  ConfiguracionWeb,
   Instructor,
   Representante,
   Alumno,

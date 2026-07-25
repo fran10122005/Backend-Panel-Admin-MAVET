@@ -366,6 +366,148 @@ class EmailjsService {
     console.log('✅ EmailJS respuesta (Auditorio):', responseText);
     return responseText;
   }
+
+  buildContactMessageHtml({ from_name, from_email, message }) {
+    const year = new Date().getFullYear();
+    const logoUrl = LOGO_URL;
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nuevo Mensaje de Contacto</title>
+</head>
+<body style="margin:0;padding:0;background-color:#faf0f0;font-family:'Playfair Display',Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf0f0;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:16px;box-shadow:0 4px 24px rgba(128,0,0,0.10);">
+          
+          <!-- ENCABEZADO -->
+          <tr>
+            <td align="center" style="background:linear-gradient(135deg,#800000 0%,#600000 100%);padding:44px 32px 36px;">
+              <img src="${logoUrl}" alt="MAVET" style="width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,0.15);padding:8px;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto;" />
+              <h1 style="color:#ffffff;font-size:26px;font-weight:700;margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;letter-spacing:0.5px;">Mensaje de Contacto</h1>
+              <p style="color:#ebc2c2;font-size:13px;margin:0;letter-spacing:2px;text-transform:uppercase;font-family:'Segoe UI',Arial,sans-serif;">Página Web MAVET</p>
+            </td>
+          </tr>
+
+          <!-- CUERPO -->
+          <tr>
+            <td style="background:#ffffff;padding:40px 36px;">
+              <p style="color:#333333;font-size:16px;line-height:1.7;margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;">Han recibido un nuevo mensaje a través del formulario de contacto.</p>
+
+              <!-- DETALLES DEL CONTACTO -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="background:#faf0f0;border-radius:12px;border-left:4px solid #800000;padding:24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:8px 0;border-bottom:1px solid #ebc2c2;">
+                          <p style="color:#800000;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:2px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Remitente</p>
+                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Playfair Display',Georgia,serif;">${from_name}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px 0;">
+                          <p style="color:#800000;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:2px;font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Correo Electrónico</p>
+                          <p style="color:#333333;font-size:15px;margin:4px 0 0;font-family:'Segoe UI',Arial,sans-serif;"><a href="mailto:${from_email}" style="color:#800000;text-decoration:none;">${from_email}</a></p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- MENSAJE ORIGINAL -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="left">
+                    <p style="color:#800000;font-size:14px;font-weight:700;margin:0 0 10px;font-family:'Playfair Display',Georgia,serif;">Mensaje Original</p>
+                    <div style="background:#faf0f0;border:1px solid #ebc2c2;border-radius:12px;padding:20px;color:#444444;font-size:15px;line-height:1.7;font-family:'Segoe UI',Arial,sans-serif;white-space:pre-wrap;">${message}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- PIE DE PAGINA -->
+          <tr>
+            <td align="center" style="background:#f5e1e1;padding:24px 32px;">
+              <p style="color:#800000;font-size:11px;margin:0 0 8px;font-family:'Segoe UI',Arial,sans-serif;letter-spacing:0.5px;">
+                Este correo fue enviado automáticamente desde la página web mavet.org.
+              </p>
+              <p style="color:#a33d3d;font-size:11px;margin:0;font-family:'Segoe UI',Arial,sans-serif;">
+                &copy; ${year} Museo de Artes Visuales y del Espacio (MAVET). Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
+
+  async sendContactMessage({ to, from_name, from_email, message }) {
+    const serviceId = process.env.EMAILJS_SERVICE_ID;
+    const templateId = process.env.EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+    const privateKey = process.env.EMAILJS_PRIVATE_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      throw new AppError(
+        'EmailJS no está configurado correctamente. Verifique las variables de entorno.',
+        500
+      );
+    }
+
+    const htmlBody = this.buildContactMessageHtml({ from_name, from_email, message });
+
+    const requestBody = {
+      service_id: serviceId,
+      template_id: templateId,
+      user_id: publicKey,
+      accessToken: privateKey,
+      template_params: {
+        to_email: to,
+        body: htmlBody,
+        subject: `Nuevo mensaje de contacto de ${from_name}`,
+        reply_to: from_email,
+      },
+    };
+
+    console.log('📧 Enviando mensaje de contacto a:', to);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    let response;
+    try {
+      response = await fetch(EMAILJS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      console.error('❌ EmailJS error HTTP', response.status, responseText);
+      throw new AppError(
+        `Error al enviar el mensaje de contacto (EmailJS ${response.status}). Intente más tarde.`,
+        500
+      );
+    }
+
+    return responseText;
+  }
 }
 
 module.exports = new EmailjsService();

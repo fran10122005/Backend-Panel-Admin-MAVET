@@ -30,3 +30,16 @@ exports.deleteEspacio = catchAsync(async (req, res) => {
   await espacioService.deleteEspacio(req.params.id, req.user);
   res.status(200).json({ message: 'Espacio eliminado' });
 });
+
+exports.getEspaciosPublicos = catchAsync(async (req, res) => {
+  const result = await espacioService.getEspaciosPublicos();
+  res.status(200).json(result);
+});
+
+exports.subirImagen = catchAsync(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No se subió ninguna imagen' });
+  }
+  const url = await espacioService.subirImagenEspacio(req.params.id, req.file.path);
+  res.status(200).json({ status: 'success', message: 'Imagen subida', url });
+});
