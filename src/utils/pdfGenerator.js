@@ -195,9 +195,19 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
         });
 
         let y = 95;
-        const rowH = 20;
+        const ROW_MIN = 20;
         const m = MARGIN;
         const tblW = pw - 2 * m;
+
+        function calcRowH(rowArr) {
+          let maxH = ROW_MIN;
+          tableHeaders.forEach((h, i) => {
+            const val = rowArr[i] != null ? String(rowArr[i]) : '';
+            const hh = doc.heightOfString(val, { width: h.width - 10, align: h.align });
+            if (hh + 10 > maxH) maxH = hh + 10;
+          });
+          return maxH;
+        }
 
         // ── Grid: left + top border ──
         function strokeCell(x, yy, w, hh) {
@@ -213,10 +223,10 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
         }
 
         const drawTableHead = (cy) => {
-          doc.rect(m, cy, tblW, rowH).fill(C.headerBg);
+          doc.rect(m, cy, tblW, ROW_MIN).fill(C.headerBg);
           let cx = m;
           tableHeaders.forEach((h) => {
-            strokeCell(cx, cy, h.width, rowH);
+            strokeCell(cx, cy, h.width, ROW_MIN);
             doc.fillColor('#FFFFFF').font(F.bold).fontSize(9);
             doc.text(h.label, cx + 5, cy + 5, {
               width: h.width - 10,
@@ -230,22 +240,22 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
             .lineWidth(0.4)
             .strokeColor(C.line)
             .moveTo(cx, cy)
-            .lineTo(cx, cy + rowH)
+            .lineTo(cx, cy + ROW_MIN)
             .stroke();
-          return cy + rowH;
+          return cy + ROW_MIN;
         };
 
-        const drawRow = (rowArr, cy, odd) => {
-          doc.rect(m, cy, tblW, rowH).fill(odd ? C.rowOdd : C.rowEven);
+        const drawRow = (rowArr, cy, rh, odd) => {
+          doc.rect(m, cy, tblW, rh).fill(odd ? C.rowOdd : C.rowEven);
           let cx = m;
           tableHeaders.forEach((h, i) => {
-            strokeCell(cx, cy, h.width, rowH);
+            strokeCell(cx, cy, h.width, rh);
             const val = rowArr[i] != null ? String(rowArr[i]) : '';
             doc.fillColor(C.text).font(F.normal).fontSize(8);
             doc.text(val, cx + 5, cy + 5, {
               width: h.width - 10,
               align: h.align,
-              lineBreak: false,
+              lineBreak: true,
             });
             cx += h.width;
           });
@@ -253,27 +263,28 @@ const generateTablePdf = async (title, headers, rows, signatureLabel) => {
             .lineWidth(0.4)
             .strokeColor(C.line)
             .moveTo(cx, cy)
-            .lineTo(cx, cy + rowH)
+            .lineTo(cx, cy + rh)
             .stroke();
           // bottom
           doc
             .lineWidth(0.4)
             .strokeColor(C.line)
-            .moveTo(m, cy + rowH)
-            .lineTo(pw - m, cy + rowH)
+            .moveTo(m, cy + rh)
+            .lineTo(pw - m, cy + rh)
             .stroke();
         };
 
         y = drawTableHead(y);
 
         for (let r = 0; r < rows.length; r++) {
-          if (y + rowH > ph - 120) {
+          const rh = calcRowH(rows[r]);
+          if (y + rh > ph - 120) {
             doc.addPage();
             y = m + 60;
             y = drawTableHead(y);
           }
-          drawRow(rows[r], y, r % 2 === 1);
-          y += rowH;
+          drawRow(rows[r], y, rh, r % 2 === 1);
+          y += rh;
         }
 
         // ── Firma centrada ──

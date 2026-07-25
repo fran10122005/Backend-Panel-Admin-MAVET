@@ -5,7 +5,7 @@ const {
   generateCredencialesMasivasPdf,
   generateQRPdf,
 } = require('../../utils/pdfGenerator');
-const { Libro, CategoriaLibro } = require('../../models');
+const { Libro, CategoriaLibro, AutorLibro } = require('../../models');
 const { Obra, Artista, TecnicaObra, EstadoObra } = require('../../models');
 const { AsistenciaQR, Trabajador, CargoTrabajador } = require('../../models');
 const {
@@ -66,25 +66,32 @@ exports.reporteObras = catchAsync(async (req, res) => {
 // ─── Reporte: Catálogo de Biblioteca ──────────────────────────────────────
 exports.reporteLibros = catchAsync(async (req, res) => {
   const libros = await Libro.findAll({
-    include: [CategoriaLibro],
+    include: [CategoriaLibro, AutorLibro],
     order: [['titulo', 'ASC']],
   });
 
   const headers = [
     { label: 'Unidad', width: 50, align: 'center' },
-    { label: 'Título', width: 150 },
+    { label: 'Título', width: 130 },
+    { label: 'Autor', width: 110 },
     { label: 'Año', width: 40, align: 'center' },
-    { label: 'Categoría', width: 100 },
+    { label: 'Categoría', width: 90 },
+    { label: 'Estante', width: 85, align: 'center' },
     { label: 'Total', width: 45, align: 'right' },
     { label: 'Disp.', width: 45, align: 'right' },
-    { label: 'Estado', width: 70, align: 'center' },
+    { label: 'Estado', width: 65, align: 'center' },
     { label: 'F. Ingreso', width: 65, align: 'center' },
   ];
   const rows = libros.map((l) => [
     l.unidad || '—',
     l.titulo || '—',
+    (l.AutorLibros || [])
+      .map((a) => `${a.nombre || ''} ${a.apellido || ''}`.trim())
+      .filter(Boolean)
+      .join(', ') || '—',
     l.ano_libro || '—',
     l.CategoriaLibro?.nombre_categoria || '—',
+    l.estante || '—',
     l.cantidad_total?.toString() || '0',
     l.cantidad_disponible?.toString() || '0',
     l.estado || '—',
