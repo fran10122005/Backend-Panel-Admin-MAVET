@@ -21,6 +21,11 @@ const tecnicas = [
   { nombre_tecnica: 'Collage' },
   { nombre_tecnica: 'Mixta' },
   { nombre_tecnica: 'Instalación' },
+  { nombre_tecnica: 'Tejido' },
+  { nombre_tecnica: 'Telar' },
+  { nombre_tecnica: 'Bordado' },
+  { nombre_tecnica: 'Tapiz' },
+  { nombre_tecnica: 'Fibras Naturales' },
 ];
 
 const estados = [
