@@ -17,6 +17,9 @@ const startCronJobs = require('./cronJobs');
 
 const app = express();
 
+// Confiar en el proxy de Render (y otros cloud providers) para leer X-Forwarded-For correctamente
+app.set('trust proxy', 1);
+
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
