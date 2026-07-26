@@ -38,7 +38,13 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.includes('.onrender.com') ||
+      origin.includes('.vercel.app')
+    ) {
       callback(null, true);
     } else {
       callback(new Error('No permitido por CORS'));
