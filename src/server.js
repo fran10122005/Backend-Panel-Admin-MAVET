@@ -47,7 +47,8 @@ const corsOptions = {
     ) {
       callback(null, true);
     } else {
-      callback(new Error('No permitido por CORS'));
+      // Retornar false para que CORS responda con 403, sin lanzar error al errorHandler
+      callback(null, false);
     }
   },
   credentials: true,

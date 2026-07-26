@@ -35,3 +35,13 @@ exports.eliminarDefinitivo = catchAsync(async (req, res) => {
   await papeleraService.eliminarDefinitivo(tipo, id);
   res.status(200).json({ status: 'success', message: 'Registro eliminado permanentemente' });
 });
+
+exports.vaciarPapelera = catchAsync(async (req, res) => {
+  const { tipo } = req.query;
+  const { eliminados } = await papeleraService.vaciarPapelera(tipo);
+  res.status(200).json({
+    status: 'success',
+    message: `Papelera vaciada: ${eliminados} registro(s) eliminado(s) permanentemente`,
+    eliminados,
+  });
+});
