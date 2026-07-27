@@ -45,6 +45,18 @@ router.get(
   })
 );
 
+// GET /api/cms/espacios
+router.get(
+  '/espacios',
+  catchAsync(async (req, res) => {
+    const espacios = await EspacioMuseo.findAll({
+      attributes: ['id_espacio', 'nombre', 'imagen_url', 'mostrar_en_web', 'descripcion_web'],
+      order: [['created_at', 'DESC']],
+    });
+    res.json({ data: espacios });
+  })
+);
+
 // ========================
 // ENDPOINTS PUT (Actualizar)
 // ========================
@@ -101,21 +113,6 @@ router.put(
     await obra.save();
     await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
     res.json({ message: 'Obra actualizada exitosamente', obra });
-  })
-);
-
-// ========================
-// ENDPOINTS DE ESPACIOS
-// ========================
-
-// GET /api/cms/espacios
-router.get(
-  '/espacios',
-  catchAsync(async (req, res) => {
-    const espacios = await EspacioMuseo.findAll({
-      order: [['created_at', 'DESC']],
-    });
-    res.json({ data: espacios });
   })
 );
 
