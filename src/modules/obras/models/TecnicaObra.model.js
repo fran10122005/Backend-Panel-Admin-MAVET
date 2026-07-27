@@ -6,6 +6,7 @@ const TecnicaObra = sequelize.define(
   {
     id_tecnica: { type: DataTypes.STRING(15), primaryKey: true },
     nombre_tecnica: { type: DataTypes.STRING(255) },
+    id_categoria_obra: { type: DataTypes.STRING(15) },
   },
   {
     tableName: 'tecnicas_obras',

@@ -127,6 +127,9 @@ Obra.belongsTo(Artista, { foreignKey: 'id_artista', as: 'Artista' });
 TecnicaObra.hasMany(Obra, { foreignKey: 'id_tecnica' });
 Obra.belongsTo(TecnicaObra, { foreignKey: 'id_tecnica' });
 
+TecnicaObra.belongsTo(CategoriaObra, { foreignKey: 'id_categoria_obra' });
+CategoriaObra.hasMany(TecnicaObra, { foreignKey: 'id_categoria_obra' });
+
 EstadoObra.hasMany(Obra, { foreignKey: 'id_estado_actual' });
 Obra.belongsTo(EstadoObra, { foreignKey: 'id_estado_actual' });
 

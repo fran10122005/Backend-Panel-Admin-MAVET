@@ -271,6 +271,7 @@ async function migrateTablas() {
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS descripcion_web TEXT;`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS numero_expediente VARCHAR(30);`,
     `ALTER TABLE solicitudes_espacios ADD COLUMN IF NOT EXISTS id_tipo_evento VARCHAR(15);`,
+    `ALTER TABLE tecnicas_obras ADD COLUMN IF NOT EXISTS id_categoria_obra VARCHAR(15);`,
 
     `ALTER TABLE inscripciones_talleres ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;`,
     `ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`,
