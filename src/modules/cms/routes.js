@@ -45,6 +45,19 @@ router.get(
   })
 );
 
+// GET /api/cms/espacios
+router.get(
+  '/espacios',
+  catchAsync(async (req, res) => {
+    const { EspacioMuseo } = require('../../models');
+    const espacios = await EspacioMuseo.findAll({
+      attributes: ['id_espacio', 'nombre', 'imagen_url', 'mostrar_en_web', 'descripcion_web'],
+      order: [['created_at', 'DESC']],
+    });
+    res.json({ data: espacios });
+  })
+);
+
 // ========================
 // ENDPOINTS PUT (Actualizar)
 // ========================
@@ -101,6 +114,25 @@ router.put(
     await obra.save();
     await cacheService.eliminarPatron('mavet:resp:/api/public/obras*');
     res.json({ message: 'Obra actualizada exitosamente', obra });
+  })
+);
+
+// PUT /api/cms/espacios/:id
+router.put(
+  '/espacios/:id',
+  catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { mostrar_en_web, descripcion_web } = req.body;
+    const { EspacioMuseo } = require('../../models');
+    const espacio = await EspacioMuseo.findByPk(id);
+    if (!espacio) return res.status(404).json({ error: 'Espacio no encontrado' });
+
+    if (mostrar_en_web !== undefined) espacio.mostrar_en_web = mostrar_en_web;
+    if (descripcion_web !== undefined) espacio.descripcion_web = descripcion_web;
+
+    await espacio.save();
+    await cacheService.eliminarPatron('mavet:resp:/api/public/espacios*');
+    res.json({ message: 'Espacio actualizado exitosamente', espacio });
   })
 );
 
