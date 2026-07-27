@@ -104,9 +104,15 @@ exports.createObra = async (data) => {
 
     let codigo_inventario = data.codigo_inventario || `SIN-CODIGO-${Date.now()}`;
 
+    // Construir objeto solo con campos permitidos para evitar Validation error de Sequelize
+    const obraData = {};
+    allowedFields.forEach((field) => {
+      if (data[field] !== undefined) obraData[field] = data[field];
+    });
+
     const newObra = await Obra.create(
       {
-        ...data,
+        ...obraData,
         codigo_inventario,
         id_artista,
         id_tecnica,

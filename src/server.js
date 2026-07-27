@@ -17,6 +17,9 @@ const startCronJobs = require('./cronJobs');
 
 const app = express();
 
+// Confiar en el proxy de Render (y otros cloud providers) para leer X-Forwarded-For correctamente
+app.set('trust proxy', 1);
+
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -38,10 +41,17 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.includes('.onrender.com') ||
+      origin.includes('.vercel.app')
+    ) {
       callback(null, true);
     } else {
-      callback(new Error('No permitido por CORS'));
+      // Retornar false para que CORS responda con 403, sin lanzar error al errorHandler
+      callback(null, false);
     }
   },
   credentials: true,

@@ -249,3 +249,27 @@ exports.eliminarDefinitivo = async (tipo, id) => {
   await record.destroy({ force: true });
   return true;
 };
+
+exports.vaciarPapelera = async (tipo) => {
+  const modelosAVaciar = tipo ? MODELOS.filter((m) => m.tipo === tipo) : MODELOS;
+
+  let eliminados = 0;
+  for (const entry of modelosAVaciar) {
+    // Sólo modelos que soporten paranoid (deleted_at)
+    try {
+      const { Op } = require('sequelize');
+      const records = await entry.model.findAll({
+        where: { deleted_at: { [Op.ne]: null } },
+        paranoid: false,
+      });
+      for (const record of records) {
+        await record.destroy({ force: true });
+        eliminados++;
+      }
+    } catch (e) {
+      // Si el modelo no tiene deleted_at, ignorar
+    }
+  }
+
+  return { eliminados };
+};

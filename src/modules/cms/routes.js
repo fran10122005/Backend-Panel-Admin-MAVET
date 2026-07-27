@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const catchAsync = require('../../utils/catchAsync');
-const { Taller, SolicitudEspacio, Obra, ImagenWeb } = require('../../models');
+const { Taller, SolicitudEspacio, Obra, ImagenWeb, EspacioMuseo } = require('../../models');
 const cacheService = require('../../services/cache.service');
 
 // ========================
@@ -49,7 +49,6 @@ router.get(
 router.get(
   '/espacios',
   catchAsync(async (req, res) => {
-    const { EspacioMuseo } = require('../../models');
     const espacios = await EspacioMuseo.findAll({
       attributes: ['id_espacio', 'nombre', 'imagen_url', 'mostrar_en_web', 'descripcion_web'],
       order: [['created_at', 'DESC']],
@@ -123,7 +122,7 @@ router.put(
   catchAsync(async (req, res) => {
     const { id } = req.params;
     const { mostrar_en_web, descripcion_web } = req.body;
-    const { EspacioMuseo } = require('../../models');
+
     const espacio = await EspacioMuseo.findByPk(id);
     if (!espacio) return res.status(404).json({ error: 'Espacio no encontrado' });
 
