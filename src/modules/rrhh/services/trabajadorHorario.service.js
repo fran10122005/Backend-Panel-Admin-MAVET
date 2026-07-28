@@ -11,8 +11,8 @@ const DIAS_SEMANA = [
   { value: 6, label: 'Sábado' },
 ];
 
-const HORA_ENTRADA_DEFAULT = '09:00:00';
-const HORA_SALIDA_DEFAULT = '17:00:00';
+const HORA_ENTRADA_DEFAULT = '09:00';
+const HORA_SALIDA_DEFAULT = '17:00';
 
 exports.obtenerHorario = async (id_trabajador) => {
   const trabajador = await Trabajador.findByPk(id_trabajador);
