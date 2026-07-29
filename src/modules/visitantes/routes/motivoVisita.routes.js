@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const motivoController = require('../controllers/motivoVisita.controller');
+const { verifyToken } = require('../../../middleware/authMiddleware');
+
+router.use(verifyToken);
 
 router.post('/', motivoController.createMotivo);
 router.get('/', motivoController.getAllMotivos);

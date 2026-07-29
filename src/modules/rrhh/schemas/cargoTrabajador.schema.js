@@ -8,7 +8,9 @@ const createCargoTrabajadorSchema = z.object({
 const updateCargoTrabajadorSchema = createCargoTrabajadorSchema.partial();
 
 const cargoIdParamSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'El ID debe ser un número entero'),
+  id: z
+    .string()
+    .regex(/^[A-Z]+-\d+$|^\d+$/, 'El ID debe ser un número o tener formato PREFIJO-00000'),
 });
 
 module.exports = {
