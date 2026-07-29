@@ -1,4 +1,5 @@
 const { CargoTrabajador, Role, sequelize } = require('../models');
+const { permisosCompletos } = require('../config/permissions');
 
 const { Op } = require('sequelize');
 
@@ -18,13 +19,60 @@ const cargos = [
 ];
 
 const roles = [
-  { nombre_rol: 'Administrador', permisos: 'all' },
-  { nombre_rol: 'Recepcionista', permisos: 'visitantes,asistencia' },
-  { nombre_rol: 'Curador', permisos: 'obras' },
-  { nombre_rol: 'Restaurador', permisos: 'obras' },
-  { nombre_rol: 'Bibliotecario', permisos: 'biblioteca' },
-  { nombre_rol: 'Educador', permisos: 'talleres,auditorio' },
-  { nombre_rol: 'Gerente', permisos: 'read' },
+  { nombre_rol: 'Administrador', permisos: JSON.stringify(permisosCompletos()) },
+  {
+    nombre_rol: 'Recepcionista',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      recepcion: ['read', 'write'],
+      asistencia: ['read'],
+    }),
+  },
+  {
+    nombre_rol: 'Curador',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      inventario_obras: ['read', 'write', 'delete'],
+    }),
+  },
+  {
+    nombre_rol: 'Restaurador',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      inventario_obras: ['read', 'write'],
+    }),
+  },
+  {
+    nombre_rol: 'Bibliotecario',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      biblioteca: ['read', 'write', 'delete'],
+    }),
+  },
+  {
+    nombre_rol: 'Educador',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      auditorio: ['read', 'write', 'delete'],
+      talleres: ['read', 'write', 'delete'],
+      educacion: ['read'],
+    }),
+  },
+  {
+    nombre_rol: 'Gerente',
+    permisos: JSON.stringify({
+      dashboard: ['read'],
+      recepcion: ['read'],
+      auditorio: ['read'],
+      talleres: ['read'],
+      asistencia: ['read'],
+      biblioteca: ['read'],
+      inventario_obras: ['read'],
+      rrhh: ['read'],
+      auditoria: ['read'],
+      catalogos: ['read'],
+    }),
+  },
 ];
 
 async function seedRRHH() {

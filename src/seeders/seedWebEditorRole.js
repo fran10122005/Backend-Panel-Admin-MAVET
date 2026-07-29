@@ -1,5 +1,6 @@
 const sequelize = require('../config/db');
 const Role = require('../modules/auth/models/Role.model');
+const { permisosCompletos } = require('../config/permissions');
 
 async function seedWebEditor() {
   try {
@@ -12,9 +13,17 @@ async function seedWebEditor() {
     if (existingRole) {
       console.log('El rol WEB_EDITOR ya existe con ID:', existingRole.id_rol);
     } else {
+      const basePermisos = permisosCompletos();
+      const webEditorPermisos = {
+        dashboard: basePermisos.dashboard,
+        biblioteca: ['read'],
+        inventario_obras: ['read'],
+        talleres: ['read'],
+        auditorio: ['read'],
+      };
       const newRole = await Role.create({
         nombre_rol: 'WEB_EDITOR',
-        permisos: '{"cms_access": true, "edit_content": true}',
+        permisos: JSON.stringify(webEditorPermisos),
       });
       console.log('Rol WEB_EDITOR creado exitosamente con ID:', newRole.id_rol);
     }
